@@ -436,6 +436,37 @@ def do_selftest() -> bool:
                      for m in pat.finditer(txt)]
     check("全仓库无学号形状残留", not hits, str(hits[:8]))
 
+    # 私人路径黑名单的**反向守卫**：黑名单的值只在 Secret 里，所以这里不能写死路径名
+    # （写死本身就是泄露）。改成运行时读 DIARY_EXCLUDE，有值就断言全仓库不含这些前缀。
+    # 2026-11-14 实测抓到过两个漏点：state.json 的键就是文件路径、技术路径.md 抄了真实目录名。
+    # 本地没设这个环境变量时跳过（不是失败）——Actions 里一定有。
+    import diary_collector as _dc
+    _prefixes = _dc.excluded_prefixes()
+    if _prefixes:
+        # 既查完整前缀，也查**最后一段目录名**：实测的漏点是文档里只写了叶子名，
+        # 完整前缀匹配抓不到它。目录名本身就是隐私，所以这里也不写出真实名字。
+        _needles = []
+        for pref in _prefixes:
+            _needles.append(pref)
+            leaf = pref.rstrip("/").rsplit("/", 1)[-1]
+            if leaf and leaf not in _needles:
+                _needles.append(leaf)
+        leak = []
+        for p in sorted(rr.REPO_ROOT.rglob("*")):
+            if ".git" in p.parts or "__pycache__" in p.parts or not p.is_file():
+                continue
+            if p.suffix.lower() not in exts:
+                continue
+            try:
+                txt = p.read_text(encoding="utf-8")
+            except (UnicodeDecodeError, OSError):
+                continue
+            leak += [f"{p.relative_to(rr.REPO_ROOT)}:{n}"
+                     for n in _needles if n in txt]
+        check("私人路径不出现在仓库任何文件里", not leak, str(leak[:8]))
+    else:
+        log("[selftest] ⏭️ 跳过私人路径守卫（本地未设 DIARY_EXCLUDE，Actions 里会跑）")
+
     # 用户硬要求：所有说明性文档都必须能在 README 目录里找到。
     # 新增文档忘了挂链接，这条会直接红，不用等人肉发现。
     docs = sorted((rr.REPO_ROOT / "docs").glob("*.md"))

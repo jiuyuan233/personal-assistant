@@ -370,6 +370,13 @@ def run() -> dict:
             save_list(ARCHIVE_PATH, old_arc, repo=repo)
         if dq or dp or da:
             log(f"清理黑名单生效前入库的私人条目：名言 {dq} 条、计划 {dp} 条、归档 {da} 条")
+        # state.json 的键**就是文件路径**。只清 plans/quotes 不够 ——
+        # 私人目录名会从 sha 映射里泄露出去（2026-11-14 全仓库扫描实测发现）。
+        bad_keys = [k for k in known if is_excluded(k, prefixes)]
+        for k in bad_keys:
+            del known[k]
+        if bad_keys:
+            log(f"清理 state.json 里的私人路径：{len(bad_keys)} 条")
     quotes = merge_quotes(old_quotes, dedupe_by_id(new_quotes), today)
     plans = merge_plans(old_plans, dedupe_by_id(new_plans), today)
     plans, archived = archive_plans(plans, today)
