@@ -44,6 +44,10 @@ DATE_PATTERNS = [
 
 AI_BATCH = 10
 AI_MAX_CANDIDATES = 30
+DETAIL_MAX = 5
+# 博达 CMS 正文容器，www 与 jwc 两站实测一致
+BODY_CONTAINER = "v_news_content"
+BODY_CHARS = 6000
 
 
 # ---------------------------------------------------------------------------
@@ -244,6 +248,45 @@ def ai_score(items: list[dict], kw: dict) -> None:
 # ---------------------------------------------------------------------------
 # 主流程
 # ---------------------------------------------------------------------------
+def body_text(html: str) -> str:
+    i = html.find(BODY_CONTAINER)
+    chunk = html[i:i + 30000] if i >= 0 else html
+    return safe_text(clean_html_text(chunk), BODY_CHARS)
+
+
+def ai_detail(session: requests.Session, items: list[dict]) -> None:
+    """就地给高分公告补 description/deadline。只看标题拿不到截止日，必须读正文。"""
+    from ai_client import AIClient
+    from prompts import DETAIL_SCHEMA, detail_messages
+
+    try:
+        client = AIClient(timeout=90)
+    except SystemExit:
+        return
+    done = 0
+    for n in items:
+        html = fetch(session, n["url"])
+        if not html:
+            continue
+        text = body_text(html)
+        if len(text) < 80:
+            continue
+        try:
+            d = client.chat_json(detail_messages(n["title"], text),
+                                 schema_hint=DETAIL_SCHEMA, temperature=0.1, max_tokens=1000)
+        except Exception as e:
+            log(f"公告正文摘要失败：{safe_text(e, 200)}", level="ERROR")
+            continue
+        if not isinstance(d, dict):
+            continue
+        n["description"] = safe_text(d.get("summary"), 120)
+        dl = d.get("deadline")
+        if not n.get("deadline") and isinstance(dl, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", dl):
+            n["deadline"] = dl
+        done += 1
+    log(f"正文摘要补全：{done}/{len(items)} 条")
+
+
 def run() -> dict:
     cfg = load_sources()
     sources = [s for s in cfg.get("notice", []) if s.get("enabled")]
@@ -279,9 +322,14 @@ def run() -> dict:
         ai_score(candidates, kw)
 
     merged = merge_notices(old, all_new, today)
+    high = [n for n in merged if (n.get("score") or 0) >= 4]
+    # 只看标题拿不到报名截止日，高分公告必须读正文。已有摘要的不重复抓。
+    targets = [n for n in high if not n.get("description")][:DETAIL_MAX]
+    if targets:
+        log(f"抓正文补摘要：{len(targets)} 条")
+        ai_detail(session, targets)
     save_list(NOTICE_PATH, merged, sources=[s["name"] for s in sources])
 
-    high = [n for n in merged if (n.get("score") or 0) >= 4]
     log(f"高相关：{len(high)}")
     for n in high[:5]:
         log(f"[notice] {n['score']}分 {n['title']} ({n.get('publish_date') or '?'}) {n['url']}")

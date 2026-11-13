@@ -195,6 +195,15 @@ def do_selftest() -> bool:
               ns[0]["url"])
         check("标题取 title 属性", ns[1]["title"] == "我校18篇学士学位论文获评河南省优秀", ns[1]["title"])
 
+    body_html = ('<div class="nav">首页 通知公告 学院概况</div>'
+                 '<div class="v_news_content"><p>全校各学院：</p>'
+                 '<p>定于2026年10月至12月举办第二十一届大学生职业规划大赛。</p>'
+                 '<p>报名截止：2026年11月30日</p></div>'
+                 '<div class="footer">版权所有 河南城建学院</div>')
+    bt = notice_collector.body_text(body_html)
+    check("正文取 v_news_content 容器", "职业规划大赛" in bt and "报名截止" in bt, bt[:60])
+    check("正文不含导航与页脚", "学院概况" not in bt and "版权所有" not in bt, bt[:60])
+
     ics = schedule_parser.parse_ics(schedule_parser.ICS_PATH)
     check("课表 VEVENT 解析", len(ics) > 100, f"实际 {len(ics)}")
     if ics:
