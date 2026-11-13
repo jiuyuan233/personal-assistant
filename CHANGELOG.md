@@ -89,9 +89,14 @@
 3. 考试的**待完成行**结构未验证（实测样本都是已完成状态）
 4. Actions 分钟数用量是估算，需要一个月的真实数据校准。仓库已设为 public（额度无限），
    若日后转 private 必须换省额度 cron，见 `DEV_GUIDE.md` 第 2 节
-5. `study` / `diary` **尚未端到端跑通**，需先配 `CX_USERNAME`/`CX_PASSWORD`、`GITEE_TOKEN`。
-   已在真实 runner 上验证成功：`selftest`（26 项断言）、`probe`、`finalize`（含 git 写回）、
-   `notice`（4 源全成功、新增 78 条、README 渲染 12 条竞赛公告）
+5. ~~`study` / `diary` 尚未端到端跑通~~ **已跑通（2026-11-13）**：
+   `study` 登录成功、14 门课失败 0、38 条作业、待完成 7（两条真实截止日 11-19 / 11-20 进清单）；
+   `diary` 处理 12 个 md、名言 7 条、计划 39 条；两者飞书均推送成功。
+   已在真实 runner 上验证成功：`selftest`（**30 项断言**）、`probe`、`finalize`（含 git 写回）、
+   `notice`（4 源全成功、新增 78 条）、`study`、`diary`。
+   **唯一仍未验证的是 `schedule` 定时触发**：截至 2026-11-13T05:22Z，workflow `state=active`、
+   Actions `enabled=true`、仓库 public 非归档，但 `event=schedule` 的 run 数为 0，
+   全部运行都是 `workflow_dispatch`。cron 表达式合法，需继续观测首次自动触发
 6. **关键词打分上限只有 3 分**（`keyword_score`：boost=3 / gate=2 / block=0）。没配 `AI_API_KEY` 时
    「高相关」恒为 0，飞书高相关阈值 ≥4 永不触发，README 公告表的「截止」「说明」两列恒为 `—`。
    而且只有**新增**公告送 AI（`AI_MAX_CANDIDATES=30`/次），已入库的旧公告不会被重打分。

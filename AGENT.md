@@ -107,12 +107,16 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
      GET  考试 /exam-ans/mooc2/exam/exam-list?courseid=&clazzid=&cpi=&ut=s&stuenc=<enc>&enc=<examEnc>
 ```
 
-**四个必记的坑：**
+**六个必记的坑：**
 
 - `ut=s` 不能省 → 否则「无权限的操作！」
 - `stuenc` 和 `enc` 是**两个不同 token**，都要带
 - 作业用驼峰 `courseId/classId`，**考试用小写 `courseid/clazzid`** → 混用会「参数传递不正确！」
 - `enc` 每次访问都变 → **绝不能进任务 ID**，否则每次抓取都变成"新任务"
+- **课程名别取 middle 页的 `<h2>`** → 那是全站横幅「在线学习诚信承诺书」，会让 14 门课名字全错。
+  正确来源：课程列表页 `course-name` span 的 `title`（链接后 2500 字符窗口内），middle 页 `<title>` 兜底
+- **待交状态词是 `未交`** → 词表里只有 `未提交`/`待提交` 会漏掉真待交作业（实测漏了 3 条）。
+  再遇到 `unknown` 状态，先 dump 原文再补词表，不要猜
 
 **列表页只给相对倒计时**（「剩余1小时12分钟」），没有绝对时间戳。
 所以 `deadline = 抓取时刻 + 剩余时长`，`deadline_exact=False`，README 里显示 `≈`。
@@ -141,7 +145,20 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
   解压到仓库外的临时目录充当 `node_modules`。两个坑：GNU tar 会把 `C:/...` 的冒号当远程主机，
   必须加 `--force-local`；脚本要写成真实文件再跑，`node -e` 里 `process.chdir` 不改变模块解析基准。
   明文值走环境变量传入、不落盘不进 git，用完删掉临时目录。
-  已验证成功的模式：`selftest`（26 项断言）、`probe`、`finalize`（含 git 写回）、`notice`。
+  已验证成功的模式：`selftest`（**30 项断言**）、`probe`、`finalize`（含 git 写回）、`notice`、`study`、`diary`。
+- **`study` / `diary` 已端到端跑通（2026-11-13）**，Secrets 配好后首次真实采集暴露了四个 bug，均已修：
+  - `study`：登录成功、**14 门课全扫描失败 0**、38 条作业、**待完成 7**（修 `未交` 前只有 4）、
+    两条真实截止日 2026-11-19 / 2026-11-20 已进 README 清单，飞书推送成功。
+  - `diary`：Gitee 扫到 23 个 md、处理 12 个、**名言 7 条、计划 39 条**，飞书推送成功。
+  - **AI 模型名必须是 `deepseek-v3.2`（点号），不是 `deepseek-v3-2`。** 写错时每次调用都 403
+    「免费API仅可使用免费模型目录中的模型」，极易误判成 key 失效或海外 IP 被封。
+    排查顺序：先 `GET /v1/models` 看目录（实测 200、31 个模型），再核模型名，最后才怀疑 key/IP。
+    换中转站时 `AI_MODEL` 必须从该站 `/models` 返回里复制。
+- **采集模式只提交 `data`，派生产物提交权独占给 `finalize`/`all`。** 这条边界是数据丢失事故换来的：
+  原先每个模式都 `git add data docs README.md`，加上 checkout 默认用派发时的 `github.sha`，
+  排队中的 `diary` 在旧树上渲染 README，rebase 冲突直接吞掉已抽出的 24 条计划。
+  现在 checkout 显式 `ref: ${{ github.ref_name }}`，采集模式 `git add data` 后
+  `git checkout -- README.md docs`。**改提交步骤前必读 `docs/技术路径.md` 第 11 节。**
 - **`notice` 已端到端验证（2026-11-13）**：4 个源全成功，新增 78 条，README 渲染出 12 条竞赛公告。
   但**关键词打分封顶 3 分**（`keyword_score`：boost=3 / gate=2 / block=0），所以没配 `AI_API_KEY` 时
   「高相关」恒为 0（飞书阈值 ≥4 永不触发），公告表的「截止」「说明」两列恒为 `—`。
@@ -167,6 +184,9 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
 - [ ] 改了日志文案 → 同步改 `notify_feishu.js` 的 `TASK_TEMPLATES` 正则（指标靠正则从日志里抠）
 - [ ] 改了数据字段 → 同步改 `docs/数据结构.md` 和 `docs/js/app.js`
 - [ ] 改了解析器 → 同步改 `main.py` 的 `do_selftest()`，并在 Actions 上跑一次 selftest
+- [ ] 改了提交步骤 → 确认采集模式仍只 `git add data`，派生产物只由 `finalize`/`all` 提交（见第 5 节事故）
+- [ ] 换了 AI 中转站或模型 → 先 `GET /v1/models` 核目录，`AI_MODEL` 照抄返回里的名字，别凭记忆写
+- [ ] 遇到 `unknown` 作业状态 → dump 状态原文再补 `PENDING`/`SUBMITTED`/`DONE` 词表，不要猜
 - [ ] 加了新公告源 → 只改 `data/sources.json`，先确认列表页是静态 HTML（不是 JS 渲染）
 - [ ] 加了新依赖 → 更新 `requirements.txt`，并在 DEV_GUIDE 里说明为什么需要
 - [ ] 任何情况下都不要把凭据写进文件
