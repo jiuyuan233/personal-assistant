@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-14T00:08:14+08:00",
+  "updated_at": "2026-11-14T00:11:02+08:00",
   "semester_start": "2026-09-07",
   "total_weeks": 18,
   "current_week": 10,
@@ -118,7 +118,7 @@
       "slot_start": 5,
       "slot_end": 6,
       "slots": "5-6",
-      "course": "1：50青协例会计算思维与人工智能",
+      "course": "计算思维与人工智能",
       "topic": "",
       "room": "建业楼7#B115",
       "teacher": "",

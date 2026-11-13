@@ -4,8 +4,9 @@
 15 号复查，勾了的算完成，没勾的滚进 15 号的日记。
 
 安全边界（这是往用户自己的日记仓库里写东西，必须守住）：
-- **只在凌晨窗口内写**（默认北京时间 00:00–05:00，`sources.json` 的 `writeback_window` 可改）。
+- **只在凌晨窗口内写**（默认北京时间 00:00–06:00，`sources.json` 的 `writeback_window` 可改）。
   用户白天在 Obsidian 里写日记，白天写回会和他的编辑撞车。窗口外只复查勾选、绝不提交。
+  **窗口宽度必须 ≥ cron 间隔（20 分钟）**，否则窗口里可能一次都不触发（审计 §4.1）。
 - 只动 `<!-- assistant:plans:start/end -->` 之间的内容，区块外的正文一个字节都不碰
 - 区块已存在就按 pid 合并，保留用户已经勾上的 [x]，不重置
 - 每行尾部带 `<!-- pid:xxx -->`，Obsidian 预览里不显示，但能精确对回 plans.json
@@ -14,17 +15,19 @@
 from __future__ import annotations
 
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 from dedup import load_list
-from diary_collector import BLOCK_END, BLOCK_START, PLANS_PATH, Gitee, strip_assistant_block
+from diary_collector import BLOCK_END, BLOCK_START, PLANS_PATH, Gitee
 from utils import DATA_DIR, load_json, log, now_bj, safe_text, save_json
 
 WB_PATH = DATA_DIR / "diary" / "writeback.json"
 PID_LINE_RE = re.compile(r"^\s*[-*+]\s*\[([ xX])\]\s*(.+?)\s*<!--\s*pid:(\S+?)\s*-->\s*$", re.M)
 WINDOW_RE = re.compile(r"\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*")
 DEFAULT_MAX = 20
-DEFAULT_WINDOW = "00:00-05:00"
+# 兜底值必须与 sources.json 一致。原来是 05:00，审计 §4.1 实测 cron 延迟可达 54 分钟，
+# 04:07 那班会落到窗口外；放宽到 06:00 后窗口内有 18 次 tick 机会。
+DEFAULT_WINDOW = "00:00-06:00"
 NEW_FILE_TEMPLATE = "# 今日记录\n\n# 随笔 / 感想\n\n# 明日计划\n\n"
 
 
@@ -84,22 +87,29 @@ def upsert_block(text: str, block: str) -> str:
     return text + sep + "\n" + block + "\n"
 
 
-def pick_plans(plans: list[dict], yesterday: str, rolling: set[str],
-               limit: int) -> list[dict]:
-    """昨天新挖到的 + 上次没勾完滚过来的，都只要 state=open 的。"""
-    by_id = {p.get("id"): p for p in plans if p.get("id")}
-    chosen: dict[str, dict] = {}
-    for p in plans:
-        pid = p.get("id")
-        if not pid or p.get("state") != "open":
-            continue
-        if p.get("first_seen") == yesterday or pid in rolling:
-            chosen[pid] = p
-    # 有截止日的排前面（近的优先），没截止日的按用户自己的确定程度排
-    ordered = sorted(chosen.values(),
-                     key=lambda p: (p.get("due_date") or "9999-12-31",
-                                    -(p.get("confidence") or 0)))
-    return ordered[:limit]
+def pick_plans(plans: list[dict], rolling: set[str], limit: int) -> list[dict]:
+    """入选条件：state=open 且（**从未写回过** 或 昨天没勾完滚过来）。
+
+    审计 §1.5：原来是 `first_seen == yesterday or pid in rolling`。first_seen 是
+    采集日期，一条计划只在「被采到的次日」有资格；凌晨三次窗口全被挤掉 →
+    这条计划再也不会进任何一天的日记。改成与日期无关的 written_once 标记后，
+    错过窗口只是延后，不会永久丢。
+
+    排序（审计 §3.4 ③）：昨天没勾完的优先 → 有截止日的近的优先 →
+    **老计划先轮到**（原来按 due_date 排，多数计划没 due_date，实际按 first_seen
+    倒序，新计划永远挤掉老计划）→ 用户自己的确定程度。
+    """
+    chosen = [p for p in plans
+              if p.get("id") and p.get("state") == "open"
+              and (not p.get("written_once") or p["id"] in rolling)]
+
+    def rank(p: dict):
+        return (0 if p.get("id") in rolling else 1,
+                p.get("due_date") or "9999-12-31",
+                p.get("first_seen") or "9999-12-31",
+                -(p.get("confidence") or 0))
+
+    return sorted(chosen, key=rank)[:limit]
 
 
 def run(today: date | None = None, g: Gitee | None = None,
@@ -138,24 +148,34 @@ def run(today: date | None = None, g: Gitee | None = None,
     done_ids |= {pid for pid, done in existing.items() if done}
     rolling |= {pid for pid, done in existing.items() if not done}
 
+    # 审计 §3.2：用户把昨天勾上的 [x] 又改回 [ ]，这条计划必须回到待办。
+    # 复选框是权威来源，plans.json 里的 done 只是它的缓存。
+    state_by_id = {p.get("id"): p.get("state") for p in plans}
+    undone = {pid for pid in rolling if state_by_id.get(pid) == "done"}
+    if undone:
+        log(f"复查：{len(undone)} 条被取消勾选，复原为未完成")
+
     # 3) 凌晨窗口守卫：窗口外只复查（上面两步都是只读），绝不往用户仓库提交。
     #    不推进 last_date，等下一个凌晨窗口再写，滚动链条不会断。
     window = cfg.get("writeback_window") or DEFAULT_WINDOW
     if not in_window(now, window):
         log(f"写回：北京时间 {now:%H:%M} 不在凌晨窗口 {window} 内，只复查不写入")
         return {"ok": True, "skipped": "outside_window", "written": 0,
-                "done": sorted(done_ids), "path": path}
+                "done": sorted(done_ids), "undone": sorted(undone), "path": path}
 
-    # 4) 选出今天要写的
-    yesterday = (today - timedelta(days=1)).isoformat()
-    picked = pick_plans(plans, yesterday, rolling, limit)
+    # 4) 选出今天要写的。已勾选完成的不再写进新一天 —— 它们的 state 要等
+    #    diary_collector 拿到本函数返回值之后才改成 done，这里必须自己排掉。
+    candidates = [p for p in plans if p.get("id") not in done_ids]
+    picked = pick_plans(candidates, rolling, limit)
     entries = [(p["id"], safe_text(p.get("text"), 100), p["id"] in done_ids) for p in picked]
+    picked_ids = [p["id"] for p in picked]
 
     if not entries and not text:
         log(f"写回：{iso} 没有可写的计划，也不新建空日记")
         save_json(WB_PATH, {"updated_at": now_bj().isoformat(timespec="seconds"),
                             "last_date": prev_date, "last_path": prev_path})
-        return {"ok": True, "written": 0, "done": sorted(done_ids), "path": path}
+        return {"ok": True, "written": 0, "done": sorted(done_ids),
+                "undone": sorted(undone), "path": path}
 
     block = render_block(iso, entries)
     new_text = upsert_block(text or NEW_FILE_TEMPLATE, block)
@@ -175,13 +195,15 @@ def run(today: date | None = None, g: Gitee | None = None,
             elif sha:
                 ok = g.write_file(path, new_text, msg, sha=sha)
         if not ok:
-            return {"ok": False, "written": 0, "done": sorted(done_ids), "path": path}
+            return {"ok": False, "written": 0, "done": sorted(done_ids),
+                    "undone": sorted(undone), "path": path}
         log(f"写回：{iso} 写入 {len(entries)} 条 → {path}（{'更新' if sha else '新建'}）")
 
     save_json(WB_PATH, {"updated_at": now_bj().isoformat(timespec="seconds"),
                         "last_date": iso, "last_path": path,
                         "written": len(entries), "done": sorted(done_ids)})
-    return {"ok": True, "written": len(entries), "done": sorted(done_ids), "path": path}
+    return {"ok": True, "written": len(entries), "done": sorted(done_ids),
+            "undone": sorted(undone), "picked": picked_ids, "path": path}
 
 
 if __name__ == "__main__":

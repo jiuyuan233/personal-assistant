@@ -23,7 +23,8 @@ from urllib.parse import quote
 
 import requests
 
-from dedup import (dedupe_by_id, load_list, merge_plans, merge_quotes, save_list)
+from dedup import (archive_plans, dedupe_by_id, load_list, merge_plans,
+                   merge_quotes, save_list)
 from utils import (DATA_DIR, env, load_json, log, make_id, now_bj, safe_text,
                    save_json, today_bj)
 
@@ -31,6 +32,7 @@ DIARY_DIR = DATA_DIR / "diary"
 STATE_PATH = DIARY_DIR / "state.json"
 QUOTES_PATH = DIARY_DIR / "quotes.json"
 PLANS_PATH = DIARY_DIR / "plans.json"
+ARCHIVE_PATH = DIARY_DIR / "plans_archive.json"
 
 API = "https://gitee.com/api/v5/repos/{repo}/contents/{path}"
 MAX_DEPTH = 3
@@ -147,6 +149,35 @@ def source_date_of(entry: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
+# 私人路径黑名单（审计 §2.2 / §7.3）
+# ---------------------------------------------------------------------------
+def excluded_prefixes() -> list[str]:
+    """从环境变量 DIARY_EXCLUDE 读私人路径前缀，逗号/分号/换行分隔。
+
+    **黑名单本身不能进仓库**：路径名就暴露了用户把哪些主题标成私人。
+    所以值只放 GitHub Secret `DIARY_EXCLUDE`，仓库里只出现这个名字。
+    """
+    raw = env("DIARY_EXCLUDE")
+    return [s.strip().strip("/") for s in re.split(r"[,;\n]", raw) if s.strip()]
+
+
+def is_excluded(rel: str, prefixes: list[str]) -> bool:
+    rel = (rel or "").strip("/")
+    return any(rel == p or rel.startswith(p + "/") for p in prefixes)
+
+
+def drop_excluded(items: list[dict], prefixes: list[str]) -> tuple[list[dict], int]:
+    """把已经入库的私人条目清掉。
+
+    只挡新采集不够 —— 黑名单生效前采到的计划还在 plans.json 里公开着。
+    """
+    if not prefixes:
+        return items, 0
+    kept = [it for it in items if not is_excluded(it.get("source_file") or "", prefixes)]
+    return kept, len(items) - len(kept)
+
+
+# ---------------------------------------------------------------------------
 # 确定性抽取：Obsidian 复选框
 # ---------------------------------------------------------------------------
 def extract_checkboxes(text: str, entry: dict, today: date) -> list[dict]:
@@ -180,7 +211,12 @@ def extract_checkboxes(text: str, entry: dict, today: date) -> list[dict]:
 # ---------------------------------------------------------------------------
 # AI 抽取
 # ---------------------------------------------------------------------------
-def ai_extract(client, text: str, entry: dict, today: date) -> tuple[list[dict], list[dict]]:
+def ai_extract(client, text: str, entry: dict, today: date) -> tuple[list[dict], list[dict], bool]:
+    """返回 (名言, 计划, 是否成功)。
+
+    第三个值是给增量判定用的（审计 §1.4）：AI 挂了和「这篇日记本来就没东西可抽」
+    都返回空列表，但前者必须重试、后者不该重试。只看列表空不空分不开这两种情况。
+    """
     from prompts import DIARY_SCHEMA, diary_messages
 
     rel = entry.get("path") or entry.get("name") or ""
@@ -191,10 +227,10 @@ def ai_extract(client, text: str, entry: dict, today: date) -> tuple[list[dict],
                                 temperature=0.2, max_tokens=2000)
     except Exception as e:
         log(f"日记 AI 抽取失败 {rel}: {safe_text(e, 200)}", level="ERROR")
-        return [], []
+        return [], [], False
     if not isinstance(data, dict):
         log(f"日记 AI 返回结构异常 {rel}", level="WARN")
-        return [], []
+        return [], [], False
 
     quotes = []
     for q in data.get("quotes") or []:
@@ -238,7 +274,7 @@ def ai_extract(client, text: str, entry: dict, today: date) -> tuple[list[dict],
             "first_seen": today.isoformat(),
             "last_seen": today.isoformat(),
         })
-    return quotes, plans
+    return quotes, plans, True
 
 
 # ---------------------------------------------------------------------------
@@ -265,6 +301,15 @@ def run() -> dict:
     if not entries:
         return {"ok": False, "files": 0}
 
+    # 私人目录不采、也不公开（审计 §2.2）。日志只报条数，不报路径 —— 路径名本身是隐私。
+    prefixes = excluded_prefixes()
+    if prefixes:
+        before = len(entries)
+        entries = [e for e in entries if not is_excluded(e.get("path") or "", prefixes)]
+        log(f"私人路径黑名单：跳过 {before - len(entries)} 个文件（{len(prefixes)} 条前缀）")
+    else:
+        log("未配置 DIARY_EXCLUDE，全部日记文件都会公开采集", level="WARN")
+
     state = load_json(STATE_PATH) or {}
     known = state.get("files") or {}
     changed = [e for e in entries
@@ -279,12 +324,13 @@ def run() -> dict:
         from ai_client import AIClient
         try:
             client = AIClient(timeout=90)
-        except SystemExit:
+        except (SystemExit, RuntimeError):
             log("未配置 AI_API_KEY，日记只做复选框解析", level="WARN")
 
     new_quotes: list[dict] = []
     new_plans: list[dict] = []
     processed = 0
+    retry = 0
     for e in batch:
         rel = e.get("path") or ""
         full = g.contents(rel)
@@ -294,16 +340,41 @@ def run() -> dict:
         if not text.strip():
             continue
         new_plans.extend(extract_checkboxes(text, e, today))
+        ai_ok = True
         if client:
-            q, p = ai_extract(client, strip_assistant_block(text)[:max_chars], e, today)
+            q, p, ai_ok = ai_extract(client, strip_assistant_block(text)[:max_chars], e, today)
             new_quotes.extend(q)
             new_plans.extend(p)
-        known[rel] = {"sha": e.get("sha"), "size": e.get("size"),
-                      "processed_at": now_bj().isoformat(timespec="seconds")}
+        if ai_ok:
+            known[rel] = {"sha": e.get("sha"), "size": e.get("size"),
+                          "processed_at": now_bj().isoformat(timespec="seconds")}
+        else:
+            # 审计 §1.4：AI 失败时**不推进 sha**，否则这篇日记永久漏采。
+            # sha 记 None → 下轮 changed 判定必然命中 → 自动重试。
+            known[rel] = {"sha": None, "failed": True, "size": e.get("size"),
+                          "processed_at": now_bj().isoformat(timespec="seconds")}
+            retry += 1
+            log(f"AI 抽取失败，不推进 sha，下轮重试：{rel}", level="WARN")
         processed += 1
+    if retry:
+        log(f"本次 {retry} 个文件 AI 失败，已标记下轮重试", level="WARN")
 
-    quotes = merge_quotes(load_list(QUOTES_PATH), dedupe_by_id(new_quotes), today)
-    plans = merge_plans(load_list(PLANS_PATH), dedupe_by_id(new_plans), today)
+    old_quotes = load_list(QUOTES_PATH)
+    old_plans = load_list(PLANS_PATH)
+    if prefixes:
+        old_quotes, dq = drop_excluded(old_quotes, prefixes)
+        old_plans, dp = drop_excluded(old_plans, prefixes)
+        old_arc = load_list(ARCHIVE_PATH)
+        old_arc, da = drop_excluded(old_arc, prefixes)
+        if da:
+            save_list(ARCHIVE_PATH, old_arc, repo=repo)
+        if dq or dp or da:
+            log(f"清理黑名单生效前入库的私人条目：名言 {dq} 条、计划 {dp} 条、归档 {da} 条")
+    quotes = merge_quotes(old_quotes, dedupe_by_id(new_quotes), today)
+    plans = merge_plans(old_plans, dedupe_by_id(new_plans), today)
+    plans, archived = archive_plans(plans, today)
+    if archived:
+        save_list(ARCHIVE_PATH, dedupe_by_id(load_list(ARCHIVE_PATH) + archived), repo=repo)
     save_list(QUOTES_PATH, quotes, repo=repo)
     save_list(PLANS_PATH, plans, repo=repo)
     save_json(STATE_PATH, {"last_run": now_bj().isoformat(timespec="seconds"),
@@ -323,17 +394,78 @@ def run() -> dict:
     except Exception as e:
         log(f"日记写回失败：{safe_text(e, 200)}", level="WARN")
     done = set(wb.get("done") or [])
-    if done:
+    undone = set(wb.get("undone") or [])
+    picked = set(wb.get("picked") or [])
+    if done or undone or picked:
         for p in plans:
-            if p.get("id") in done:
+            pid = p.get("id")
+            if pid in done:
                 p["state"] = "done"
+                # 审计 §3.2：复选框已成为权威来源。不改 origin 的话
+                # merge_plans 的 done 短路会让「勾了又取消」永远回不到待办。
+                p["origin"] = "checkbox"
+            elif pid in undone:
+                p["state"] = "open"
+                p["origin"] = "checkbox"
+            if pid in picked:
+                p["written_once"] = True
+                p["last_written"] = today.isoformat()
         save_list(PLANS_PATH, plans, repo=repo)
-        log(f"写回复查：{len(done)} 条计划标记完成")
+        log(f"写回复查：完成 {len(done)} 条、取消勾选复原 {len(undone)} 条、"
+            f"本次写入 {len(picked)} 条")
 
     return {"ok": True, "files": len(entries), "changed": len(changed),
             "processed": processed, "quotes": len(quotes),
             "plans": len(plans), "open_plans": len(open_plans),
             "writeback": wb.get("written", 0)}
+
+
+def backfill_comments(batch: int = 8) -> dict:
+    """给 comment 为空的名言补 AI 点评（审计 §3.3）。
+
+    为什么需要单独一个模式：增量采集只处理 sha 变化的文件，老日记不再重跑 AI，
+    而 merge_quotes 的 _carry 只补空字段 → 空 comment 永远空着。
+    实测 15 条名言只有 8 条有点评，用户要求的「名言加 AI 点评」只做了一半。
+
+    零采集、只读 quotes.json + 调 AI，跑一次即可（`main.py backfill`）。
+    """
+    from ai_client import AIClient
+    from prompts import COMMENT_SCHEMA, comment_messages
+
+    quotes = load_list(QUOTES_PATH)
+    todo = [q for q in quotes if not (q.get("comment") or "").strip()]
+    if not todo:
+        log(f"名言点评回填：{len(quotes)} 条全部已有评论，无需回填")
+        return {"ok": True, "filled": 0, "pending": 0}
+    try:
+        client = AIClient(timeout=90)
+    except (SystemExit, RuntimeError) as e:
+        log(f"名言点评回填：AI 不可用（{type(e).__name__}）", level="ERROR")
+        return {"ok": False, "filled": 0, "pending": len(todo)}
+
+    filled = 0
+    for i in range(0, len(todo), batch):
+        chunk = todo[i:i + batch]
+        try:
+            data = client.chat_json(comment_messages(chunk), schema_hint=COMMENT_SCHEMA,
+                                    temperature=0.7, max_tokens=2000)
+        except Exception as e:
+            log(f"名言点评回填失败（第 {i // batch + 1} 批）：{safe_text(e, 160)}", level="ERROR")
+            continue
+        comments = (data or {}).get("comments") if isinstance(data, dict) else None
+        if not isinstance(comments, list):
+            log(f"名言点评回填：第 {i // batch + 1} 批返回结构异常", level="WARN")
+            continue
+        for q, c in zip(chunk, comments):
+            c = safe_text(c, 120).strip()
+            if c:
+                q["comment"] = c
+                filled += 1
+    if filled:
+        save_list(QUOTES_PATH, quotes, repo=(load_json(DATA_DIR / "sources.json") or {})
+                  .get("diary", {}).get("repo", ""))
+    log(f"名言点评回填：补上 {filled} 条，仍空 {len(todo) - filled} 条（共 {len(quotes)} 条）")
+    return {"ok": filled > 0, "filled": filled, "pending": len(todo) - filled}
 
 
 if __name__ == "__main__":

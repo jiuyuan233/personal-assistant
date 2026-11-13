@@ -46,6 +46,7 @@ section {
 .bucket { margin: 14px 0; }
 .bucket > h3 { font-size: 14px; margin: 0 0 8px; }
 .bucket.overdue > h3 { color: var(--red); }
+.bucket.unknown > h3 { color: var(--red); }
 .bucket.today > h3 { color: var(--orange); }
 .bucket.week > h3 { color: var(--yellow); }
 

@@ -31,6 +31,14 @@ ASSETS_DIR = REPO_ROOT / "assets"
 # Actions 的 /tmp 日志，飞书通知从这里读摘要
 TASK_LOG = Path(os.environ.get("TASK_LOG_PATH", "/tmp/task-output.log"))
 
+# Windows 控制台默认 GBK，日志里的 ✅/⚠️ 会让 print 抛 UnicodeEncodeError，
+# 整个模式崩在第一条日志上（本地实测过）。Actions 是 UTF-8，这里等于无操作。
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
 
 def log(msg: str, *, level: str = "INFO") -> None:
     ts = now_bj().strftime("%Y-%m-%d %H:%M:%S")
@@ -153,6 +161,21 @@ def save_json(path: Path, data: Any, *, indent: int = 2) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=indent), encoding="utf-8")
 
 
+def save_json_stable(path: Path, data: dict, *, stamp_key: str = "updated_at") -> None:
+    """内容没变就不动时间戳（审计 §4.2）。
+
+    finalize 每 20 分钟重跑课表解析，186 条记录一个字节都没变，但 updated_at
+    每次都写「现在」→ workflow 的「无更新跳过提交」分支永远不命中 →
+    每天 72 个纯时间戳 commit，把真正的变更淹掉。
+    """
+    old = load_json(path)
+    if isinstance(old, dict) and isinstance(data, dict):
+        if ({k: v for k, v in old.items() if k != stamp_key}
+                == {k: v for k, v in data.items() if k != stamp_key}):
+            data = {**data, stamp_key: old.get(stamp_key) or data.get(stamp_key)}
+    save_json(path, data)
+
+
 def env(key: str, default: str | None = None, required: bool = False) -> str:
     v = os.environ.get(key, default)
     if required and not v:
@@ -191,12 +214,62 @@ def scrub_course_name(s: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[,，、\s]+$", "", s)).strip()
 
 
+# 审计 §2.1：考试/作业标题以教师真实姓名开头。实测形状是
+#   <姓名><学年>-<学年>（<学期>）<课程名><任务名>
+# 姓名 2-4 个汉字，紧跟四位数学年区间。**用结构规则，不用姓名黑名单** ——
+# 黑名单要把真实姓名写进仓库，那本身就是二次泄露（学号已经踩过三次）。
+_TEACHER_PREFIX = re.compile(r"^[一-鿿]{2,4}(?=\d{4}\s*[-—–~]\s*\d{4})")
+
+
+def scrub_task_title(s: str) -> str:
+    """剥掉任务标题开头的教师姓名。
+
+    必须要求「学年-学年」这个形状，不能只写「汉字开头 + 四位数字」：
+    实测有合法标题 `作业20261022`，宽松规则会把它削成 `1022`。
+    正常课程名（高等数学A / 军事理论（同济大学版））不含这个形状，不会被误伤。
+    """
+    return _TEACHER_PREFIX.sub("", s or "").strip()
+
+
+# 审计 §2.5 / §7.2：cpi / enc / stuenc / answerId 都是每生一份的，能定位到用户本人，
+# 所以用白名单而不是黑名单 —— 学习通以后新增什么个人参数都不会漏出去。
+_PUBLIC_KEEP = {"courseid", "classid", "clazzid", "workid", "ut", "ismooc2"}
+
+
+def public_url(url: str, mode: str = "course") -> str:
+    """公开产物里的链接去掉可定位到个人的参数。
+
+    mode="course"（默认）：只留课程级参数，cpi/enc/answerId 一律去掉。
+    mode="full"：原样返回。用户在 data/sources.json 的 study.public_links 里自行取舍 ——
+    这是产品取舍不是 bug，所以做成一行配置，而不是写死。
+    """
+    if mode == "full" or not url:
+        return url
+    from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+    p = urlparse(url)
+    keep = [(k, v) for k, v in parse_qsl(p.query, keep_blank_values=True)
+            if k.lower() in _PUBLIC_KEEP]
+    return urlunparse(p._replace(query=urlencode(keep)))
+
+
+def strip_personal_fields(task: dict, mode: str = "course") -> dict:
+    """落盘前抹掉每生一份的字段。data/ 是公开仓库的一部分，不是本地缓存。"""
+    out = {k: v for k, v in task.items() if k not in ("cpi", "answer_id")}
+    if task.get("url"):
+        out["url"] = public_url(task["url"], mode)
+    return out
+
+
 _REDACT_PATTERNS = [
     re.compile(r"(access_token=)[^&\s\"']+"),
     re.compile(r"(Bearer\s+)[A-Za-z0-9._\-]+"),
     re.compile(r"(sk-)[A-Za-z0-9]{8,}"),
     re.compile(r"(ghp_)[A-Za-z0-9]{8,}"),
     re.compile(r"((?:password|passwd|pwd|api_key|apikey|token|secret)[\"']?\s*[:=]\s*[\"']?)[^\s&\"',}]+", re.I),
+    # 审计 §2.6：学习通整条链路靠 Cookie，requests 的异常字符串会带完整请求头。
+    # 仓库是 public → Actions 日志也是 public，漏一个就是明文公开。
+    re.compile(r"((?:Cookie|Set-Cookie|JSESSIONID|_uid|UID|uf|_d|vc3|fid|unam|route)[\"']?\s*[:=]\s*[\"']?)[^\s&\"',}]+", re.I),
+    re.compile(r"(?i)(cookie[\"']?\s*[:=]\s*[\"']?)[^\n\"']+"),
 ]
 
 
@@ -210,3 +283,16 @@ def redact(s: Any) -> str:
     for p in _REDACT_PATTERNS:
         text = p.sub(lambda m: m.group(1) + "***", text)
     return text
+
+
+def exc_brief(exc: BaseException) -> str:
+    """异常摘要：类型 + 出错位置 + 消息。**不发完整栈**（审计 §2.6）。
+
+    完整 traceback 会把局部变量里的 URL、请求头、cookie 一起带进公开日志。
+    排查需要的信息（哪一行、什么错）这里都有，够了。
+    """
+    import traceback
+    frames = traceback.extract_tb(exc.__traceback__)
+    where = f"{Path(frames[-1].filename).name}:{frames[-1].lineno}" if frames else "?"
+    # 先脱敏再截断：反过来会把长凭据切断，切断后的残段匹配不上脱敏正则。
+    return redact(f"{type(exc).__name__} @ {where}: {exc}")[:300]

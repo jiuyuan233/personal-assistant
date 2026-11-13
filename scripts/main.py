@@ -3,17 +3,25 @@
 模式设计的核心约束：**finalize 必须零网络、零 token、40 秒内跑完**，
 因为它每 20 分钟跑一次。登录类采集各自独立频率，互不拖累。
 
-  python scripts/main.py finalize   # 只渲染 + 离线重算课表，不联网（每 20 分钟）
+  python scripts/main.py tick       # ★唯一的定时入口：按 runtime.json 决定这轮干什么
+  python scripts/main.py finalize   # 只渲染 + 离线重算课表，不联网
   python scripts/main.py diary      # Gitee 日记 → 渲染
   python scripts/main.py study      # 学习通 → 渲染
   python scripts/main.py notice     # 校园公告 → 渲染
   python scripts/main.py schedule   # 课表 → 渲染
   python scripts/main.py all        # 全部采集 → 渲染
-  python scripts/main.py probe      # 海外 IP 连通性探测
+  python scripts/main.py backfill   # 给老名言补 AI 点评（一次性，联网）
+  python scripts/main.py probe      # 海外 IP 连通性 + 解析冒烟
   python scripts/main.py selftest   # 解析器自检（离线，不需要凭据）
   python scripts/main.py morning    # 早 7 点飞书：今日任务（来源日记，不带课表）+ 一言
   python scripts/main.py noon       # 中午飞书：问好 + 鼓励
   python scripts/main.py night      # 晚上飞书：当日总结（来源日记）
+
+为什么只有一个 cron（审计 §4.1）：原来 8 条 cron 各自映射一个模式，实测出现过
+连续 1 小时 33 分钟一次都没触发。GitHub 对同一 workflow 的 schedule 有节流，
+条数越多越容易被丢；而并发组只保留一个 pending，手动派发会把定时班挤掉。
+现在改成一条 `*/20 * * * *` → tick，频率由 data/runtime.json 里的时间戳决定，
+调度逻辑在 Python 里，可离线自检，也能在日志里看到「这轮为什么跑/不跑」。
 
 三个推送模式只读 data/diary，不写数据、不渲染 README，文案落到 /tmp/push-message.txt，
 由 workflow 的飞书步骤读出来发纯文本。AI 或一言失败会降级推送，不会静默不发。
@@ -21,11 +29,123 @@
 from __future__ import annotations
 
 import sys
-import traceback
 
-from utils import log, now_bj
+from utils import DATA_DIR, exc_brief, load_json, log, now_bj, parse_datetime, save_json
 
 COLLECT_MODES = ("diary", "study", "notice", "schedule")
+
+# tick 的调度参数。单位分钟；判定留 5 分钟宽限，因为 Actions 的 cron 经常晚几分钟。
+TICK_INTERVALS = {"study": 60, "diary": 120, "notice": 360}
+TICK_SLACK_MIN = 5
+# 飞书三时段（北京时间）。错过整点后 3 小时内补发，超过就不发了 ——
+# 晚上 10 点的总结拖到凌晨 1 点毫无意义，还会吵醒用户。
+PUSH_HOURS = {"morning": 7, "noon": 12, "night": 22}
+PUSH_CATCHUP_HOURS = 3
+RUNTIME_PATH = DATA_DIR / "runtime.json"
+
+
+def due_collectors(runtime: dict, now, intervals: dict | None = None) -> list[str]:
+    """这轮该跑哪些采集器。纯函数，selftest 直接喂时间戳验证。
+
+    同时看 last_ok 和 last_try：失败也按同样的间隔重试，不会每 20 分钟
+    重跑一次登录链把 AI 额度和账号风控一起烧掉。
+    """
+    last_ok = runtime.get("last_ok") or {}
+    last_try = runtime.get("last_try") or {}
+    out = []
+    for mode, mins in (intervals or TICK_INTERVALS).items():
+        threshold = mins * 60 - TICK_SLACK_MIN * 60
+        due = True
+        for stamp in (last_ok.get(mode), last_try.get(mode)):
+            dt = parse_datetime(stamp)
+            if dt is not None and (now - dt).total_seconds() < threshold:
+                due = False
+                break
+        if due:
+            out.append(mode)
+    return out
+
+
+def due_pushes(runtime: dict, now) -> list[str]:
+    """这轮该发哪些飞书推送。每种每天最多一次，按日期记账而不是按小时。"""
+    today = now.date().isoformat()
+    sent = runtime.get("pushed") or {}
+    out = []
+    for kind, hour in PUSH_HOURS.items():
+        if sent.get(kind) == today:
+            continue
+        target = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+        hours = (now - target).total_seconds() / 3600
+        if 0 <= hours <= PUSH_CATCHUP_HOURS:
+            out.append(kind)
+    return out
+
+
+def do_tick() -> bool:
+    """定时总入口：到点的采集 → 到点的推送 → finalize → 记账。
+
+    任何一步失败都不中断后面的步骤，最后只要 finalize 成功就算这轮成功
+    （README 是用户唯一看得见的产物）。失败详情写进 runtime.json 供下一轮和排查用。
+    """
+    import diary_writeback
+
+    now = now_bj()
+    rt = load_json(RUNTIME_PATH) or {}
+    rt.setdefault("last_ok", {})
+    rt.setdefault("last_try", {})
+    rt.setdefault("pushed", {})
+    rt.setdefault("errors", {})
+
+    cfg = (load_json(DATA_DIR / "sources.json") or {}).get("diary") or {}
+    window = cfg.get("writeback_window") or diary_writeback.DEFAULT_WINDOW
+    todo = due_collectors(rt, now)
+    # 凌晨写回窗口内必须跑一次 diary，否则「昨天计划写进今天日记」会整天空转。
+    # 120 分钟的常规间隔不保证落在 6 小时窗口里，所以这里强制加一次。
+    if (diary_writeback.in_window(now, window)
+            and rt.get("writeback_date") != now.date().isoformat()
+            and "diary" not in todo):
+        todo.append("diary")
+        log(f"[tick] 凌晨写回窗口 {window} 内今天还没写回，强制加跑 diary")
+
+    pushes = due_pushes(rt, now)
+    log(f"[tick] 本轮采集 {todo or '无'} · 推送 {pushes or '无'}")
+
+    results = {}
+    for m in todo:
+        rt["last_try"][m] = now.isoformat(timespec="seconds")
+        try:
+            results[m] = bool(HANDLERS[m]())
+        except Exception as e:
+            log(f"[tick] {m} 异常：{exc_brief(e)}", level="ERROR")
+            results[m] = False
+            rt["errors"][m] = exc_brief(e)
+        if results[m]:
+            rt["last_ok"][m] = now.isoformat(timespec="seconds")
+            rt["errors"].pop(m, None)
+            if m == "diary" and diary_writeback.in_window(now, window):
+                rt["writeback_date"] = now.date().isoformat()
+
+    for kind in pushes:
+        try:
+            ok = do_push(kind)
+        except Exception as e:
+            log(f"[tick] 推送 {kind} 异常：{exc_brief(e)}", level="ERROR")
+            ok = False
+        results[kind] = ok
+        if ok:
+            rt["pushed"][kind] = now.date().isoformat()
+
+    try:
+        results["finalize"] = do_finalize()
+    except Exception as e:
+        log(f"[tick] 渲染异常：{exc_brief(e)}", level="ERROR")
+        results["finalize"] = False
+
+    rt["last_tick"] = now.isoformat(timespec="seconds")
+    rt["last_results"] = results
+    save_json(RUNTIME_PATH, rt)
+    log(f"[tick] 结果：{results}")
+    return bool(results.get("finalize"))
 
 
 def do_finalize() -> bool:
@@ -60,10 +180,13 @@ def do_notice() -> bool:
 
 
 def do_probe() -> bool:
-    """从 Actions  runner 探测各站点可达性。
+    """从 Actions runner 探测各站点可达性 + 解析器冒烟。
 
     这是整个架构唯一的致命未知：所有实测成功都来自国内出口 IP，
     GitHub Actions 是美国 Azure IP，学校站点可能直接拒连。
+
+    审计 §4.4：原来只测连通性，站点返回 200 但页面改版照样「probe 全绿」。
+    所以末尾加一段离线解析冒烟，用合成样本验证正则还能不能抽出东西。
     """
     import time
     import requests
@@ -76,9 +199,12 @@ def do_probe() -> bool:
         ("校网公告", "https://www.huuc.edu.cn/index/tzgg.htm"),
         ("教务处", "https://jwc.huuc.edu.cn/index.htm"),
         ("校团委", "https://tw.huuc.edu.cn/tzgg.htm"),
+        ("科研处", "https://kyc.huuc.edu.cn/index/tzgg.htm"),
+        ("研究生处", "https://yjsc.huuc.edu.cn/xkjs/tzgg.htm"),
         ("Gitee", "https://gitee.com/api/v5/user"),
         ("AI 中转", "https://api.chatanywhere.org/v1/models"),
-        ("飞书", "https://open.feishu.cn/open-apis/bot/v2/hook/0"),
+        ("飞书", "https://open.feishu.cn/"),
+        ("一言", "https://v1.hitokoto.cn/"),
     ]
     ua = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
           "(KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36")
@@ -86,7 +212,7 @@ def do_probe() -> bool:
         ip = requests.get("https://api.ipify.org?format=json", timeout=15).json().get("ip")
         log(f"Actions 出口 IP：{ip}")
     except Exception as e:
-        log(f"出口 IP 查询失败：{e}", level="WARN")
+        log(f"出口 IP 查询失败：{exc_brief(e)}", level="WARN")
 
     reachable = 0
     for name, url in targets:
@@ -104,7 +230,14 @@ def do_probe() -> bool:
             log(f"[probe] {name} → 失败 ({ms}ms): {type(e).__name__}", level="ERROR")
     log(f"可达：{reachable}")
     log(f"不可达：{len(targets) - reachable}")
-    return reachable > 0
+
+    import study_collector
+    smoke = study_collector.parse_smoke()
+    bad = [k for k, v in smoke.items() if not v]
+    log(f"[probe] 解析冒烟：{smoke}")
+    if bad:
+        log(f"[probe] 解析冒烟失败项：{bad}（页面结构可能已改版）", level="ERROR")
+    return reachable > 0 and not bad
 
 
 def do_selftest() -> bool:
@@ -132,19 +265,11 @@ def do_selftest() -> bool:
     check("倒计时缺失返回 None", parse_remaining("已结束") is None)
     check("倒计时渲染", "剩余" in fmt_remaining(now.replace(hour=23), now=now))
 
-    work_html = '''<h2>教师甲26级高等数学A（一）</h2>
-    <li onclick="goTask(this);" data="https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&cpi=100000001&workId=58370553&answerId=55746672&enc=abc123" tabindex="0" aria-label="3-5函数的极值与最值 ; 待批阅" role="link">
-      <div class="right-content"><p class="overHidden2 fl">3-5函数的极值与最值</p>
-      <i class="label fl">互评</i><p class="status fl">待批阅</p></div>
-      <div class="time notOver" tabindex="0"><img src="x.png" />剩余1小时12分钟</div>
-    </li>
-    <li onclick="goTask(this);" data="https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&cpi=100000001&workId=58263400&answerId=55727436&enc=def456" aria-label="3.3泰勒公式 ; 待互评">
-      <div class="right-content"><p class="overHidden2 fl">3.3泰勒公式</p>
-      <i class="label fl">互评</i><p class="status fl">待互评</p></div>
-    </li>'''
-    course = {"course_id": "219232606", "class_id": "153566712",
-              "cpi": "100000001", "name": "教师甲26级高等数学A（一）"}
-    rows = study_collector.parse_work_rows(work_html, course, now)
+    # 样本一律取自 study_collector.SAMPLE_*（合成 ID）。
+    # 源码里写死真实 course_id/class_id 本身就是可定位信息泄露，而且会被下面的全仓库扫描扫到。
+    rows = study_collector.parse_work_rows(study_collector.SAMPLE_WORK_HTML,
+                                           study_collector.SAMPLE_COURSE, now)
+    course = study_collector.SAMPLE_COURSE
     check("作业行数=2", len(rows) == 2, f"实际 {len(rows)}")
     if len(rows) == 2:
         check("互评待批阅升级为 pending", rows[0]["state"] == "pending", rows[0]["state"])
@@ -154,11 +279,7 @@ def do_selftest() -> bool:
         check("待互评为 pending", rows[1]["state"] == "pending", rows[1]["state"])
         check("ID 不含 enc", "abc123" not in rows[0]["id"] and "def456" not in rows[1]["id"])
 
-    exam_html = '''<div class="bottomList"><ul><li>
-    <div onclick="viewExamAnswer('10959519','170844300')">
-    <div class="right-content"><p class="overHidden2 fl">第二章测试题</p>
-    <p class="status fl">已完成</p></div></div></li></ul></div>'''
-    erows = study_collector.parse_exam_rows(exam_html, course, now)
+    erows = study_collector.parse_exam_rows(study_collector.SAMPLE_EXAM_HTML, course, now)
     check("考试行数=1", len(erows) == 1, f"实际 {len(erows)}")
     if erows:
         check("考试状态 done", erows[0]["state"] == "done", erows[0]["state"])
@@ -289,12 +410,16 @@ def do_selftest() -> bool:
     check("学习通落盘课程名无学号", not bad_names, str(bad_names))
 
     # 全仓库扫学号形状：修 bug 时把真实学号抄进文档同样是泄露，只扫 data/ 扫不到。
-    # 两种形状：① 逗号串起的长数字串 ② 汉字紧跟 7 位以上数字。
+    # 三种形状：① 逗号串起的长数字串 ② 汉字紧跟 7 位以上数字 ③ ID 标签 + 可选空白 + 长数字。
     # ② 必须排掉 20YYMMDD 日期 —— 实测任务标题「作业20261022」是合法的，不能误报。
     # 也不能扫「任意 7 位以上数字」：course_id / cpi / ICS UID 全是长数字，会全库飘红。
     pats = [_re2.compile(r"\d{7,}[,，、]\d{7,}"),
             _re2.compile(r"[\u4e00-\u9fff]"
-                         r"(?!20\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01]))\d{7,}")]
+                         r"(?!20\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01]))\d{7,}"),
+            # ③ 2026-11-14 补的洞：②要求汉字与数字**紧挨**，「学号 + 空格 + 数字」能溜过去。
+            #    只认 ID 标签而不是任意汉字，否则「分别是 <class_id>」这种合法教学班号会误报。
+            #    这里不写具体数字示例：写了会被本守卫自己扫到（实测过，红了一条）。
+            _re2.compile(r"(?:学号|工号|学籍号|身份证号|考生号)\s*[:：]?\s*\d{7,}")]
     exts = {".md", ".py", ".json", ".yml", ".yaml", ".js", ".html", ".svg", ".ics", ".txt"}
     hits = []
     for p in sorted(rr.REPO_ROOT.rglob("*")):
@@ -378,13 +503,18 @@ def do_selftest() -> bool:
 
     sample_plans = [
         {"id": "a", "text": "昨天的", "state": "open", "first_seen": "2026-11-12"},
-        {"id": "b", "text": "滚动的", "state": "open", "first_seen": "2026-11-01"},
+        {"id": "b", "text": "滚动的", "state": "open", "first_seen": "2026-11-01",
+         "written_once": True},
         {"id": "c", "text": "已完成", "state": "done", "first_seen": "2026-11-12"},
         {"id": "d", "text": "今天的", "state": "open", "first_seen": "2026-11-13"},
+        {"id": "e", "text": "写过的", "state": "open", "first_seen": "2026-11-05",
+         "written_once": True},
     ]
-    picked = dw.pick_plans(sample_plans, "2026-11-12", {"b"}, 20)
-    check("写回只选昨天新增+滚动未完成", [p["id"] for p in picked] == ["a", "b"],
-          str([p["id"] for p in picked]))
+    picked = dw.pick_plans(sample_plans, {"b"}, 20)
+    check("写回选未写过的+滚动未完成，滚动的排最前",
+          [p["id"] for p in picked] == ["b", "a", "d"], str([p["id"] for p in picked]))
+    check("写过又没滚动的不再重复写", "e" not in [p["id"] for p in picked])
+    check("已完成的不写回", "c" not in [p["id"] for p in picked])
 
     cb = dc.extract_checkboxes("- [ ] 用户自己写的\n" + blk,
                                {"path": "日/2026-11-14.md", "name": "2026-11-14.md"}, now.date())
@@ -468,15 +598,22 @@ def do_selftest() -> bool:
         dw.WB_PATH = saved_wb
 
     yml = (rr.REPO_ROOT / ".github" / "workflows" / "assistant.yml").read_text(encoding="utf-8")
-    check("凌晨写回 cron 已配且映射到 diary",
-          "'7 16,18,20 * * *'" in yml and "'7 16,18,20 * * *') MODE=diary" in yml)
+    check("只有一条 cron（多条会被 GitHub 节流丢掉）",
+          yml.count("- cron:") == 1 and "'*/20 * * * *'" in yml, str(yml.count("- cron:")))
+    check("定时触发映射到 tick", "MODE=tick" in yml)
+    check("质量门禁在执行之前",
+          yml.index("ruff check scripts") < yml.index("python scripts/main.py \"$MODE\""))
+    check("门禁含未定义名字检查 F821", "F821" in yml)
+    check("只有一个并发组", "group: pa-run" in yml and "pa-push" not in yml and "pa-collect" not in yml)
+    check("私人黑名单只引用 Secret 名",
+          "DIARY_EXCLUDE: ${{ secrets.DIARY_EXCLUDE }}" in yml)
     wcfg = ((dw.load_json(dw.DATA_DIR / "sources.json") or {}).get("diary") or {}).get("writeback_window")
     check("sources.json 的写回窗口可解析", dw.parse_window(wcfg or dw.DEFAULT_WINDOW) is not None, str(wcfg))
 
     # 真实样本结构：课程名在 li 内的 course-name span，middle 页首个 h2 是全站横幅
-    list_html = '''<ul class="course-list"><li class="course clearfix" id="c_219232606">
-      <div class="course-cover"><a href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=219232606&clazzid=153566712&cpi=100000001&ismooc2=1"><img src="x.jpg"></a></div>
-      <div class="course-info"><h3 class="inlineBlock"><a class="color1" href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=219232606&clazzid=153566712&cpi=100000001&ismooc2=1">
+    list_html = '''<ul class="course-list"><li class="course clearfix" id="c_100000001">
+      <div class="course-cover"><a href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=100000001&clazzid=100000002&cpi=100000003&ismooc2=1"><img src="x.jpg"></a></div>
+      <div class="course-info"><h3 class="inlineBlock"><a class="color1" href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=100000001&clazzid=100000002&cpi=100000003&ismooc2=1">
       <span class="course-name overHidden2" title="高等数学A">高等数学A</span></a></h3></div></li></ul>'''
     cx = study_collector.Chaoxing({}, "u", "p")
     cx.get = lambda *a, **k: list_html
@@ -531,7 +668,8 @@ def do_selftest() -> bool:
         ss = schedule_parser.guess_semester_start(ev)
         check("学期起点推断", ss == "2026-09-07", str(ss))
 
-    from dedup import merge_tasks, merge_notices
+    from dedup import (archive_plans, merge_notices, merge_plans, merge_tasks,
+                       save_list)
     t_old = [{"id": "a", "deadline": "2026-11-13T10:00:00+08:00", "deadline_exact": True,
               "first_seen": "2026-11-01T00:00:00+08:00", "state": "pending"}]
     t_new = [{"id": "a", "deadline": "2026-11-13T09:00:00+08:00", "deadline_exact": False,
@@ -549,6 +687,225 @@ def do_selftest() -> bool:
     check("公告旧值优先", mn[0]["description"] == "已有描述" and mn[0]["title"] == "旧标题")
     check("公告相关度只升不降", mn[0]["score"] == 4, str(mn[0]["score"]))
 
+    # ------------------------------------------------------------------
+    # 以下是本轮审计修复的回归断言。每一条都对应 docs/不足与风险.md 的一个编号，
+    # 改坏了会在这里直接红，不用等用户发现。
+    # ------------------------------------------------------------------
+    import importlib
+    import inspect
+    import json
+
+    from utils import exc_brief, public_url, scrub_task_title, strip_personal_fields
+
+    # §2.1 教师姓名混在任务标题开头。规则必须要求「学年-学年」形状，
+    # 否则合法标题「作业20261022」会被削成「1022」。
+    check("教师姓名前缀被剥掉",
+          scrub_task_title("张三2026-2027学年第一学期期末") == "2026-2027学年第一学期期末",
+          scrub_task_title("张三2026-2027学年第一学期期末"))
+    check("合法数字标题不被误伤", scrub_task_title("作业20261022") == "作业20261022",
+          scrub_task_title("作业20261022"))
+    check("无学年形状的课程名不动", scrub_task_title("高等数学A") == "高等数学A")
+
+    # §7.2 公开链接只保留课程级参数，每生一份的 cpi/enc/answerId 一律抹掉
+    deep = ("https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task"
+            "?courseId=1&classId=2&cpi=3&workId=4&answerId=5&enc=abc")
+    check("公开链接去掉每生一份的参数",
+          public_url(deep) == "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task"
+                              "?courseId=1&classId=2&workId=4", public_url(deep))
+    check("full 模式保留深链（只给飞书用）", public_url(deep, "full") == deep)
+    stripped = strip_personal_fields({"url": deep, "cpi": "3", "answer_id": "5", "title": "t"})
+    check("落盘前抹掉 cpi/answer_id 字段",
+          "cpi" not in stripped and "answer_id" not in stripped and stripped["title"] == "t",
+          str(stripped))
+
+    # §2.6 异常摘要：公开仓库的 Actions 日志谁都能看，不能发完整栈
+    try:
+        raise ValueError("Cookie: JSESSIONID=ABCDEF123456; _uid=999")
+    except ValueError as e:
+        brief = exc_brief(e)
+    check("异常摘要脱敏 cookie", "ABCDEF123456" not in brief, brief)
+    check("异常摘要带出错位置", "main.py:" in brief, brief)
+    check("异常摘要不是完整栈", "Traceback" not in brief and "\n" not in brief, brief)
+
+    # 用户报的核心 bug：明明有截止时间却抓不到，逾期任务被显示进 README。
+    # 真实截止在详情页「作答时间:<em>MM-DD HH:MM</em>至<em>MM-DD HH:MM</em>」里。
+    ds, de = study_collector.detail_work_window(study_collector.SAMPLE_DETAIL_HTML, now)
+    check("作业详情页解析出真实截止",
+          de is not None and (de.month, de.day, de.hour, de.minute) == (11, 10, 23, 59), str(de))
+    check("作业详情页解析出开始时间", ds is not None and (ds.month, ds.day) == (11, 5), str(ds))
+    check("解析出的窗口能判定逾期", de is not None and de < now)
+    cst, cen = study_collector.detail_time_window(
+        "<p>作答时间:<em>12-28 08:00</em>至<em>01-05 23:59</em></p>", now, "作答时间")
+    check("跨年窗口止时间进到下一年",
+          cst is not None and cen is not None and cst.year == 2026 and cen.year == 2027,
+          f"{cst} ~ {cen}")
+    smoke = study_collector.parse_smoke(now)
+    check("解析冒烟全通道有产出", all(smoke.values()), str(smoke))
+
+    # §1.2 采集全空 ≠ 作业全没了，必须保住历史
+    hist = [mk(title="历史任务")]
+    check("新列表为空时拒绝合并", len(merge_tasks(hist, [], now)) == 1, str(hist))
+
+    # §4.2 内容没变就不动 updated_at，否则每天 24 个纯时间戳 commit
+    with tempfile.TemporaryDirectory() as td:
+        sp = Path(td) / "x.json"
+        save_list(sp, [{"id": "a"}])
+        s1 = json.loads(sp.read_text(encoding="utf-8"))["updated_at"]
+        save_list(sp, [{"id": "a"}])
+        s2 = json.loads(sp.read_text(encoding="utf-8"))["updated_at"]
+        check("内容不变则时间戳不变", s1 == s2, f"{s1} vs {s2}")
+        d = json.loads(sp.read_text(encoding="utf-8"))
+        d["updated_at"] = "2020-01-01T00:00:00+08:00"
+        sp.write_text(json.dumps(d), encoding="utf-8")
+        save_list(sp, [{"id": "b"}])
+        check("内容变了时间戳才刷新",
+              json.loads(sp.read_text(encoding="utf-8"))["updated_at"] != "2020-01-01T00:00:00+08:00")
+
+    # §3.4 归档只动「已完成/取消且久未出现」，open 计划一条都不删
+    ap = [{"id": "o", "state": "open", "last_seen": "2026-01-01"},
+          {"id": "d", "state": "done", "last_seen": "2026-01-01"},
+          {"id": "n", "state": "done", "last_seen": "2026-11-10"}]
+    kept_p, arc_p = archive_plans(ap, now.date())
+    check("归档只动已完成且久未出现",
+          [p["id"] for p in arc_p] == ["d"] and [p["id"] for p in kept_p] == ["o", "n"],
+          f"kept={kept_p} arc={arc_p}")
+
+    # §2.3 置信度门槛。注意量纲是 0.0–1.0（审计原文写的 >=2 是把量纲搞反了）
+    check("低置信度 AI 计划不入库",
+          merge_plans([], [{"id": "x", "text": "吐槽", "origin": "ai",
+                            "confidence": 0.2, "state": "open"}], now.date()) == [])
+    check("正常置信度入库",
+          len(merge_plans([], [{"id": "y", "text": "计划", "origin": "ai",
+                                "confidence": 0.7, "state": "open"}], now.date())) == 1)
+    check("复选框计划不受门槛影响",
+          len(merge_plans([], [{"id": "z", "text": "待办", "origin": "checkbox",
+                                "confidence": 1.0, "state": "open"}], now.date())) == 1)
+
+    # §3.9 研究生处把日期放在 </a> 之后，只看锚点内和锚点前会永远取不到
+    after_html = ('<li><a href="info/1/2.htm" title="学术报告通知">学术报告通知</a>'
+                  '<span>2026-11-08</span></li>')
+    na = notice_collector.parse_list(after_html, "https://yjsc.huuc.edu.cn/xkjs/tzgg.htm",
+                                     "研究生处学科建设", now.date())
+    check("日期在锚点之后也能取到",
+          len(na) == 1 and na[0]["publish_date"] == "2026-11-08", str(na))
+
+    # §3.1 标题通道的截止日必须有字面依据，且不能永久压住后来校验过的正文日期
+    n_old2 = [{"id": "n2", "title": "比赛通知", "deadline": "2026-12-01",
+               "deadline_source": "title", "score": 3}]
+    n_new2 = [{"id": "n2", "title": "比赛通知", "deadline": "2026-11-30",
+               "deadline_source": "body", "score": 1}]
+    mn2 = merge_notices(n_old2, n_new2, now.date())
+    check("正文校验过的截止日覆盖标题猜测",
+          mn2[0]["deadline"] == "2026-11-30" and mn2[0]["deadline_source"] == "body", str(mn2[0]))
+
+    # §5.3 ICS 里 10 条 SUMMARY 被时钟前缀污染，用干净记录的课程名反修
+    raw_ics = schedule_parser.parse_ics(schedule_parser.ICS_PATH)
+    polluted = sum(1 for p in raw_ics
+                   if schedule_parser.CLOCK_PREFIX_RE.match((p.get("SUMMARY") or "").strip()))
+    fixed_n = schedule_parser.repair_summaries(raw_ics)
+    left = sum(1 for p in raw_ics
+               if schedule_parser.CLOCK_PREFIX_RE.match((p.get("SUMMARY") or "").strip()))
+    check("时钟前缀污染全部修好", fixed_n == polluted and left == 0,
+          f"fixed={fixed_n} polluted={polluted} left={left}")
+    check("修复后没有空课程名",
+          all((p.get("SUMMARY") or "").strip() for p in raw_ics))
+
+    # §5.1 静态 SVG 不再烘焙红色时间线，红色那条只由网页 JS 画
+    check("SVG 源码不再烘焙红色时间线", "#FA5252" not in inspect.getsource(ws.run))
+    check("网页端仍有实时时间线",
+          "nowline" in (rr.REPO_ROOT / "docs" / "js" / "app.js").read_text(encoding="utf-8"))
+
+    # §5.3 嵌套加粗：**第 **10** 周** 在 Markdown 里渲染成字面星号
+    _, _, sched_detail = rr.render_schedule(now)
+    check("周次不再嵌套加粗", "**第 **" not in sched_detail, sched_detail)
+
+    # §3.8 顶部告警按优先级只出一个，🔴 档必须真的存在
+    check("采集失败出红卡", "🔴" in rr.render_alert({}, {"study": {"status": "failed"}}, now))
+    check("截止未知出红卡", "🔴" in rr.render_alert({"unknown": 2}, {"study": {"ok": True}}, now))
+    check("今天有截止出橙卡",
+          "🟠" in rr.render_alert({"today": 1}, {"study": {"ok": True}}, now))
+    check("数据过期出警告",
+          "小时未更新" in rr.render_alert({}, {"study": {"ok": True, "last_success":
+                                                        (now - timedelta(hours=9)).isoformat()}}, now))
+    check("一切正常不出告警",
+          rr.render_alert({}, {"study": {"ok": True, "last_success": now.isoformat()}}, now) == "")
+
+    # §4.1 tick 调度：纯函数，离线就能验证「这轮该跑什么」
+    base = now
+    check("首轮全部到点", set(due_collectors({}, base)) == set(TICK_INTERVALS),
+          str(due_collectors({}, base)))
+    fresh = {k: (base - timedelta(minutes=10)).isoformat() for k in TICK_INTERVALS}
+    check("刚跑过的不再跑", due_collectors({"last_ok": fresh}, base) == [])
+    hourly = dict(fresh, study=(base - timedelta(minutes=60)).isoformat())
+    check("study 满 60 分钟才跑", due_collectors({"last_ok": hourly}, base) == ["study"],
+          str(due_collectors({"last_ok": hourly}, base)))
+    check("失败也按间隔重试，不每 20 分钟烧一次登录链",
+          due_collectors({"last_try": fresh}, base) == [])
+    check("到点发早报", due_pushes({}, base.replace(hour=7)) == ["morning"])
+    check("早报错过 2 小时仍补发", due_pushes({}, base.replace(hour=9)) == ["morning"])
+    check("早报错过 4 小时不再补发", due_pushes({}, base.replace(hour=11)) == [])
+    check("中午发问好", due_pushes({}, base.replace(hour=12)) == ["noon"])
+    check("晚上发总结", due_pushes({}, base.replace(hour=22)) == ["night"])
+    check("同一天不重复发",
+          due_pushes({"pushed": {"morning": base.date().isoformat()}}, base.replace(hour=7)) == [])
+
+    # §2.2 私人路径黑名单：值来自 Secret，判定按路径前缀，已入库的也要清掉
+    check("黑名单按前缀命中", dc.is_excluded("Tasks/私人/长期计划.md", ["Tasks/私人"]))
+    check("黑名单不误伤同前缀兄弟目录",
+          not dc.is_excluded("Tasks/私人笔记公开版/a.md", ["Tasks/私人"]))
+    kept_x, drop_n = dc.drop_excluded(
+        [{"source_file": "Tasks/私人/a.md"}, {"source_file": "Tasks/日/b.md"}], ["Tasks/私人"])
+    check("已入库的私人条目会被清掉", drop_n == 1 and len(kept_x) == 1, str(kept_x))
+    check("无黑名单时不动数据", dc.drop_excluded([{"source_file": "x"}], []) == ([{"source_file": "x"}], 0))
+
+    # §5.2 文档是交接材料：引用了不存在的函数，下一个 AI 会去找、找不到、然后自己造一个
+    mods = ("render_readme", "study_collector", "diary_collector", "diary_writeback",
+            "notice_collector", "schedule_parser", "week_svg", "dedup", "utils",
+            "main", "daily_push", "ai_client", "prompts")
+    # 排除文件扩展名：`prompts.py` 是文件名不是函数引用，早先的写法会把 .py 当函数名
+    exts = ("py", "md", "json", "js", "yml", "yaml", "ics", "svg", "txt", "html", "css")
+    ref_re = _re.compile(r"`(" + "|".join(mods) + r")\.([A-Za-z_][A-Za-z0-9_]*)`")
+    # 只扫「常驻说明」：CHANGELOG 与不足与风险是**历史记录**，
+    # 它们引用旧函数名/旧频率是在举证「当时错在哪」，不是给下一个 AI 的指令。
+    living = sorted((rr.REPO_ROOT / "docs").glob("*.md"))
+    living = [p for p in living if p.name not in ("不足与风险.md",)]
+    living += sorted((rr.REPO_ROOT / "scripts").glob("*_template.md"))
+    living += [rr.REPO_ROOT / n for n in ("README.md", "AGENT.md", "DEV_GUIDE.md")]
+    bad_refs, stale_words = [], []
+    # 只禁「当成现状陈述就是错的」措辞。`pa-push` / `github.event.schedule` 这类**设计名词**
+    # 不进这个名单：文档里「原来用 X，因为 Y 改成了 Z」是有价值的决策记录，禁掉会逼着人删掉理由。
+    # 现状由上面那几条 yml 断言守（只有一条 cron、只有一个 group、MODE=tick），那才是权威。
+    forbidden = ("bucket_tasks", "日记每 20 分钟", "每天 4 次增量")
+    for p in living:
+        if not p.exists():
+            continue
+        txt = p.read_text(encoding="utf-8")
+        for mod, fn in ref_re.findall(txt):
+            if fn in exts:
+                continue
+            try:
+                m = importlib.import_module(mod)
+            except Exception:
+                bad_refs.append(f"{p.name}:{mod}(导入失败)")
+                continue
+            if not hasattr(m, fn):
+                bad_refs.append(f"{p.name}:{mod}.{fn}")
+        stale_words += [f"{p.name}:{w}" for w in forbidden if w in txt]
+    check("文档引用的函数都真实存在", not bad_refs, str(bad_refs[:10]))
+    check("文档不再写着过时的函数名与频率", not stale_words, str(stale_words[:10]))
+
+    # AI 运维手册把「日志里搜什么」当成验收证据。日志文案一改，手册就变成假指令，
+    # 下一个 AI 会搜不到、然后以为功能坏了。这里把手册承诺的关键字锁住。
+    src_all = "\n".join(p.read_text(encoding="utf-8")
+                        for p in sorted((rr.REPO_ROOT / "scripts").glob("*.py")))
+    promised = ("详情页补全截止时间", "名言点评回填", "抓取站点", "课程总数", "扫描课程",
+                "变更文件", "名言合并", "计划合并", "公告合并", "文案来源", "解析冒烟",
+                "课表解析", "本周课表 SVG 已生成", "README 已生成", "任务清单",
+                "凌晨写回窗口", "不在凌晨窗口", "写回：", "低置信度丢弃", "计划归档",
+                "清理黑名单生效前入库的私人条目", "课表源文件污染修复")
+    missing = [s for s in promised if s not in src_all]
+    check("运维手册承诺的日志关键字都真实存在", not missing, str(missing))
+
     log(f"[selftest] 失败 {len(failures)} 项")
     return not failures
 
@@ -559,11 +916,13 @@ def do_push(kind: str) -> bool:
 
 
 HANDLERS = {
+    "tick": do_tick,
     "finalize": do_finalize,
     "schedule": do_schedule,
     "diary": do_diary,
     "study": do_study,
     "notice": do_notice,
+    "backfill": lambda: __import__("diary_collector").backfill_comments().get("ok", False),
     "probe": do_probe,
     "studydiag": lambda: __import__("study_collector").diagnose().get("ok", False),
     "selftest": do_selftest,
@@ -574,7 +933,7 @@ HANDLERS = {
 
 
 def main() -> int:
-    mode = (sys.argv[1] if len(sys.argv) > 1 else "finalize").strip().lower()
+    mode = (sys.argv[1] if len(sys.argv) > 1 else "tick").strip().lower()
     log(f"===== 个人助手启动 · 模式 {mode} · {now_bj().strftime('%Y-%m-%d %H:%M:%S')} =====")
 
     if mode == "all":
@@ -582,13 +941,13 @@ def main() -> int:
         for m in COLLECT_MODES:
             try:
                 results[m] = HANDLERS[m]()
-            except Exception:
-                log(f"模式 {m} 异常：\n{traceback.format_exc()}", level="ERROR")
+            except Exception as e:
+                log(f"模式 {m} 异常：{exc_brief(e)}", level="ERROR")
                 results[m] = False
         try:
             results["finalize"] = do_finalize()
-        except Exception:
-            log(f"渲染异常：\n{traceback.format_exc()}", level="ERROR")
+        except Exception as e:
+            log(f"渲染异常：{exc_brief(e)}", level="ERROR")
             results["finalize"] = False
         log(f"全部完成：{results}")
         return 0 if results.get("finalize") else 1
@@ -600,16 +959,17 @@ def main() -> int:
 
     try:
         ok = handler()
-    except Exception:
-        log(f"模式 {mode} 异常：\n{traceback.format_exc()}", level="ERROR")
+    except Exception as e:
+        # 只发异常摘要，不发完整栈：栈里的局部变量可能带 cookie / 密码（审计 §2.6）
+        log(f"模式 {mode} 异常：{exc_brief(e)}", level="ERROR")
         return 1
 
     # 采集模式跑完顺手渲染，README 立刻反映最新数据
     if ok and mode in COLLECT_MODES:
         try:
             do_finalize()
-        except Exception:
-            log(f"渲染异常：\n{traceback.format_exc()}", level="ERROR")
+        except Exception as e:
+            log(f"渲染异常：{exc_brief(e)}", level="ERROR")
             return 1
 
     log(f"===== 模式 {mode} 结束：{'成功' if ok else '失败'} =====")

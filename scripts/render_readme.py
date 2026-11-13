@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 from dedup import load_list, sort_by_deadline
 from utils import (DATA_DIR, DOCS_DATA_DIR, REPO_ROOT, load_json,
-                   log, now_bj, parse_datetime, save_json)
+                   log, now_bj, parse_datetime, save_json_stable)
 
 TEMPLATE = REPO_ROOT / "scripts" / "readme_template.md"
 README = REPO_ROOT / "README.md"
@@ -81,9 +81,9 @@ def actionable(tasks: list[dict], now: datetime) -> tuple[list[dict], dict]:
 def course_key(d: dict) -> tuple[str, str]:
     """课程身份 = course_id + class_id。
 
-    同一门课可能挂在两个教学班下（实测英语课 course_id 201780805 有
-    class_id 156400069 / 156290484 两条），只按 course_id 归组会让两个班
-    显示同一批任务。
+    实测同一门英语课挂在两个教学班下：course_id 相同、class_id 不同。
+    只按 course_id 归组会让两个班显示同一批任务。
+    （具体 ID 不写进源码 —— 那也是可定位信息，见 AGENT.md 铁律 6。）
     """
     return (d.get("course_id") or "", d.get("class_id") or "")
 
@@ -111,7 +111,9 @@ def course_rows(courses: list[dict], kept: list[dict]) -> list[str]:
         cells = []
         for t in items:
             dt = parse_datetime(t.get("deadline"))
-            when = dt.strftime("%m-%d %H:%M") if dt else "无截止"
+            # 「抓不到截止」不等于「很久以后」。原来渲染成「无截止」并被算进「更远」，
+            # 用户看到的是一条其实早已逾期的作业（审计 §1.1 / 用户报的 bug）。
+            when = dt.strftime("%m-%d %H:%M") if dt else "⚠️截止未知"
             if dt and not t.get("deadline_exact"):
                 when += " ≈"
             cells.append("{}（{}·{}）".format(
@@ -130,11 +132,12 @@ def render_tasks(tasks: list[dict], now: datetime) -> tuple[str, str, dict]:
     body = "\n".join(course_rows(courses, kept)) + "\n"
 
     today = now.date()
-    counts = {"today": 0, "week": 0, "later": 0}
+    counts = {"today": 0, "week": 0, "later": 0, "unknown": 0}
     for t in kept:
         dt = parse_datetime(t.get("deadline"))
         if dt is None:
-            counts["later"] += 1
+            # 单独一类，不能混进「更远」—— 那会让逾期作业看起来还很宽裕
+            counts["unknown"] += 1
         elif dt.date() == today:
             counts["today"] += 1
         elif dt - now <= timedelta(days=7):
@@ -147,6 +150,8 @@ def render_tasks(tasks: list[dict], now: datetime) -> tuple[str, str, dict]:
             "> 📄 [逐项查看已剔除任务与原因](docs/已剔除任务.md)\n").format(
                 dropped["overdue"], dropped["not_pending"], len(courses))
     suffix = f"，其中 **{counts['today']} 项今天截止**" if counts["today"] else ""
+    if counts["unknown"]:
+        suffix += f"，**{counts['unknown']} 项截止未知（可能已逾期，请点进去确认）**"
     stats = {"pending": len(kept), "overdue": 0, **counts,
              "dropped": dropped, "courses": len(courses), "suffix": suffix}
     return body, note, stats
@@ -163,7 +168,7 @@ def reason_detail(reason: str, t: dict, now: datetime,
 def excluded_row(t: dict, reason: str, now: datetime) -> str:
     dt = parse_datetime(t.get("deadline"))
     st = task_start(t)
-    when = dt.strftime("%m-%d %H:%M") if dt else "无截止"
+    when = dt.strftime("%m-%d %H:%M") if dt else "⚠️截止未知"
     if dt and not t.get("deadline_exact"):
         when += " ≈"
     start = st.strftime("%m-%d %H:%M") if st else "未知"
@@ -227,11 +232,54 @@ def render_excluded(tasks: list[dict], now: datetime,
     return "\n".join(lines).rstrip() + "\n", total
 
 
-def render_alert(stats: dict, meta: dict) -> str:
-    if stats["today"]:
+DATA_STALE_HOURS = 3
+
+
+def study_age_hours(study: dict, now: datetime) -> float | None:
+    """数据年龄（小时）。取 last_success，没有就退回 last_attempt；都没有返回 None。"""
+    dt = parse_datetime(study.get("last_success") or study.get("last_attempt"))
+    return (now - dt).total_seconds() / 3600 if dt else None
+
+
+def render_alert(stats: dict, meta: dict, now: datetime | None = None) -> str:
+    """顶部告警，**按优先级只出一个**。
+
+    优先级（与 docs/工作原理.md 的表格必须一致，selftest 有守卫）：
+      🔴 采集失败 → 🔴 截止未知 → 🟠 今天有截止 → 🟠 有逾期被移出
+      → ⚠️ 部分降级 → ⚠️ 数据过期 → ⚠️ 未同步
+    审计 §3.8：原来没有「数据已经 N 小时没更新」这一档，数据悄悄变旧无人发现。
+    """
+    now = now or now_bj()
+    study = meta.get("study") or {}
+    dropped = stats.get("dropped") or {}
+    unknown = stats.get("unknown") or 0
+    status = study.get("status") or ("ok" if study.get("ok") else "failed")
+
+    if study and status == "failed":
+        return ("> ## 🔴 学习通采集失败\n"
+                f"> 原因：`{esc(study.get('reason') or '未知')}`。下方清单是上一次成功的数据，"
+                "**可能已经过期**，别照着它安排今天。\n")
+    if unknown:
+        return (f"> ## 🔴 有 {unknown} 项待完成抓不到截止时间\n"
+                "> 学习通没给倒计时、详情页也没解析出时间窗，**这些任务可能早已逾期**。"
+                "请点进任务自己确认，不要当成「还很宽裕」。\n")
+    if stats.get("today"):
         return (f"> ## 🟠 今天有 {stats['today']} 项截止\n"
-                f"> 就在下方清单里，别拖到明天。\n")
-    if not meta.get("study", {}).get("ok"):
+                "> 就在下方清单里，别拖到明天。\n")
+    if dropped.get("overdue"):
+        return (f"> ## 🟠 有 {dropped['overdue']} 项已逾期，已移出清单\n"
+                "> 做不了了，但值得知道错过了什么。逐项见 "
+                "[已剔除任务](docs/已剔除任务.md)。\n")
+    if study and status == "partial":
+        why = "；".join(study.get("anomalies") or []) or "部分课程采集失败"
+        return ("> ## ⚠️ 学习通数据不完整\n"
+                f"> {esc(why)}。清单可能缺课或缺任务。\n")
+    age = study_age_hours(study, now)
+    if age is not None and age >= DATA_STALE_HOURS:
+        return (f"> ## ⚠️ 学习通数据已 {int(age)} 小时未更新\n"
+                f"> 超过 {DATA_STALE_HOURS} 小时阈值。可能是定时触发漏了或采集一直失败，"
+                "见 [不足与风险](docs/不足与风险.md) §4.1。\n")
+    if not study.get("ok"):
         return ("> ## ⚠️ 学习通数据未同步\n"
                 "> 最近一次采集失败或未配置凭据，下方清单可能不是最新的。详见「数据源状态」。\n")
     return ""
@@ -248,7 +296,7 @@ def render_schedule(now: datetime) -> tuple[str, str, str]:
     if cw is None:
         return "课表尚未解析。", "_无_", "课表未解析"
     info = f"第 **{cw}** 周" + (f" / 共 {total} 周" if total else "")
-    detail = f"当前是 **{info}**，本周 {len(this_week)} 节课。"
+    detail = f"当前是 {info}，本周 {len(this_week)} 节课。"
     if not this_week:
         return info, "_本周没有课。_\n", detail
 
@@ -266,10 +314,16 @@ def render_schedule(now: datetime) -> tuple[str, str, str]:
 # 公告 / 计划 / 名言
 # ---------------------------------------------------------------------------
 def render_notices(limit: int = NOTICE_LIMIT) -> tuple[str, int]:
+    """返回 (正文, **符合条件的总条数**)。
+
+    审计 §3.4：原来只返回被截断后的条数，用户看不到「还有 N 条没显示」，
+    会以为公告就这么多。现在总数照实给，截断处在正文里写明。
+    """
     items = [n for n in load_list(DATA_DIR / "notice" / "notices.json")
              if (n.get("score") or 0) >= 3]
     items.sort(key=lambda n: n.get("publish_date") or "", reverse=True)
     items.sort(key=lambda n: -(n.get("score") or 0))
+    total = len(items)
     items = items[:limit]
     if not items:
         return "_暂无高相关公告。_\n", 0
@@ -280,13 +334,19 @@ def render_notices(limit: int = NOTICE_LIMIT) -> tuple[str, int]:
             n.get("score") or 0, n.get("publish_date") or "—",
             md_link(n.get("title"), n.get("url")), esc(n.get("source")),
             n.get("deadline") or "—", esc(n.get("description") or n.get("reason")) or "—"))
-    return "\n".join(lines) + "\n", len(items)
+    if total > len(items):
+        lines.append("")
+        lines.append(f"_另有 **{total - len(items)}** 条相关公告未显示（共 {total} 条），"
+                     f"完整数据见 [notices.json](data/notice/notices.json)。_")
+    return "\n".join(lines) + "\n", total
 
 
 def render_plans(limit: int = PLAN_LIMIT) -> tuple[str, int]:
+    """返回 (正文, **未完成计划总数**)。截断处写明还有多少条，见 §3.4。"""
     items = [p for p in load_list(DATA_DIR / "diary" / "plans.json")
              if p.get("state") == "open"]
     items.sort(key=lambda p: (-(p.get("confidence") or 0), p.get("due_date") or "9999"))
+    total = len(items)
     items = items[:limit]
     if not items:
         return "_暂无未完成计划。_\n", 0
@@ -297,7 +357,11 @@ def render_plans(limit: int = PLAN_LIMIT) -> tuple[str, int]:
             esc(p.get("text")), f"{(p.get('confidence') or 0):.1f}",
             p.get("due_date") or "—", esc(p.get("source_date") or p.get("source_file")),
             esc(" / ".join(p.get("tags") or [])) or "—"))
-    return "\n".join(lines) + "\n", len(items)
+    if total > len(items):
+        lines.append("")
+        lines.append(f"_另有 **{total - len(items)}** 条未完成计划未显示（共 {total} 条），"
+                     f"完整数据见 [plans.json](data/diary/plans.json)。_")
+    return "\n".join(lines) + "\n", total
 
 
 def render_quotes(limit: int = 8) -> str:
@@ -336,8 +400,12 @@ def render_sources(now: datetime) -> tuple[str, dict]:
             return f"{mins // 60} 小时前"
         return f"{mins // 1440} 天前"
 
+    def study_state(s: dict) -> str:
+        st = s.get("status") or ("ok" if s.get("ok") else "failed")
+        return {"ok": "✅ 正常", "partial": "🟠 不完整"}.get(st, "❌ 失败")
+
     rows = [
-        ("学习通作业", "✅ 正常" if study.get("ok") else "❌ 失败",
+        ("学习通作业", study_state(study),
          ago(study.get("last_success") or study.get("last_attempt")),
          f"{study.get('courses_ok', 0)}/{study.get('courses', 0)} 门课，{study.get('tasks', 0)} 条任务"),
         ("校园公告", "✅ 有数据" if notice.get("count") else "⚪ 未采集",
@@ -378,7 +446,7 @@ def run() -> bool:
     body, filter_note, stats = render_tasks(tasks, now)
     week_info, sched_table, week_detail = render_schedule(now)
     sources, meta = render_sources(now)
-    alert = render_alert(stats, meta)
+    alert = render_alert(stats, meta, now)
     notices, notice_count = render_notices()
     plans, plan_count = render_plans()
 
@@ -424,21 +492,27 @@ def run() -> bool:
     # 网页版数据（docs/ 是 GitHub Pages 目录，前端只能读到这里面的文件）
     # 前端自己按 state 分桶，所以这里必须只喂可做的任务，否则网页会显示出 README 已剔除的逾期项
     kept, _ = actionable(tasks, now)
-    save_json(DOCS_DATA_DIR / "tasks.json", {"updated_at": now.isoformat(timespec="seconds"),
-                                             "stats": {k: v for k, v in stats.items() if k != "suffix"},
-                                             "items": kept,
-                                             "courses": load_list(DATA_DIR / "study" / "courses.json")})
-    save_json(DOCS_DATA_DIR / "meta.json", {"updated_at": now.isoformat(timespec="seconds"),
-                                            "week": week_info.replace("**", ""), "stats": stats,
-                                            "sources": meta})
+    save_json_stable(DOCS_DATA_DIR / "tasks.json", {"updated_at": now.isoformat(timespec="seconds"),
+                                                    "stats": {k: v for k, v in stats.items() if k != "suffix"},
+                                                    "items": kept,
+                                                    "courses": load_list(DATA_DIR / "study" / "courses.json")})
+    save_json_stable(DOCS_DATA_DIR / "meta.json", {"updated_at": now.isoformat(timespec="seconds"),
+                                                   "week": week_info.replace("**", ""), "stats": stats,
+                                                   "sources": meta})
     for name in ("notices", "plans", "quotes"):
         src = {"notices": DATA_DIR / "notice" / "notices.json",
                "plans": DATA_DIR / "diary" / "plans.json",
                "quotes": DATA_DIR / "diary" / "quotes.json"}[name]
-        save_json(DOCS_DATA_DIR / f"{name}.json", load_json(src) or {"items": []})
+        payload = load_json(src) or {"items": []}
+        if name in ("plans", "quotes"):
+            # 网页版不需要知道这条计划出自私有仓库的哪个文件（审计 §2.2）
+            payload = {**payload, "items": [{k: v for k, v in it.items() if k != "source_file"}
+                                            for it in payload.get("items") or []]}
+        save_json_stable(DOCS_DATA_DIR / f"{name}.json", payload)
     d = stats["dropped"]
     log(f"任务清单：{stats['pending']} 条可做 / {stats['courses']} 门课"
-        f"（今天 {stats['today']} / 7天内 {stats['week']} / 更远 {stats['later']}）")
+        f"（今天 {stats['today']} / 7天内 {stats['week']} / 更远 {stats['later']}"
+        f" / 截止未知 {stats['unknown']}）")
     log(f"已剔除：逾期 {d['overdue']} / 非待完成 {d['not_pending']}")
     log(f"独立文档：公告 {notice_count} 条 / 潜在计划 {plan_count} 项 / 已剔除 {excluded_count} 项")
     log("README 已生成")

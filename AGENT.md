@@ -3,11 +3,11 @@
 **给任何接手本仓库的 AI 或人类维护者。** 本文件优先级高于你的全局默认行为。
 读完这一份就能上手，不需要回溯开发历史。
 
-> ⚠️ **动手前先读 [docs/不足与风险.md](docs/不足与风险.md)。**
-> 那里有 31 条已核实的已知问题，包括学习通会「假成功」、公开仓库里的隐私欠账、
-> 以及**定时触发极不稳定（绝大多数运行都是手动派发，schedule 只零星命中）**。**别把「代码写了」当成「功能验证过了」。**
+> ⚠️ **动手前先读 [docs/AI运维手册.md](docs/AI运维手册.md)，再读 [docs/不足与风险.md](docs/不足与风险.md)。**
+> 运维手册是**可执行的操作步骤**（怎么改、怎么验、怎么派发、验收清单）；
+> 不足与风险是**逐条问题的根因与修复状态**，还列了「不是缺陷、别乱改」的 10 项，
+> 防止顺手重构把对的改坏。**别把「代码写了」当成「功能验证过了」。**
 > 带具体次数的实测快照只写在审计文档里并注明时间，**不要把会漂移的数字抄进这两处常驻说明**。
-> 该文档还列了「不是缺陷、别乱改」的 10 项，防止顺手重构把对的改坏。
 
 ---
 
@@ -18,13 +18,18 @@
 
 三个数据源：
 
-| 源 | 内容 | 采集方式 | 频率 |
+| 源 | 内容 | 采集方式 | 间隔（约） |
 | --- | --- | --- | --- |
-| 1 | Gitee 日记里的名言 + 潜在计划 | Gitee API v5（只读 .md） | 每天 4 次增量 |
-| 2 | 学习通作业/考试 | 模拟登录四步链 | 每小时 |
-| 3 | 校园比赛/项目公告 | 公开列表页，**不登录** | 每天 3 次 |
+| 1 | Gitee 日记里的名言 + 潜在计划 | Gitee API v5（只读 .md） | 120 分钟 |
+| 2 | 学习通作业/考试 | 模拟登录四步链 | 60 分钟 |
+| 3 | 校园比赛/项目公告 | 公开列表页，**不登录** | 360 分钟 |
 
-外加 WakeUp 导出的课表 `.ics`（本地解析，不联网）。
+外加 WakeUp 导出的课表 `.ics`（本地解析，不联网，每轮 finalize 都重跑）。
+
+**这三个间隔不是 cron，是 Python 里的常量** `main.TICK_INTERVALS`。
+cron 只有一条 `*/20 * * * *` → 模式 `tick`，每轮由 `due_collectors()` 查
+`data/runtime.json` 的时间戳决定该跑谁。改频率改常量，**不要往 workflow 里加 cron**
+（selftest 有断言守着「只有一条 cron」）。为什么这么设计见 [工作原理 §0](docs/工作原理.md)。
 
 ---
 
@@ -34,6 +39,8 @@
    - `README.md`
    - `docs/公告.md`、`docs/潜在计划.md`、`docs/已剔除任务.md`（从 README 挪出来的独立文档，模板在 `scripts/*_template.md`）
    - `data/study/*`、`data/notice/*`、`data/diary/*`、`data/schedule/*`
+   - **`data/runtime.json`**（tick 的调度状态：`last_ok` / `last_try` / `pushed` / `errors`）
+   - **`data/diary/plans_archive.json`**（归档的已完成/已取消计划）
    - `docs/data/*`、`docs/week.svg`
 
    想改这几份文档的**措辞/结构**，改对应的模板（`readme_template.md` /
@@ -45,9 +52,21 @@
    另外 `data/diary/plans.json` 里的 `state` 字段允许人工改成 `done` / `cancelled`，
    合并逻辑会保护这个人工标记不被 AI 覆盖。
 
+   **`data/runtime.json` 可以删，但不能编。** 删掉等于「所有采集器都到期、今天还没推送过」，
+   下一轮 tick 会全跑一遍 —— 这是安全的重置方式。手工塞时间戳会让调度错乱，
+   而且 `pushed` 被改成今天会导致当天不再推送。要重置就整个文件删掉。
+
 2. **凭据只存在于 GitHub Secrets。** 绝不写进代码、workflow、commit、日志。
-   `utils.log()` 已内置 `redact()`，会抹掉 `access_token=` / `Bearer` / `sk-` / `ghp_` / `password=`。
-   新增日志时不要绕过 `log()` 直接 `print`。
+   仓库是**公开**的，Actions 日志任何人可见，所以脱敏有两道闸：
+   - Python：`utils.log()` / `utils.exc_brief()` 内置 `redact()`，抹掉令牌、口令字段、**Cookie 字段**
+     （`JSESSIONID` / `_uid` / `uf` / `_d` / `vc3` / `fid` / `unam` / `route` …）。
+     新增日志时不要绕过 `log()` 直接 `print`；异常一律用 `exc_brief(e)`，**不要 `traceback.format_exc()`**。
+   - JS：`notify_feishu.js` 的 `redact()` 用同一套正则再过一遍 `NOTIFY_OUTPUT` 和命令行文案。
+     这两条路不经过 Python 的 `log()`，AI 也可能把日记隐私原样吐出来。
+   **改一边的正则必须改另一边**，selftest 有断言检查 JS 侧确实套了 `redact()`。
+
+   非凭据但同样敏感的开关也走 Secrets：**`DIARY_EXCLUDE`**（逗号分隔的日记目录前缀黑名单），
+   仓库里只出现名字，值不入库。见 §5.2 与 [AI 运维手册](docs/AI运维手册.md)。
 
 3. **不要 force push。** 提交步骤用的是 `git pull --rebase` + 普通 `push`。
    推不上去就让步骤失败、飞书报红、人来处理。这是刻意的设计，别"优化"成 `--force-with-lease`。
@@ -76,6 +95,19 @@
    **新增任何「抓回来又要公开渲染」的字段（课程名、公告标题、教师名…），
    都要先问「这个值能不能定位到人」，并把清洗放在采集器里，不要手改生成物。**
    详见 [docs/开发习惯.md](docs/开发习惯.md) 第 8 条与 CHANGELOG v1.2.3。
+
+   **已落地的四道清洗，都在采集层/渲染层，不在生成物里：**
+
+   | 函数 | 清什么 | 为什么用结构规则而不是黑名单 |
+   | --- | --- | --- |
+   | `utils.scrub_course_name()` | 课程名里嵌的同学学号、教学班编号 | 黑名单要写真实学号进仓库 = 二次泄露 |
+   | `utils.scrub_task_title()` | 任务标题开头的教师姓名（`姓名2024-2025…` 形状） | 同上；且必须要求「学年-学年」形状，否则会把合法标题 `作业20261022` 削成 `1022` |
+   | `utils.public_url()` | 深链里的 `cpi` / `enc` / `answerId` 等每生一份的参数 | 白名单 `_PUBLIC_KEEP` 只留课程/作业级 ID |
+   | `utils.strip_personal_fields()` | task 里的 `cpi` / `answer_id` 字段 | `data/` 是公开仓库的一部分，不是本地缓存 |
+
+   `study.public_links` 在 `data/sources.json` 里可设 `"course"`（默认，去个人参数）
+   或 `"full"`（原样深链）。**这是产品取舍不是 bug** —— 用户要在「点开就能做作业」和
+   「链接不暴露身份」之间选，做成一行配置而不是写死。
 
 ---
 
@@ -112,28 +144,40 @@ scripts/
 
 ```bash
 pip install -r scripts/requirements.txt
+pip install ruff                    # 质量门禁用，和 workflow 里一致
 
-python scripts/main.py selftest   # 离线自检，不需要凭据、不需要网络 ← 改完代码先跑这个
-python scripts/main.py probe      # 探测各站点从当前出口 IP 是否可达
-python scripts/main.py finalize   # 渲染 + 离线重算课表（不联网、不花 token）
+ruff check scripts --select E9,F63,F7,F82,F821,F401   # ← 先跑这个，语法/未定义名/未用导入
+python scripts/main.py selftest   # 离线自检，不需要凭据、不需要网络 ← 改完代码必跑
+python scripts/main.py probe      # 探测各站点从当前出口 IP 是否可达 + 解析冒烟
+python scripts/main.py tick       # ★ cron 的唯一入口：按 runtime.json 决定跑谁，最后必渲染
+python scripts/main.py finalize   # 只渲染 + 离线重算课表（不联网、不花 token）
 python scripts/main.py study      # 采集学习通 + 渲染
-python scripts/main.py diary      # 采集日记 + 写回 Gitee
+python scripts/main.py diary      # 采集日记 + 写回 Gitee（写回只在凌晨窗口内发生）
 python scripts/main.py notice     # 采集公告
+python scripts/main.py schedule   # 只重算课表
+python scripts/main.py backfill   # 给历史名言补 AI 点评（每批 8 条）
+python scripts/main.py studydiag  # dump 学习通页面形状（数字全打码，可进公开日志）
 python scripts/main.py morning    # 早 7 点飞书文案（不提交任何文件）
 python scripts/main.py noon       # 中午问好
 python scripts/main.py night      # 晚间总结
-python scripts/main.py all        # 全部
+python scripts/main.py all        # 全部采集 + 渲染
 ```
 
-Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
+**不带参数 = `tick`。** 上面两条（ruff + selftest）就是 workflow 里的「质量门禁」步骤，
+在**执行步骤之前**跑，任何一条失败整个 job 就红，不会带着坏代码去动数据。
+本地改完先跑这两条，能省掉一整轮 Actions 往返。
 
-**⚠️ 派发必须串行，一次一个。** concurrency group 设的是 `cancel-in-progress: false`，
+Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`（默认 `tick`）。
+
+**⚠️ 派发必须串行，一次一个。** concurrency group 是单一的 `pa-run`，`cancel-in-progress: false`，
 但 GitHub 对同一个 group **只保留一个 pending run** —— 一次性派发多个模式，
 后派发的会把先派发的**直接 cancel 掉**（实测两条 CANCELLED）。
-等上一个 run 变 completed 再派下一个。
+等上一个 run 变 completed 再派下一个。job 有 `timeout-minutes: 25` 兜底，卡死不会占住 group 一整天。
 
 **改任何解析器后，务必同步更新 `main.py` 里的 `do_selftest()` 断言。**
 自检是唯一能在不消耗凭据、不依赖网络的情况下验证解析逻辑的手段。
+`study_collector.parse_smoke()` 用内置 HTML 样本跑一遍解析链，`probe` 也会调它 ——
+页面改版时这是最早的报警。
 
 ---
 
@@ -164,8 +208,24 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
   再遇到 `unknown` 状态，先 dump 原文再补词表，不要猜
 
 **列表页只给相对倒计时**（「剩余1小时12分钟」），没有绝对时间戳。
-所以 `deadline = 抓取时刻 + 剩余时长`，`deadline_exact=False`，README 里显示 `≈`。
+所以列表页解析出的 `deadline = 抓取时刻 + 剩余时长`，`deadline_exact=False`，README 里显示 `≈`。
+
+**⚠️ 但「列表页没有倒计时」不等于「没有截止时间」。** 实测逾期作业的行**根本不含 `time` div**，
+早先的代码把这类任务的 deadline 留成 `null`，于是 `drop_reason()` 判不出逾期，
+**早已截止的作业被当成「更远」显示给用户** —— 这是用户报的核心 bug。
+现在 `detail_time_window()` 从详情页取绝对时间：
+
+| 页面 | 实测形状 | 解析函数 |
+| --- | --- | --- |
+| 作业详情 | `<p>作答时间:<em>MM-DD HH:MM</em>至<em>MM-DD HH:MM</em></p>` | `detail_work_window()` |
+| 互评详情 | `<p class="hpInfo">互评时间：MM-DD HH:MM 至 MM-DD HH:MM</p>` | `detail_eval_window()` |
+
+**页面不给年份**，所以按「距抓取时刻最近的那一年」补：候选超过 180 天就回退一年，
+跨年时结束时间自动 +1 年。待完成且 deadline 未知的任务**一律去抓详情页**（受 `max_detail` 预算限制）。
 只有详情页补全的时间才是 `deadline_exact=True`，且合并时旧精确值优先于新估算值。
+
+**抓不到就诚实地说抓不到**：`deadline` 仍为 `null` 的任务进**独立的「⚠️截止未知」类**，
+README 顶部出 🔴 告警，网页看板单列一桶 —— **绝不混进「更远」**，那会让逾期作业看起来还很宽裕。
 
 **状态语义：** `待批阅` 通常表示已提交、等老师批阅，但**互评模式下「待批阅」+ 仍在倒计时 = 用户还得去互评**，
 `parse_work_rows()` 会把它升级成 `pending`。改这段前先看清楚。
@@ -211,14 +271,20 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
 
 用户要的**不是**运行状态卡片，是有人格的每日陪伴消息。三个时段：
 
-| 模式 | cron（UTC） | 北京时间 | 内容 |
-| --- | --- | --- | --- |
-| `morning` | `2 23 * * *` | 07:02 | 今天该做的事，**来源于日记**，附一言 |
-| `noon` | `2 4 * * *` | 12:02 | 问好 + 鼓励 |
-| `night` | `2 14 * * *` | 22:02 | 一天的总结，数据来源于日记 |
+| 模式 | 触发时刻（北京） | 内容 |
+| --- | --- | --- |
+| `morning` | 07:00 起 | 今天该做的事，**来源于日记**，附一言 |
+| `noon` | 12:00 起 | 问好 + 鼓励 |
+| `night` | 22:00 起 | 一天的总结，数据来源于日记 |
 
-**为什么是分钟 2 而不是 0**：0 分会和 `*/20` 的 finalize 撞在同一时刻，
-两个 run 抢同一个 concurrency group。错开 2 分钟。
+**没有推送专用 cron。** 三个时刻写在 `main.PUSH_HOURS`，由 `due_pushes()` 在每轮 tick 里判断：
+`now` 落在 `[目标时刻, 目标时刻 + PUSH_CATCHUP_HOURS(3h)]` 且 `runtime.pushed[kind] != 今天` 才发。
+
+- **按日期记账，不是按小时**：`pushed[kind]` 存 `YYYY-MM-DD`，所以**一天最多一条**，
+  3 小时补发窗口内 tick 跑 9 次也只发第一次。
+- **3 小时补发**是为了扛 Actions 延迟/跳过：7 点那轮没跑成，8 点、9 点还能补上；
+  超过 10 点就不发了 —— 迟到的「早安」比不发更烦人。
+- 想改时刻改 `PUSH_HOURS`，想改补发宽度改 `PUSH_CATCHUP_HOURS`。**不要往 workflow 加 cron。**
 
 **人格只有一份，在 `prompts.py` 的 `PERSONA`。** 傲娇雌小鬼：先损一句，再落到实事上。
 名言点评和三个时段共用它 —— **改人格只改这一处**。
@@ -250,20 +316,28 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
 
 - **只在凌晨写（用户硬要求）**：他白天在 Obsidian 里编辑，白天提交会撞车。
   守卫在 `in_window()`，窗口取 `data/sources.json` → `diary.writeback_window`
-  （默认 `00:00-05:00`，北京时间，含头不含尾，支持跨零点）。
+  （当前 `00:00-06:00`，代码默认 `00:00-05:00`，北京时间，含头不含尾，支持跨零点）。
   **窗口外只复查勾选、一次都不提交**，返回 `skipped=outside_window`，且**不推进 `last_date`**，
   所以滚动链条不会断，下一个凌晨窗口接着写。格式写错时**失败关闭**（当天不写），不会退化成随时写。
-  cron 侧对应 `7 16,18,20 * * *`（北京 00:07 / 02:07 / 04:07）；白天班 `7 0,4,8,12 * * *` 只读。
   **守卫在代码里而不是 cron 里**，手动派发 `diary` 或 Actions 延迟到白天也写不进去。
+- **tick 会强制补跑**：`do_tick()` 发现「现在在窗口内」且 `runtime.writeback_date != 今天`，
+  就把 `diary` 加进本轮待跑列表，**不管它 120 分钟的间隔到没到**。
+  写回成功后才记 `writeback_date`。这是修「错过凌晨窗口 → 计划永久不再进入待办」（审计 §1.5）的关键：
+  窗口有 6 小时宽、每 20 分钟一次机会，只要 Actions 在这 6 小时里跑成过一轮就写得上。
 - 落点：`{root}/{daily_dir}/{YYYY-MM-DD}.md`，`daily_dir` 在 `data/sources.json` 里配（当前是 `日`）。
 - **只动助手区块**，边界是 `<!-- assistant:plans:start -->` / `<!-- assistant:plans:end -->`。
   区块外是用户正文，**一个字节都不许碰**。`upsert_block()` 有 markers 就替换区间，没有就追加。
 - 每行带 `<!-- pid:xxx -->`，复查靠 pid 对齐，不靠文本匹配（用户可能改字）。
 - **已勾选的状态必须保住**：合并时 `[x]` 优先，重复写回同一天是幂等的。
 - 复查读**上一次写回的那天**（`writeback.json` 的 `last_date` / `last_path`），
-  勾了的 → 计划 `state=done`，没勾的 → 进 rolling 滚到今天。
-- 选取规则 `pick_plans()`：`state=="open"` 且（`first_seen==昨天` 或 pid 在 rolling 里），
-  按 (due_date, -confidence) 排序，上限 `max_writeback`（默认 20）。
+  勾了的 → 进 `done_ids`，没勾的 → 进 rolling 滚到今天。
+- **`done_ids` 里的计划先从候选里剔掉再选**（`candidates = [p for p in plans if p["id"] not in done_ids]`）。
+  这一步不能省：`state` 要等 `diary_collector` 拿到本函数返回值之后才改成 `done`，
+  传进来的 `plans` 里它们还是 `open`，不自己排掉就会把刚勾完的待办又写进新一天。
+- 选取规则 `pick_plans(plans, rolling, limit)`：`state=="open"` 且（**没写过** `written_once` 或 pid 在 rolling 里），
+  排序键 `(rolling 优先, due_date, first_seen 升序, -confidence)`，上限 `max_writeback`（默认 20）。
+  **`first_seen` 升序是刻意的**：老计划先写，否则新计划天天挤掉老计划，老的永远轮不到（审计 §3.4 的饥饿问题）。
+  写过的计划会带 `written_once=True` / `last_written`，只有 rolling 里的才允许再写一次。
 - **没有内容且文件不存在时不创建空日记。** 别给用户造垃圾文件。
 - 新建文件用用户的三段骨架 `NEW_FILE_TEMPLATE`（今日记录 / 随笔感想 / 明日计划）。
 
@@ -282,12 +356,15 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
 
 ### 5.3 课表当前时间线（`week_svg.py` + `docs/js/app.js`）
 
-两层，**精度不同，别混为一谈**：
+两层，**颜色和精度都不同，别混为一谈**：
 
-1. **SVG 里的红线**：`finalize` 每 20 分钟重画一次，所以是 **20 分钟精度**。
-2. **网页上的覆盖线**：`docs/js/app.js` 的 `startNowLine()` 每 30 秒按浏览器时间实时移动，
+1. **SVG 里的浅灰虚线**：`finalize` 每 20 分钟重画一次，所以是 **20 分钟精度**。
+   它只是「生成时刻的参考位置」，**刻意画成浅色 `#CED4DA` + 灰色时间标签**。
+   早先这里是红线，和网页覆盖线叠在一起，用户看到 20 分钟前的位置还以为是真的（审计 §5.1）。
+   **不要把它改回红色** —— selftest 有断言检查 SVG 源码里不含 `#FA5252`。
+2. **网页上的红色覆盖线**：`docs/js/app.js` 的 `startNowLine()` 每 30 秒按浏览器时间实时移动，
    这才是真·实时。几何参数由 `week_svg.py` 导出到 `docs/data/schedule_geo.json`
-   （width/height/pad/gutter/col_w/row_h/body_top/today_col/slots/class_minutes）。
+   （width/height/pad/gutter/col_w/row_h/body_top/today_col/slots/class_minutes/date）。
    **JS 的 `nowLineY()` 必须和 Python 的 `time_y()` 用同一套锚点算法**，改一边就要改另一边。
 
 `time_y()` 的关键设计：**每节课 45 分钟正好占满一行，课间线停在两行交界不拉伸**。
@@ -296,9 +373,10 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
 
 JS 侧按 `geo.date` 算日期漂移来平移 `today_col`，超出 0..6 就隐藏线。
 时区换算成北京时间用的是 `Date.now() + (8*60 + getTimezoneOffset())*60000`。
+覆盖线用**百分比定位**（`.svg-wrap` 相对定位 + `.now-line` 绝对定位），所以图片缩放也不会歪。
 
-**现状：GitHub Pages 还没开（`has_pages=false`），所以浏览器里的实时线尚未在真实页面上验证过。**
-要验证得先开 Pages —— 这是需要用户点头的动作，别自己开。
+**在 README 里看 SVG 是看不到实时线的** —— GitHub 会把它当静态图片渲染，不执行 JS。
+实时线只在网页看板（`docs/index.html`）里存在。这一点必须跟用户说清楚，别让他以为 README 里的线会动。
 
 ### 5.4 名言 AI 点评（`prompts.py` + `diary_collector.py`）
 
@@ -310,8 +388,11 @@ JS 侧按 `geo.date` 算日期漂移来平移 `today_col`，超出 0..6 就隐�
 **必须含 `comment`**（否则旧条目永远补不上点评）→ `render_readme.render_quotes()` 输出 `> 💬 ...`
 → 前端 `renderQuotes` 输出 `<span class="ctx">💬 ...</span>`。
 
-**存量名言不会自动补点评**：`_carry` 只填空字段，而存量是 AI 抽取当时就没有 comment。
-要给存量补，得清 `data/diary/quotes.json` 重抽（会连带重抽计划，注意保住人工 `state` 标记）。
+**存量名言靠 `backfill` 模式补点评**：`diary_collector.backfill_comments(batch=8)`
+挑出 `comment` 为空的名言，每批 8 条调 `prompts.comment_messages()`，成功才写回。
+`_carry` 只填空字段、不覆盖已有点评，所以重复跑是幂等的。
+Actions 上手动派发 `backfill`；本地 `python scripts/main.py backfill`。
+**不要靠清 `quotes.json` 重抽来补** —— 那会连带重抽计划，人工 `state` 标记有丢失风险。
 
 ---
 
@@ -322,18 +403,20 @@ JS 侧按 `geo.date` 算日期漂移来平移 `today_col`，超出 0..6 就隐�
   校团委、飞书均 HTTP 200；Gitee 与 AI 中转 HTTP 401（可达，只是未带凭据）。
   **不需要 self-hosted runner，也不需要国内定时任务兜底。**
   学校日后若封海外 IP，重跑 `probe` 即可确认，退路见 DEV_GUIDE 4.3。
-- **Secrets 已配置完成（2026-11-13）**：`FS_WEBHOOK`、`AI_API_KEY`、`GITEE_TOKEN`、
-  `CX_USERNAME`、`CX_PASSWORD` 共 5 个，Variables `AI_BASE_URL`、`AI_MODEL` 共 2 个，全部 HTTP 201。
+- **Secrets 已配置（2026-11-13）**：`FS_WEBHOOK`、`AI_API_KEY`、`GITEE_TOKEN`、
+  `CX_USERNAME`、`CX_PASSWORD`、`DIARY_EXCLUDE`，Variables `AI_BASE_URL`、`AI_MODEL`。
   **能用 API 写，不必走网页**（轮换凭据时照这个做）：
   GET `/actions/secrets/public-key` 取 base64 公钥与 `key_id` → 用 libsodium `crypto_box_seal`
   加密 → PUT `/actions/secrets/{name}`，body 为 `{encrypted_value, key_id}`。
-  本机 PATH 里没有 node/npm/python/gh，但搜到一个可用运行时：
-  `C:/Program Files/Adobe/Adobe Creative Cloud Experience/libs/node.exe`（Node v24，自带 fetch）。
+  **GitHub 返回 204 本身就是加密正确的证明**（解不开会 422）。
+  本机 PATH 里没有 node/npm/gh，但有两个可用运行时：
+  `C:/Program Files/Adobe/Adobe Creative Cloud Experience/libs/node.exe`（Node v24，自带 fetch）、
+  `C:/Users/XOS/AppData/Local/Temp/py311/python.exe`（3.11.9 embeddable，本地跑 selftest/ruff 用）。
   加密库从 npm 官方 registry 取 `libsodium-wrappers`，**它依赖 `libsodium`，要一并下载**；
   解压到仓库外的临时目录充当 `node_modules`。两个坑：GNU tar 会把 `C:/...` 的冒号当远程主机，
   必须加 `--force-local`；脚本要写成真实文件再跑，`node -e` 里 `process.chdir` 不改变模块解析基准。
   明文值走环境变量传入、不落盘不进 git，用完删掉临时目录。
-  已验证成功的模式：`selftest`（**88 项断言、失败 0 项**，commit `40f3fea`，run `43389793345`）、`probe`、`finalize`（含 git 写回）、`notice`、`study`、`diary`、`schedule`、`morning`、`noon`、`night`。
+  **⚠️ 开发期在聊天里贴过的凭据一律视为已泄露，必须轮换后再填进 Secrets。**
 - **`study` / `diary` 已端到端跑通（2026-11-13）**，Secrets 配好后首次真实采集暴露了四个 bug，均已修：
   - `study`：登录成功、**14 门课全扫描失败 0**、38 条作业、**待完成 7**（修 `未交` 前只有 4）、
     两条真实截止日 2026-11-19 / 2026-11-20 已进 README 清单，飞书推送成功。
@@ -366,43 +449,58 @@ JS 侧按 `geo.date` 算日期漂移来平移 `today_col`，超出 0..6 就隐�
   不要改回「从容器名起取固定 N 字符」——那样会把页脚和「上一篇/下一篇」喂给 AI。selftest 有 2 条断言守着。
 - **考试列表解析未经真实待考数据验证。** 目前样本里两场考试都是「已完成」，
   待考行的 `onclick` 函数名和倒计时结构可能与作业不同。第一次遇到待考时要核对。
-- **详情页精确截止时间未经样本验证。** `DETAIL_DT_RE` 是容错猜测，
-  失败时静默退回倒计时估算，不会报错。日志里会打「详情页补全截止时间」，没打就是没匹配上。
+- **详情页绝对时间已实测拿到形状（2026-11-13），但年份是推算的。**
+  作业详情 `<p>作答时间:<em>MM-DD HH:MM</em>至<em>MM-DD HH:MM</em></p>`、
+  互评详情 `<p class="hpInfo">互评时间：MM-DD HH:MM 至 MM-DD HH:MM</p>`，**都不带年份**。
+  `detail_time_window()` 按「距抓取时刻最近的一年」补，超 180 天回退一年、跨年结束 +1 年。
+  **学期交界（12 月底 / 1 月初）和暑假前后要人工核对一次**，这是唯一可能系统性错一年的地方。
+  解析失败时退回倒计时估算并打 WARN，不会静默；日志里没有「详情页补全截止时间」就是没匹配上。
 - **招生就业处 `hncj.goworkla.cn` 默认关闭**（第三方建站，列表结构不同）。需要时再适配。
-- **Actions 额度**：本仓库已设为 **public**，额度无限，所以保留每 20 分钟的 finalize。
-  注意计费是「每个 job 向上取整到分钟」：20 分钟一次 = 2160 分钟/月，
-  **私有仓库的 2000 分钟免费额度装不下**。若日后转 private，必须改用
-  DEV_GUIDE 第 2 节的省额度 cron 组合（约 1500 分钟/月），否则会中途被停用。
-- **Actions 60 天无 push 会自动停用 schedule。** 本项目每小时都有数据变更，正常不会触发。
+- **Actions 额度**：本仓库已设为 **public**，额度无限。
+  注意计费是「每个 job 向上取整到分钟」：`*/20` 一条 cron = 72 轮/天，
+  每轮平均 1–2 分钟 ≈ **2200–4400 分钟/月**，**私有仓库的 2000 分钟免费额度装不下**。
+  若日后转 private，把 `TICK_INTERVALS` 整体调大（例如 study 180 / diary 360 / notice 720），
+  或把 cron 改成 `*/30`，**不要靠删 cron 条数来省** —— 现在只有一条，删了就全停。
+- **Actions 60 天无 push 会自动停用 schedule。** 本项目每轮 tick 都可能产生数据变更，正常不会触发。
   长期放假无课时可能触发，去 Actions 页面手动重新启用即可。
 - **课表教师列恒为空。** `assets/WakeUp导入课表.ics` 已脱敏剥离教师名，
   `split_location()` 因此恒定返回 `teacher=""`。**这是预期行为，不要去"修"它。**
   拆分逻辑保留着，换回未脱敏原件即生效。详见 [docs/原始文件.md](docs/原始文件.md)。
-- **公开仓库仍暴露 `cpi` 与作业 `enc` 令牌。** 任务 URL 里两者都是功能性必需
-  （`enc` 去掉链接就打不开），但等于把作业页访问能力公开。
-  另外部分**课程名本身带教师名**（学习通实时抓取），属生成物不能手改，
-  要去除得在采集层加过滤。这两项**待用户决策，未擅自改动**。
+- **任务标题里的教师姓名已在采集层剥掉**（`utils.scrub_task_title()`，结构规则不用黑名单）。
+  **公开链接默认已去掉 `cpi` / `enc` / `answerId`**（`study.public_links="course"`）。
+  代价：README 里的链接只到课程页，用户要多点两下才能到作业。
+  想要一键直达就把 `public_links` 改成 `"full"` —— **这是用户的产品取舍，不是 bug，别擅自改回去**。
 
 ---
 
 ## 7. 改东西时的检查清单
 
+**每次动手前后都过一遍。完整的可执行版本在 [docs/AI运维手册.md](docs/AI运维手册.md)。**
+
+- [ ] **先跑 `ruff check scripts --select E9,F63,F7,F82,F821,F401` + `python scripts/main.py selftest`**，两条都绿再谈别的
 - [ ] 改了日志文案 → 同步改 `notify_feishu.js` 的 `TASK_TEMPLATES` 正则（指标靠正则从日志里抠）
+- [ ] 改了脱敏正则 → **Python `_REDACT_PATTERNS` 和 JS `REDACT_PATTERNS` 两边都改**
 - [ ] 改了数据字段 → 同步改 `docs/数据结构.md` 和 `docs/js/app.js`
-- [ ] 改了解析器 → 同步改 `main.py` 的 `do_selftest()`，并在 Actions 上跑一次 selftest
-- [ ] 改了提交步骤 → 确认采集模式仍只 `git add data`，派生产物只由 `finalize`/`all` 提交（见第 6 节事故）；推送模式一个文件都不提交
+- [ ] 改了解析器 → 同步改 `main.py` 的 `do_selftest()` 和 `study_collector` 的 `SAMPLE_*` / `parse_smoke()`
+- [ ] 改了调度频率 → 改 `main.TICK_INTERVALS` / `PUSH_HOURS`，**不要往 workflow 加 cron**；同步改 AGENT/README 模板/工作原理里的频率描述
+- [ ] 改了提交步骤 → 确认采集模式仍只 `git add data`，派生产物只由 `tick`/`finalize`/`all` 提交（见第 6 节事故）；推送模式一个文件都不提交
 - [ ] 改了人格/说话风格 → 只改 `prompts.py` 的 `PERSONA`，别在各处复制一份；确认硬边界还在
 - [ ] 改了推送事实来源 → 确认仍然**不含课表**，且只用 `data/diary/*`
 - [ ] 改了日记写回 → 确认 `strip_assistant_block()` 仍在抽取前调用，区块外正文零改动，`[x]` 不被覆盖
 - [ ] 改了日记写回 → 确认凌晨窗口守卫还在（`in_window()`），**白天一次都不提交**，窗口外不推进 `last_date`
+- [ ] 改了 `pick_plans()` → 确认 `done_ids` 仍在选取前被剔掉，`first_seen` 仍升序（老计划不被饿死）
 - [ ] 改了课表几何（ROW_H/SLOTS/45分钟）→ Python `time_y()` 和 JS `nowLineY()` 必须同步改，并重跑 selftest
+- [ ] 改了 SVG 时间线 → 确认生成线仍是**浅灰**，红色只由 JS 画
 - [ ] 改了名言字段 → `dedup.merge_quotes` 的 `_carry` 元组、README 渲染、前端 `renderQuotes` 三处都要跟
+- [ ] 改了截止时间解析 → 确认「抓不到」仍进**独立的 unknown 类**，绝不混进「更远」
+- [ ] 新增了会公开渲染的字段 → 先问「这个值能不能定位到人」，清洗放采集层，示例用占位符
 - [ ] 派发 Actions → **串行，一次一个**，等上一个 completed 再派下一个（同 group 只留一个 pending）
 - [ ] 换了 AI 中转站或模型 → 先 `GET /v1/models` 核目录，`AI_MODEL` 照抄返回里的名字，别凭记忆写
 - [ ] 遇到 `unknown` 作业状态 → dump 状态原文再补 `PENDING`/`SUBMITTED`/`DONE` 词表，不要猜
 - [ ] 加了新公告源 → 只改 `data/sources.json`，先确认列表页是静态 HTML（不是 JS 渲染）
 - [ ] 加了新依赖 → 更新 `requirements.txt`，并在 DEV_GUIDE 里说明为什么需要
-- [ ] 任何情况下都不要把凭据写进文件
+- [ ] 改了文档里引用的函数名 → selftest 有断言扫全仓库 md，引用不存在的函数会红
+- [ ] 任何情况下都不要把凭据写进文件；开发期贴过的凭据一律轮换
 
 ---
 
@@ -410,6 +508,7 @@ JS 侧按 `geo.date` 算日期漂移来平移 `today_col`，超出 0..6 就隐�
 
 | 文件 | 内容 |
 | --- | --- |
+| **[docs/AI运维手册.md](docs/AI运维手册.md)** | **接手第一份**：可执行的改动流程、验证方法、派发方式、逐功能验收清单、踩坑速查 |
 | [DEV_GUIDE.md](DEV_GUIDE.md) | 从零部署：建仓、配 Secrets、首次运行 |
 | [docs/技术路径.md](docs/技术路径.md) | 每个技术选型的理由、被否决的方案、实测证据 |
 | [docs/工作原理.md](docs/工作原理.md) | 一次运行的完整数据流 |
@@ -419,7 +518,7 @@ JS 侧按 `geo.date` 算日期漂移来平移 `today_col`，超出 0..6 就隐�
 | [docs/常见问题.md](docs/常见问题.md) | 故障排查 |
 | [docs/个人画像.md](docs/个人画像.md) | 用户是谁 / 关注什么 / 说话风格硬边界（**public，不含凭据**） |
 | [docs/开发习惯.md](docs/开发习惯.md) | 16 条协作规则，每条附用户原话 —— **接手前必读** |
-| [docs/不足与风险.md](docs/不足与风险.md) | 31 条已知问题的诚实审计：根因位置 + 实测证据 + 建议修法，另列「不是缺陷别乱改」「等用户决定」—— **接手前必读** |
+| [docs/不足与风险.md](docs/不足与风险.md) | 逐条问题的诚实审计：根因位置 + 实测证据 + **修复状态**，另列「不是缺陷别乱改」「等用户决定」—— **接手前必读** |
 | [docs/原始文件.md](docs/原始文件.md) | `assets/` 两个上传文件的脱敏口径、审计结果、换文件流程 |
 | [docs/竞赛日历.md](docs/竞赛日历.md) | 269 项校级竞赛目录 + 已核实时间（**手工维护，Actions 不覆盖**） |
 | [CHANGELOG.md](CHANGELOG.md) | 版本记录 |

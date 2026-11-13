@@ -122,8 +122,14 @@ def _match_date(scope: str, today: date, *, nearest: bool = False) -> str | None
         return None
 
 
-def _find_date(inner: str, before: str, today: date) -> str | None:
-    return _match_date(inner, today) or _match_date(before, today, nearest=True)
+def _find_date(inner: str, before: str, today: date, after: str = "") -> str | None:
+    """日期可能在锚点内、锚点前、或锚点后 —— 三个站三种放法，都得认。
+
+    实测：www 在 <a> 内部；kyc 在 <a> **前**的 <span>；yjsc 在 </a> **后**的 <span>。
+    只看前两个会让 yjsc 的 publish_date 永远是 null。
+    """
+    return (_match_date(inner, today) or _match_date(before, today, nearest=True)
+            or _match_date(after, today))
 
 
 def parse_list(html: str, page_url: str, source: str, today: date) -> list[dict]:
@@ -141,12 +147,13 @@ def parse_list(html: str, page_url: str, source: str, today: date) -> list[dict]
             continue  # 纯图片链接
 
         url = urljoin(page_url, href)
+        after = html[close:close + 200] if close != -1 else ""
         out.append({
             "id": make_id(title, url),
             "title": title,
             "url": url,
             "source": source,
-            "publish_date": _find_date(inner, before, today),
+            "publish_date": _find_date(inner, before, today, after),
             "description": "",
             "deadline": None,
             "category": "",
@@ -213,7 +220,7 @@ def ai_score(items: list[dict], kw: dict) -> None:
 
     try:
         client = AIClient(timeout=90)
-    except SystemExit:
+    except (SystemExit, RuntimeError):
         log("未配置 AI_API_KEY，公告相关度退回关键词打分", level="WARN")
         for n in items:
             n["score"] = keyword_score(n["title"], kw)
@@ -244,7 +251,16 @@ def ai_score(items: list[dict], kw: dict) -> None:
             n["reason"] = safe_text(d.get("reason"), 60)
             n["tags"] = [safe_text(t, 12) for t in (d.get("tags") or [])][:3]
             dl = d.get("deadline")
-            n["deadline"] = dl if isinstance(dl, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", dl) else None
+            # 审计 §3.1：标题通道原来只校验格式，格式对就收 → 幻觉日期被
+            # merge_notices 的「旧值优先」永久固化。现在与正文通道共用同一道守卫。
+            # 标题里几乎不可能同时出现「截止」语义和日期字面量，所以这道门
+            # 实际上等于「标题通道不许写 deadline」，正是审计给的第二个选项。
+            if isinstance(dl, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", dl):
+                if deadline_supported(n["title"], dl):
+                    n["deadline"] = dl
+                    n["deadline_source"] = "title"
+                else:
+                    log(f"标题通道截止日 {dl} 无字面依据，丢弃：{n['title'][:40]}", level="WARN")
 
 
 # ---------------------------------------------------------------------------
@@ -286,7 +302,7 @@ def ai_detail(session: requests.Session, items: list[dict]) -> None:
 
     try:
         client = AIClient(timeout=90)
-    except SystemExit:
+    except (SystemExit, RuntimeError):
         return
     done = 0
     for n in items:
@@ -312,8 +328,10 @@ def ai_detail(session: requests.Session, items: list[dict]) -> None:
         if isinstance(dl, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", dl):
             if not deadline_supported(text, dl):
                 log(f"截止日 {dl} 在正文里没有报名截止依据，丢弃：{n['url']}", level="WARN")
-            elif not n.get("deadline"):
+            elif not n.get("deadline") or n.get("deadline_source") == "title":
+                # 正文有字面依据，比标题通道可靠，允许覆盖标题通道的结果
                 n["deadline"] = dl
+                n["deadline_source"] = "body"
         done += 1
     log(f"正文摘要补全：{done}/{len(items)} 条")
 

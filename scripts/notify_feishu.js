@@ -21,11 +21,34 @@
 
 const https = require('https');
 
+// =============================================================================
+// 二次脱敏（审计 §2.5）
+// Python 侧 utils.redact() 只洗它自己 log() 出去的东西。这里的 NOTIFY_OUTPUT 是
+// shell `tail -200` 抓的原始日志，里面可能混进 tee 之前的裸输出、node 报错、
+// 或者未来某个忘了走 log() 的 print。飞书卡片同样会被人看到，所以再洗一遍。
+// 规则必须与 scripts/utils.py 的 _REDACT_PATTERNS 保持一致，改一边就要改另一边。
+// =============================================================================
+const REDACT_PATTERNS = [
+    /(access_token=)[^&\s"']+/g,
+    /(Bearer\s+)[A-Za-z0-9._\-]+/g,
+    /(sk-)[A-Za-z0-9]{8,}/g,
+    /(ghp_)[A-Za-z0-9]{8,}/g,
+    /((?:password|passwd|pwd|api_key|apikey|token|secret)["']?\s*[:=]\s*["']?)[^\s&"',}]+/gi,
+    /((?:Cookie|Set-Cookie|JSESSIONID|_uid|UID|uf|_d|vc3|fid|unam|route)["']?\s*[:=]\s*["']?)[^\s&"',}]+/gi,
+    /(cookie["']?\s*[:=]\s*["']?)[^\n"']+/gi,
+];
+
+function redact(s) {
+    let t = String(s == null ? '' : s);
+    for (const re of REDACT_PATTERNS) t = t.replace(re, '$1***');
+    return t;
+}
+
 const webhook = process.env.FS_WEBHOOK;
 const title   = process.env.NOTIFY_TITLE  || '个人助手';
 const task    = process.env.NOTIFY_TASK   || '';
 const status  = process.env.NOTIFY_STATUS || '';
-const output  = process.env.NOTIFY_OUTPUT || '';
+const output  = redact(process.env.NOTIFY_OUTPUT || '');
 const repo    = process.env.GITHUB_REPOSITORY || '';
 const runId   = process.env.GITHUB_RUN_ID     || '';
 
@@ -39,6 +62,19 @@ if (!webhook) {
 // 正则匹配 scripts/*.py 里 log() 打出的行，改日志格式时同步改这里
 // =============================================================================
 const TASK_TEMPLATES = {
+    'tick': {
+        icon: '🔄',
+        name: '定时巡检',
+        metrics: [
+            { label: '课程数',    patterns: [/课程总数[：:]\s*(\d+)/, /扫描课程[：:]\s*(\d+)/] },
+            { label: '待完成',    patterns: [/待完成[：:]\s*(\d+)/] },
+            { label: '截止未知',  patterns: [/截止未知\s*(\d+)/] },
+            { label: '已逾期',    patterns: [/已逾期[：:]\s*(\d+)/] },
+            { label: '新增名言',  patterns: [/名言合并[：:]\s*新增\s*(\d+)/] },
+            { label: '新增计划',  patterns: [/计划合并[：:]\s*新增\s*(\d+)/] },
+            { label: '新增公告',  patterns: [/公告合并[：:]\s*新增\s*(\d+)/] },
+        ]
+    },
     'study': {
         icon: '📚',
         name: '学习通作业',
@@ -134,7 +170,7 @@ const timeStr = bjTime.toISOString().replace('T', ' ').substring(0, 19) + ' (UTC
 let payload;
 
 if (process.argv[2]) {
-    payload = { msg_type: 'text', content: { text: process.argv[2] } };
+    payload = { msg_type: 'text', content: { text: redact(process.argv[2]) } };
 } else {
     const subTasks = task.split(',').map(t => t.trim()).filter(Boolean);
     const elements = [];

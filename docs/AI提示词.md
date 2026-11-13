@@ -48,16 +48,23 @@
 
 | 环境变量 | 来源 | 默认 |
 |---|---|---|
-| `AI_API_KEY` | Secret | 无（缺失时 `env(required=True)` 直接 `sys.exit(1)`） |
+| `AI_API_KEY` | Secret | 无（缺失时抛 `MissingCredential`，**不是 `sys.exit`**，见下） |
 | `AI_BASE_URL` | Variable | workflow 里兜底 `https://api.chatanywhere.org/v1` |
 | `AI_MODEL` | Variable | workflow 里兜底 `deepseek-v3.2`（**点号**，写成 `deepseek-v3-2` 会每次 403） |
 
 `AIClient` 类内部的默认值（`api.openai.com/v1` + `gpt-4o-mini`）只在**本地不设环境变量**时生效，
 Actions 里永远被 workflow 的 env 覆盖。换中转站只改 Variable，不用改代码。
 
-`AI_API_KEY` 缺失时 `AIClient()` 抛 `SystemExit`，两个采集器都**显式捕获了 SystemExit**
-（不是 `Exception`，因为 `SystemExit` 不继承 `Exception`），退回关键词打分 / 跳过 AI 通道。
-所以没配 AI 也能跑，只是公告相关度粗糙、日记挖不出隐含计划。
+**`AI_API_KEY` 缺失时的行为（审计 §4.5 已修，2026-11-14）**：
+
+- 旧实现用 `env("AI_API_KEY", required=True)`，缺失时 `sys.exit(1)` → 抛 **`SystemExit`**。
+  而 `SystemExit` 继承 `BaseException`，**`except Exception` 捕不到** →
+  `daily_push` 写好的 `fallback_message()` 降级文案永远用不上，整个推送步骤直接死掉。
+- 现在改成 `env("AI_API_KEY")`（不 required）+ 显式 `raise MissingCredential("AI_API_KEY 未配置")`，
+  **`MissingCredential` 是 `RuntimeError` 的子类**，普通 `except Exception` 就能接住。
+- 两个采集器仍保留 `except SystemExit` 分支作为兜底（别删，其他地方可能还有 `env(required=True)`）。
+- **所以没配 AI 也能跑**：公告退回关键词打分、日记只做复选框解析、推送走降级文案。
+  只是相关度粗糙、挖不出隐含计划。
 
 ## 客户端的三个防线
 
@@ -75,7 +82,8 @@ Actions 里永远被 workflow 的 env 覆盖。换中转站只改 Variable，不
 
 ## 用户画像（USER_PROFILE）
 
-三套提示词共用同一段画像，改它就能整体调整取向。当前内容要点：
+**五套提示词**（公告评分 / 日记挖掘 / 名言点评 / 公告正文摘要 / 三时段推送）共用同一段画像，
+改它就能整体调整取向。当前内容要点：
 
 - HUUC 本科生，建筑环境与能源应用工程
 - 从课表专题（`计算思维与人工智能[Agent系统搭建]`、`强化学习-路径规划`、`智能数据分析与报告生成`）
@@ -104,7 +112,8 @@ Actions 里永远被 workflow 的 env 覆盖。换中转站只改 Variable，不
 **调用参数**：`temperature=0.1`（打分要稳定）、`max_tokens=2000`、每批 10 条、单次上限 30 条候选。
 
 **成本控制的关键**：只有 `id` 不在旧库里的**新公告**才送 AI。
-已评过的公告靠 `merge_notices` 沿用旧分数，所以每天三次的 notice 模式实际 token 消耗很低。
+已评过的公告靠 `merge_notices` 沿用旧分数，所以 notice 模式（**约每 6 小时一次**，
+由 `main.TICK_INTERVALS["notice"] = 360` 分钟决定，不是 cron）实际 token 消耗很低。
 候选还要先过关键词门（`block` 一票否决、`gate` 命中才入围），进一步砍掉无关项。
 
 **两个阈值别搞混**：README 展示 `score >= 3`，飞书「高相关」计数 `score >= 4`。
@@ -143,6 +152,40 @@ AI 只负责挖**没写成复选框的意图**：正文明说但没列待办的�
 
 点评要落到**具体动作**上，这条样例是合格线。
 
+## 名言点评回填（COMMENT_INSTRUCTIONS / comment_messages）
+
+**为什么单独有一套提示词**：日记挖掘里的 `comment` 是**顺带**产出的 —— 只有 sha 变化的文件才重跑 AI，
+老日记不再处理，于是**空 comment 永远空着**（审计 §3.3 实测：15 条名言只有 8 条有评论）。
+`backfill` 模式专门补这个洞，它需要一套**只点评、不挖掘**的提示词。
+
+| 项 | 值 |
+|---|---|
+| Schema | `COMMENT_SCHEMA = '{"comments": ["", ""]}'` |
+| 输入 | `序号. 「原句」（语境：context）` 逐行 |
+| 输出 | `{"comments": [...]}`，**数组长度必须等于输入条数** |
+| 人格 | 共用 `PERSONA`（傲娇雌小鬼），与推送同一份 |
+| 字数 | 每条 ≤40 字，落盘再 `safe_text(..., 120)` 截断 |
+
+**三条硬约束写在提示词里**：
+
+1. 必须针对这句话本身 —— 指出它体现了什么、哪里在自我欺骗、或下一步具体该做什么。
+   **不许空泛夸奖，不许复述原句。**
+2. **按输入序号一一对应**，没话说的给**空字符串**，不要跳过。
+   跳过会让数组长度对不上，回填时错位到别的名言上。
+3. 走 `PERSONA`，但**硬边界同样适用**（不许人格羞辱、不许越界）。
+
+**调用方**：`diary_collector.backfill_comments()`，由 `main.py` 的 `backfill` 模式触发。
+日志关键字（**selftest 锁死了它们，改文案要同步改 [AI运维手册](AI运维手册.md)**）：
+
+- `名言点评回填：补上 N 条，仍空 M 条（共 K 条）`
+- 第二次跑（全部已有评论）：`N 条全部已有评论，无需回填`
+
+**幂等**：只补 `comment` 为空的条目，已有评论的不动。所以可以反复跑，不会重复烧 token。
+**验收别只看「补上 N 条」**，要打开 README 的 `## 📔 我的名言` 区块
+（全量数据在 [data/diary/quotes.json](../data/diary/quotes.json)），
+确认点评真的落到了对应的那句话上 —— **序号错位是这套提示词最容易出的 bug**，
+而「补上 N 条」这个日志对错位是盲的。
+
 ## 人格（PERSONA）—— 只有一份，改这里就全改了
 
 `prompts.py` 的 `PERSONA` 常量被**名言点评**和**三时段推送**共用。
@@ -162,11 +205,16 @@ AI 只负责挖**没写成复选框的意图**：正文明说但没列待办的�
 输出**纯消息正文**，不要 JSON、不要代码块、不要「好的」开场。
 字数：早/中 ≤120 字，晚 ≤180 字。
 
-| kind | 北京时间 | 内容约束 |
+| kind | 目标时刻（北京时间） | 内容约束 |
 |---|---|---|
-| `morning` | 07:02 | 今天该做的事按紧急程度说清，**绝对不提课表、不提上课时间** |
-| `noon` | 12:02 | 先损一句再给一句具体鼓励，**不许编造上午发生了什么** |
-| `night` | 22:02 | 肯定做到的、点出没做的、给明天一个具体动作 |
+| `morning` | 07:00 | 今天该做的事按紧急程度说清，**绝对不提课表、不提上课时间** |
+| `noon` | 12:00 | 先损一句再给一句具体鼓励，**不许编造上午发生了什么** |
+| `night` | 22:00 | 肯定做到的、点出没做的、给明天一个具体动作 |
+
+**时刻不是 cron，是 `main.PUSH_HOURS` 常量**（v1.4.0 起）。全仓库只有一条 `*/20` cron，
+`do_tick()` 每轮问 `due_pushes()`：当前小时 ≥ 目标小时、且 `runtime.pushed[kind] != 今天` → 发。
+**错过后 `PUSH_CATCHUP_HOURS = 3` 小时内仍补发**，所以每个时段有 9 次机会（3 小时 ÷ 20 分钟）。
+按**日期**记账而不是按小时，保证一天最多一次，不会因为补发而重复轰炸。
 
 **三条铁律写在提示词里，也在代码里保证**：
 

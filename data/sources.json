@@ -30,6 +30,22 @@
       "weight": 1.0
     },
     {
+      "name": "科研处通知公告",
+      "url": "https://kyc.huuc.edu.cn/index/tzgg.htm",
+      "enabled": true,
+      "pages": 2,
+      "weight": 1.0,
+      "_备注": "创新创业学院站点已 404（见 docs/不足与风险.md §3.9），大创/挑战杯/互联网+/项目申报实际由科研处发布，这是最接近的替代源。实测 200、15 条锚点、日期在 <a> 前的 <span> 里"
+    },
+    {
+      "name": "研究生处学科建设",
+      "url": "https://yjsc.huuc.edu.cn/xkjs/tzgg.htm",
+      "enabled": true,
+      "pages": 1,
+      "weight": 0.7,
+      "_备注": "学术报告与学科建设通知。实测 200、15 条锚点、日期在 </a> 后的 <span> 里（notice_collector._find_date 的 after 窗口就是为它加的）"
+    },
+    {
       "name": "招生就业处",
       "url": "https://hncj.goworkla.cn/",
       "enabled": false,
@@ -58,9 +74,10 @@
     "max_chars_per_file": 6000,
     "daily_dir": "日",
     "max_writeback": 20,
-    "writeback_window": "00:00-05:00",
+    "writeback_window": "00:00-06:00",
     "_写回说明": "T 日挖到的潜在计划写进 T+1 日的 daily_dir/YYYY-MM-DD.md，只动 assistant:plans 区块；T+2 复查勾选，没勾的滚进当天日记",
-    "_writeback_window说明": "北京时间 HH:MM-HH:MM，含头不含尾，支持跨零点。只有落在这个窗口内的 diary 运行才会提交到日记仓库；窗口外只复查勾选、不写。改这里即可调整凌晨时段，格式写错会失败关闭（当天不写）"
+    "_writeback_window说明": "北京时间 HH:MM-HH:MM，含头不含尾，支持跨零点。只有落在这个窗口内的 diary 运行才会提交到日记仓库；窗口外只复查勾选、不写。改这里即可调整凌晨时段，格式写错会失败关闭（当天不写）。审计 §4.1：原为 00:00-05:00，实测 GitHub schedule 延迟可达 54 分钟，故放宽到 06:00。v1.4.0 起不再有专用凌晨 cron：全仓库只有一条 */20 cron，窗口内每 20 分钟一次 tick = 18 次机会，当天还没写回就强制加跑 diary。硬下界：窗口宽度必须 >= cron 间隔，否则窗口里可能一次都不触发",
+    "_私人路径说明": "私人日记目录不采集也不公开。黑名单**只放 GitHub Secret DIARY_EXCLUDE**（逗号分隔的路径前缀），仓库里只出现这个名字 —— 路径名本身就暴露了用户把哪些主题标成私人。见 scripts/diary_collector.excluded_prefixes()"
   },
   "study": {
     "passport": "https://passport2.huuc.edu.cn",
@@ -70,7 +87,12 @@
     "fid": "12",
     "refer": "https://dzi.huuc.edu.cn/space/index?ws=2",
     "max_courses": 40,
+    "expected_courses": 14,
+    "_expected_courses说明": "审计 §3.6：用户明确说一共 14 门课。实际抓到偏离这个数就告警（不是硬失败，选课会变）。改这里即可",
     "fetch_detail": true,
-    "max_detail": 8
+    "max_detail": 24,
+    "_max_detail说明": "审计 §3.5 + 用户报的截止时间 bug：待完成且无截止时间的任务**全部**优先取详情页，剩余额度才给已有截止时间的。14 门课实测 38 条任务、5 条 pending，24 足够覆盖",
+    "public_links": "course",
+    "_public_links说明": "审计 §2.5 / §7.2：公开产物（README / docs）里的作业链接保留到哪一级。course=只留课程级参数（去掉 cpi/enc/clazzid 等可定位到个人的值），full=保留完整深链。完整深链只在飞书推送里给（飞书是私聊，不公开）"
   }
 }

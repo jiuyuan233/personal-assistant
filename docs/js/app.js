@@ -6,9 +6,10 @@ const KIND = { work: '作业', eval: '互评', exam: '考试' };
 const STATE = { pending: '待完成', submitted: '已提交', done: '已完成', unknown: '未知' };
 const BUCKETS = [
   ['overdue', '🔴 已逾期'],
+  ['unknown', '🔴 截止未知（可能早已逾期，点进去自己确认）'],
   ['today', '🟠 今天截止'],
   ['week', '🟡 7 天内'],
-  ['later', '⚪ 更远 / 无截止时间'],
+  ['later', '⚪ 更远'],
 ];
 
 const $ = (id) => document.getElementById(id);
@@ -42,7 +43,8 @@ function fmtWhen(iso, exact) {
 }
 
 function bucketOf(t, now) {
-  if (!t.deadline) return 'later';
+  // 没有截止时间不是「还很宽裕」，是「不知道」。Python 侧同样单独分一档。
+  if (!t.deadline) return 'unknown';
   const d = new Date(t.deadline);
   if (d < now) return 'overdue';
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -69,13 +71,14 @@ function renderTasks(data) {
   const items = (data && data.items) || [];
   const now = new Date();
   const pending = items.filter((t) => t.state === 'pending');
-  const groups = { overdue: [], today: [], week: [], later: [] };
+  const groups = { overdue: [], unknown: [], today: [], week: [], later: [] };
   pending.forEach((t) => groups[bucketOf(t, now)].push(t));
   const byDeadline = (a, b) => (a.deadline ? new Date(a.deadline) : Infinity) - (b.deadline ? new Date(b.deadline) : Infinity);
   Object.values(groups).forEach((g) => g.sort(byDeadline));
 
   $('stats').innerHTML = [
     ['red', `逾期 ${groups.overdue.length}`],
+    ['red', `截止未知 ${groups.unknown.length}`],
     ['orange', `今天 ${groups.today.length}`],
     ['yellow', `7天内 ${groups.week.length}`],
     ['', `待完成 ${pending.length}`],
@@ -101,9 +104,10 @@ function renderNotices(data) {
 function renderPlans(data) {
   const items = ((data && data.items) || []).filter((p) => p.state === 'open').slice(0, 20);
   if (!items.length) { $('plans').innerHTML = '<p class="empty">暂无未完成计划。</p>'; return; }
-  $('plans').innerHTML = `<table><thead><tr><th>计划</th><th>置信度</th><th>截止</th><th>来源</th></tr></thead><tbody>${
+  // 只显示日期，不显示 source_file：那是私有日记仓库的目录结构（审计 §2.2）
+  $('plans').innerHTML = `<table><thead><tr><th>计划</th><th>置信度</th><th>截止</th><th>记录于</th></tr></thead><tbody>${
     items.map((p) => `<tr><td>${esc(p.text)}</td><td>${esc((p.confidence || 0).toFixed(1))}</td>
-      <td class="when">${esc(p.due_date || '—')}</td><td>${esc(p.source_date || p.source_file)}</td></tr>`).join('')
+      <td class="when">${esc(p.due_date || '—')}</td><td class="when">${esc(p.source_date || '—')}</td></tr>`).join('')
   }</tbody></table>`;
 }
 

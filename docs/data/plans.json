@@ -1,6 +1,6 @@
 {
   "updated_at": "2026-11-13T16:35:52+08:00",
-  "count": 40,
+  "count": 63,
   "repo": "jiuyuan233/obsidion-gitee",
   "items": [
     {
@@ -13,7 +13,6 @@
         "学习",
         "复盘"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-11.md",
       "source_date": "2026-10-11",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -29,8 +28,306 @@
         "实践",
         "生活"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-17.md",
       "source_date": "2026-10-17",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "c-3-9-6690d2b149",
+      "due_date": null,
+      "confidence": 0.9,
+      "state": "open",
+      "tags": [
+        "签证",
+        "旅行"
+      ],
+      "source_date": "",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-bf414bc719",
+      "due_date": null,
+      "confidence": 0.7,
+      "state": "open",
+      "tags": [
+        "签证",
+        "材料"
+      ],
+      "source_date": "",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-a88d9643e7",
+      "due_date": null,
+      "confidence": 0.6,
+      "state": "open",
+      "tags": [
+        "签证",
+        "旅行"
+      ],
+      "source_date": "",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-cea32cdf4b",
+      "due_date": null,
+      "confidence": 0.5,
+      "state": "open",
+      "tags": [
+        "签证",
+        "旅行"
+      ],
+      "source_date": "",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-a9e2331434",
+      "due_date": null,
+      "confidence": 0.4,
+      "state": "open",
+      "tags": [
+        "签证",
+        "旅行"
+      ],
+      "source_date": "",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-1bbfb8c909",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-9a55814a11",
+      "text": "日本出行",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-df14520ef2",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-e4adaa9e89",
+      "text": "韩国出行",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-046053552e",
+      "text": "新加坡出行",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-35e5974ac1",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-e666d22868",
+      "text": "新西兰出行",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "2-f0dab69ad9",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-61150082a6",
+      "text": "英国出行",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-e24f147d3b",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-8c83b451ba",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-a74fd29e22",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-723982a9d7",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-6d4de74af8",
+      "text": "美国出行",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-2be5c04296",
+      "due_date": null,
+      "confidence": 0.9,
+      "state": "open",
+      "tags": [
+        "签证",
+        "旅行"
+      ],
+      "source_date": "",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-072eac4776",
+      "due_date": null,
+      "confidence": 0.7,
+      "state": "open",
+      "tags": [
+        "签证"
+      ],
+      "source_date": "",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-9a78062cb7",
+      "due_date": null,
+      "confidence": 0.8,
+      "state": "open",
+      "tags": [
+        "签证",
+        "旅行"
+      ],
+      "source_date": "",
       "origin": "ai",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13"
@@ -45,7 +342,6 @@
         "习惯",
         "复盘"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/AAAREADME.md",
       "source_date": "",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -61,7 +357,6 @@
         "习惯",
         "生活"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/AAAREADME.md",
       "source_date": "",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -76,7 +371,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/年/26年.md",
       "source_date": "",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -91,7 +385,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/年/26年.md",
       "source_date": "",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -106,7 +399,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/年/26年.md",
       "source_date": "",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -121,7 +413,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/年/26年.md",
       "source_date": "",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -136,7 +427,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/年/26年.md",
       "source_date": "",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -151,7 +441,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/年/26年.md",
       "source_date": "",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -166,7 +455,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/年/26年.md",
       "source_date": "",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -181,7 +469,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/年/26年.md",
       "source_date": "",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -197,7 +484,6 @@
         "健康",
         "生活"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-11-12.md",
       "source_date": "2026-11-12",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -212,7 +498,6 @@
       "tags": [
         "自我探索"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-11-06.md",
       "source_date": "2026-11-06",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -227,7 +512,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-15.md",
       "source_date": "2026-10-15",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -242,7 +526,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-15.md",
       "source_date": "2026-10-15",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -258,7 +541,6 @@
         "学习",
         "数学"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-15.md",
       "source_date": "2026-10-15",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -273,7 +555,6 @@
       "tags": [
         "健康"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-14.md",
       "source_date": "2026-10-14",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -289,7 +570,6 @@
         "习惯",
         "规划"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-13.md",
       "source_date": "2026-10-13",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -304,7 +584,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-11.md",
       "source_date": "2026-10-11",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -319,7 +598,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-09.md",
       "source_date": "2026-10-09",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -334,7 +612,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-09.md",
       "source_date": "2026-10-09",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -350,7 +627,6 @@
         "生活",
         "心态"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-09.md",
       "source_date": "2026-10-09",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -365,7 +641,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-04.md",
       "source_date": "2026-10-04",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -380,7 +655,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-01.md",
       "source_date": "2026-10-01",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -396,7 +670,6 @@
         "学习",
         "高数"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-09-28.md",
       "source_date": "2026-09-28",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -412,7 +685,6 @@
         "学习",
         "技能"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-09-28.md",
       "source_date": "2026-09-28",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -427,7 +699,6 @@
       "tags": [
         "生活"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-09-28.md",
       "source_date": "2026-09-28",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -443,7 +714,6 @@
         "竞赛",
         "金融"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/11月.md",
       "source_date": "",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -459,7 +729,6 @@
         "技能",
         "软件"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/11月.md",
       "source_date": "",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -474,7 +743,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
       "source_date": "",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -489,7 +757,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
       "source_date": "",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -504,7 +771,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
       "source_date": "",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -519,7 +785,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
       "source_date": "",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -534,7 +799,19 @@
       "tags": [
         "竞赛"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
+      "source_date": "",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-f67418e7af",
+      "due_date": null,
+      "confidence": 0.4,
+      "state": "open",
+      "tags": [
+        "自我规划"
+      ],
       "source_date": "",
       "origin": "ai",
       "first_seen": "2026-11-13",
@@ -549,7 +826,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-10.md",
       "source_date": "2026-10-10",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -564,7 +840,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-02.md",
       "source_date": "2026-10-02",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -579,7 +854,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-02.md",
       "source_date": "2026-10-02",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -594,7 +868,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-01.md",
       "source_date": "2026-10-01",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
@@ -609,7 +882,6 @@
       "tags": [
         "待办"
       ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-01.md",
       "source_date": "2026-10-01",
       "origin": "checkbox",
       "first_seen": "2026-11-13",

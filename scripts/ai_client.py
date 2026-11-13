@@ -42,6 +42,14 @@ class RateLimiter:
         self._timestamps.append(time.time())
 
 
+class MissingCredential(RuntimeError):
+    """凭据缺失。**必须是普通异常，不能是 SystemExit**（审计 §4.5）。
+
+    utils.env(required=True) 会 sys.exit(1)，而调用方的兜底是 except Exception，
+    捕不到 SystemExit → 写好的降级文案永远用不上，整个推送步骤直接死掉。
+    """
+
+
 class AIClient:
     def __init__(
         self,
@@ -51,7 +59,9 @@ class AIClient:
         timeout: int = 60,
     ) -> None:
         self.base_url = (base_url or env("AI_BASE_URL", "https://api.openai.com/v1")).rstrip("/")
-        self.api_key = api_key or env("AI_API_KEY", required=True)
+        self.api_key = api_key or env("AI_API_KEY")
+        if not self.api_key:
+            raise MissingCredential("AI_API_KEY 未配置")
         self.model = model or env("AI_MODEL", "gpt-4o-mini")
         self.timeout = timeout
         self.session = requests.Session()

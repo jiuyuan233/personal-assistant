@@ -2,6 +2,151 @@
 
 本项目的所有版本记录。日期为北京时间。
 
+## v1.4.0 — 2026-11-14
+
+**用户报了一个核心 bug，并下令把审计文档里的 31 条不足全部修掉，然后做好交接。**
+
+> 用户原话：「关于我的任务清单，明明有截止时间，但是你找不到，然后就把已经截止的任务给我显示到了我的 readme 里」
+> 「1.x 全部修复 2.4 修复，2.5、2.6 修复 3.x 全部修复 4.x 修复 5.x 修复 7.x 全部修复」
+> 「这是我最后一次回答你了 …… 你先把这个项目做的完美 …… 教会如何让 action 里的 AI 更新这个仓库」
+
+### 1. 核心 bug：截止时间为 null 的任务被当成「还很宽裕」
+
+**根因（实测，不是猜的）**：38 条任务里 **33 条 `deadline = null`**。
+学习通列表页对**已逾期的作业行根本不渲染 `time` div**，所以 `parse_remaining()` 拿不到倒计时；
+而 `drop_reason()` 对无法解析的截止时间返回 `None` → **这些任务从来没被判过逾期**，
+被渲染进「更远」那一档。用户看到的就是「明明截止了却还在清单里」。
+
+**修法**：
+
+- 新增 `detail_time_window()`，解析详情页的**绝对时间窗**（实测形状见下）。
+- **凡是 pending 且 deadline 未知的任务，一律抓详情页**，不再受 `detail_budget` 的遍历序限制。
+- 新增**第五档 `unknown`**：抓不到截止时间的任务单独成档，README 出 **🔴 告警**
+  「有 N 项待完成抓不到截止时间 …… 这些任务可能早已逾期，请点进任务自己确认」。
+  前端 `app.js` 的 `bucketOf()` 同步返回 `'unknown'`，**两边口径必须一致**。
+- **绝不把 unknown 并进 later**。「不知道」不是「还很宽裕」，这是本次 bug 的本质。
+
+**详情页实测形状（2026-11-13 抓的真实 HTML）**：
+
+| 类型 | HTML | 备注 |
+| --- | --- | --- |
+| 作业 | `<p>作答时间:<em>MM-DD HH:MM</em>至<em>MM-DD HH:MM</em></p>` | **没有年份** |
+| 互评 | `<p class="hpInfo">互评时间：MM-DD HH:MM 至 MM-DD HH:MM</p>` | **没有年份** |
+
+没有年份 → 按**最近年推断** + 180 天回滚 + 跨年结束时间 bump。
+**残留风险**：12 月底布置、1 月初截止的作业，边界样本未实测（已记进审计 §9.3）。
+
+### 2. 调度架构重写：8 条 cron → 1 条 cron + Python 内部调度
+
+**为什么改**：v1.3.3 实测证明 GitHub 对同一 workflow 的多条 schedule 有节流，
+71 次运行里只有 2 次是 schedule，之后 1 小时 33 分零触发。
+**问题在「触发」这一步，不在触发之后** —— 那 2 次成功的 run 整条链路都对。
+平台行为改不掉，所以**降低对触发准点性的依赖**。
+
+| | 旧 | 新 |
+| --- | --- | --- |
+| cron | 8 条，各自映射一个模式 | **1 条 `*/20 * * * *`**，模式恒为 `tick` |
+| 谁决定跑什么 | `github.event.schedule` 字符串匹配 | `main.do_tick()` 读 `data/runtime.json` |
+| 丢一个槽位 | 那个模式整轮不跑 | 只是晚 20 分钟，下一轮补上 |
+| 凌晨写回 | 3 次专用 cron | 窗口 00:00–06:00 × 20 分钟 = **18 次**，窗口内没写回就强制加跑 diary |
+| 三时段推送 | 3 条专用 cron | 按**日期**记账，错过后 3 小时内补发 = **9 次机会** |
+| 并发组 | push / collect 两组 | **单组 `pa-run`**，排队不取消，`timeout-minutes: 25` |
+
+`TICK_INTERVALS = {"study": 60, "diary": 120, "notice": 360}` 分钟，`TICK_SLACK_MIN = 5`。
+**`last_ok` 和 `last_try` 都参与判定** → 采集失败也按正常间隔重试，不会每 20 分钟烧一次登录链。
+
+**硬下界**：`writeback_window` 宽度必须 ≥ cron 间隔，否则窗口里可能一次都不触发。已写进 AGENT.md。
+
+### 3. 审计 31 条的修复（逐条状态见 [不足与风险 §0.5](docs/不足与风险.md)）
+
+**§1 高危静默错误（5 条全修）**
+
+- §1.1 `is_tip_page()` 认登录页（`passport` / `fanyalogin`）；`ok` 改三态 `ok/partial/failed`；
+  一门课解析出 0 行时与上次 `task_count` 比对，**从有到无判可疑而不是正常**。
+- §1.2 `ok_courses == 0` **直接 return 不落盘**；`merge_tasks` 增「新列表为空且旧列表非空 → 拒绝合并」守卫。
+- §1.3 `NOTIFY_STATUS` 改 **`${{ job.status }}`**（`git push` 在另一个步骤，`execute.outcome` 永远 success）。
+- §1.4 AI 抽取失败**不推进 sha**；常见问题 C3 的错误措辞已改对。
+- §1.5 `pick_plans()` 改「`state == open` 且 `written_once` 未置位」，不再靠 `first_seen == yesterday`。
+
+**§2 隐私（2.1 / 2.4 / 2.5 / 2.6 修，2.2 走 Secret，2.3 纠正量纲）**
+
+- §2.1 `utils.scrub_task_title()` + `_TEACHER_PREFIX` 清洗教师真实姓名（**泄露的是别人，优先修**）。
+- §2.5 `public_url()` 改**白名单** `_PUBLIC_KEEP = {courseid, classid, clazzid, workid, ut, ismooc2}`，
+  丢掉 `cpi` / `enc` / `stuenc` / `answerId`。**白名单的失效方式是「链接点不开」，可发现；
+  黑名单的失效方式是「静默泄露」，不可发现。**
+- §2.6 `_REDACT_PATTERNS` 补 Cookie / JSESSIONID / `_uid` / UID / uf / `_d` / vc3 / fid / unam / route；
+  `notify_feishu.js` 加**第二道脱敏闸**；`exc_brief()` 只发异常类型与最后一行，不发完整栈。
+- §2.3 **审计原文写错了量纲**：confidence 是 **0.0–1.0**，1.0 最高。
+  原文建议的「门槛 >= 2」会**把所有计划全部丢掉**，包括用户亲手写的复选框。
+  实际门槛 `PLAN_MIN_CONFIDENCE = 0.4`，复选框计划不受影响。
+
+**§3 数据质量（9 条全修）**：标题通道也过 `deadline_supported()` · 写回时 `origin` 改 `checkbox`
+且 checkbox 分支排在 done 短路**之前** · 新增 `backfill` 模式补名言点评 · `archive_plans()` +
+`plans_archive.json` + README 显示「另有 N 条」 · 详情页预算先按紧急度排序 · `expected_courses: 14` 守卫 ·
+失败分支读旧 meta 再合并保留 `last_success` + 数据年龄告警 · 补科研处/研究生处公告源
+（**实测 `cxcyxy.huuc.edu.cn` 返回 404，创新创业学院子域不存在**）。
+
+**§4 工程运维（6 条）**：见上面第 2 节 · `save_list()` 内容相同则保留旧 `updated_at`（不再每 20 分钟产生纯时间戳提交）·
+质量门禁 `ruff --select E9,F63,F7,F82,F821,F401` + `selftest` **挂在执行之前** ·
+probe 增 `parse_smoke()` 测解析正确性而不只是连通性 ·
+`MissingCredential(RuntimeError)` 替代 `sys.exit`（`SystemExit` 继承 `BaseException`，`except Exception` 捕不到）。
+**§4.6 真实 Gitee 写回仍未验证**，这是唯一没有运行证据的核心功能。
+
+**§5 显示与文档（5 条全修）**：SVG 红线改**浅色虚线参考线 `#CED4DA`**，红色实时线只由网页 JS 画 ·
+五处文档与代码不符全部改写 · 课表剥时钟前缀 + 周次去掉嵌套加粗 · 反推截止时间改用当次请求时刻 `req_now` ·
+`sort_by_deadline()` 改 `astimezone(BJ_TZ)` 而不是剥时区。
+
+**§7 四项决策全部落地**（用户说「最后一次回答」，不能再问，按「代价最小、可逆、不泄露」自行决定并记录理由）：
+7.1 force push 抹历史**已获授权、待执行** · 7.2 深链**白名单** · 7.3 私人计划**走 Secret `DIARY_EXCLUDE`** ·
+7.4 Pages **决定开**（但必须先做 7.1，否则历史学号会通过构建缓存再暴露一次）。
+
+### 4. 交接材料：新增 [docs/AI运维手册.md](docs/AI运维手册.md)
+
+用户要求「教会如何让 action 里的 AI 更新这个仓库 …… 写的尽可能详细，要保证人也能看懂」。
+十节：阅读顺序 → 30 秒理解 → 环境准备（含 Windows 三个坑）→ 改动流程五步 →
+**十四个模式速查表** → **逐功能验收清单 5.1–5.8** → cookbook 6.1–6.7 →
+绝对不能碰的东西 → 踩坑速查表（~25 行）→ 交接状态快照 → 每次收工前的自检。
+
+**核心设计：日志就是接口。** 手册把「日志里搜什么关键字」当成验收证据，
+所以 selftest 新增第三道守卫，**锁死手册承诺的 22 个日志关键字** ——
+日志文案一改，手册就变成假指令，下一个 AI 会搜不到然后以为功能坏了。
+
+### 5. 本地验证能力解锁（本轮最大的杠杆）
+
+这台 Windows 机器**没有系统 Python**，pip 连不上 PyPI（`from versions: none`，但 curl 到 pypi.org 返回 200）。
+解法：Node 拉 `pypi.org/pypi/{pkg}/json` 选 wheel → `curl -C -` 断点续传 → `pip install --no-index --find-links`。
+
+**三个坑（都写进手册 §2.2 了）**：
+
+1. **embeddable Python 的 `python311._pth` 让它进入 isolated mode**：不加脚本目录进 `sys.path`，
+   **也忽略 `PYTHONPATH`** → `ModuleNotFoundError: No module named 'utils'`。解法是 `runpy` 包装器。
+2. **Windows 控制台 GBK**：日志里的 ✅ 让 `print` 抛 `UnicodeEncodeError`，整个模式崩在第一条日志上。
+   临时解法 `-X utf8`，**永久解法已写进 `utils.py`**（`sys.stdout/stderr.reconfigure`）。
+3. **Python 3.11 的 f-string 里不能有反斜杠。**
+
+**实测结果**：`ruff All checks passed` · **selftest 165 条断言 0 失败** · `finalize` 成功
+（课表 186 条上课记录 / 24 个课程条目 / 当前第 10 周 / 本周课时 17；
+任务清单 **4 条可做 / 14 门课（今天 0 / 7 天内 3 / 更远 0 / 截止未知 1）**；已剔除 逾期 1 / 非待完成 33）。
+
+### 6. 本轮我自己犯的四个错（记下来，下一个 AI 会犯同样的）
+
+1. **把审计结论当事实照抄** —— §2.3 的「>= 2」照着实现会把功能全关掉。**审计文档也是文档，也要复核。**
+2. **在修复文档里写了不存在的函数名** —— 审计 §5.2 最初写成 `bucket_of()`，
+   实际分桶在 `render_tasks()` 的 `counts` 里。**这正是 §5.2 警告的「错误会繁殖」，我自己又犯了一次。**
+3. **selftest 自己写出 `NameError`** —— 新断言用了 `merge_plans` 却忘了 import。ruff F821 就是为这类事故装的。
+4. **文档守卫误伤历史记录** —— 最初把 CHANGELOG 和审计文档也扫进「过时措辞」检查，
+   但它们引用旧函数名是在**举证当时错在哪**。已排除；`pa-push` 这类设计名词也不禁，
+   因为「原来用 X，因为 Y 改成了 Z」是有价值的决策记录。
+
+### 7. 仍未完成（**不要当成已完成**）
+
+- **git 历史里的学号与私人计划全文**（§7.1，已授权待执行，需先在仓库外做 bundle 备份）
+- **`DIARY_EXCLUDE` Secret 尚未创建** → 黑名单现在是空的、不生效
+- **真实 Gitee 写回未验证**（§4.6）
+- **Pages 未开，网页版看板从未在浏览器里跑过**（§7.4 / §5.1）
+- **新调度架构未观测满 24 小时**（§4.1）
+- **exam 深链能否打开未实测**（§3.7）
+
 ## v1.3.3 — 2026-11-13
 
 **第二次纠正 §4.1：v1.3.2 的「定时链路已跑通」同样下得太早。**

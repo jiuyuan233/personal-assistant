@@ -31,7 +31,8 @@ import requests
 from dedup import load_list, merge_tasks, save_list, sort_by_deadline
 from utils import (DATA_DIR, clean_html_text, env, fmt_remaining, load_json, log,
                    make_id, now_bj, parse_datetime, parse_remaining, safe_text,
-                   save_json, scrub_course_name)
+                   save_json, scrub_course_name, scrub_task_title,
+                   strip_personal_fields)
 
 STUDY_DIR = DATA_DIR / "study"
 TASKS_PATH = STUDY_DIR / "tasks.json"
@@ -63,13 +64,16 @@ TITLE_RE = re.compile(r'<p class="overHidden2[^"]*">\s*([^<]*?)\s*</p>', re.I)
 TIME_RE = re.compile(r'<div class="time\s+(\w+)"[^>]*>(.*?)</div>', re.I | re.S)
 EXAM_ONCLICK_RE = re.compile("onclick=\"(\\w+)\\('(\\d+)','(\\d+)'\\)\"")
 DETAIL_DT_RE = re.compile(
-    r"(?:截止时间|结束时间|截止|结束)[^0-9]{0,40}(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日]?\s*\d{1,2}:\d{2})")
-# 实测（2026-11-13）：work/task 详情页只有空标签「作答时间:」，值由 JS 填，HTML 里取不到发布时间。
-# 所以作业的「开始时间」只能退回 first_seen（本助手首次发现时间），不是真实发布时间。
+    r"(?:截止时间|结束时间|作答时间|截止|结束)[^0-9]{0,40}(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日]?\s*\d{1,2}:\d{2})")
+# 实测（2026-11-13 studydiag，run 43448758305）：作业详情页给的是
+#   <p>作答时间:<em>11-05 23:59</em>至<em>11-10 23:59</em></p>
+# 月-日 时:分、**不带年份**、值包在 <em> 里。列表页对已逾期的作业不给倒计时，
+# 所以真实截止时间只有这里能拿到。漏了它 → deadline=null → 被当成「无限远」→
+# 已逾期的作业照样显示进 README（用户报的 bug）。
 DETAIL_START_RE = re.compile(
     r"(?:开始时间|发布时间|布置时间|起始时间|开始)[^0-9]{0,40}(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日]?(?:\s*\d{1,2}:\d{2})?)")
-# 互评详情页给的是真实窗口，形如「互评时间：11-06 07:01 至 11-10 23:01」，不带年份
-EVAL_WINDOW_RE = re.compile(r"互评时间[：:]\s*([^<]{4,80})")
+# 互评页：「互评时间：11-06 07:01 至 11-10 23:01」；作业页：「作答时间:…至…」
+WINDOW_LABELS = ("互评时间", "作答时间", "开始时间", "截止时间")
 MD_HM_RE = re.compile(r"(?:(\d{4})[-/年])?(\d{1,2})[-/月](\d{1,2})日?\s*(\d{1,2}):(\d{2})")
 
 
@@ -214,10 +218,20 @@ class Chaoxing:
                                      "stuenc": tokens["enc"], "enc": tokens["examEnc"]})
 
 
+# 会话中途失效时超星返回的是 **HTTP 200 的登录页**，不是「提示」页。
+# 只认那三个字符串会把登录页当正常页面解析 → rows=[] → README 显示「无作业」+「✅ 正常」。
+# 这是审计 §1.1 的「假成功」，比崩溃更危险：用户以为真没作业，从而错过截止。
+LOGIN_MARKERS = ("fanyalogin", 'name="uname"', 'id="loginName"', "<title>登录</title>")
+
+
 def is_tip_page(html: str | None) -> bool:
+    """页面不可用（提示页 / 权限页 / 登录页）都算 True。"""
     if not html:
         return True
-    return "<title>提示</title>" in html or "参数传递不正确" in html or "无权限的操作" in html
+    if "<title>提示</title>" in html or "参数传递不正确" in html or "无权限的操作" in html:
+        return True
+    head = html[:6000]
+    return any(k in head for k in LOGIN_MARKERS)
 
 
 # ---------------------------------------------------------------------------
@@ -266,6 +280,7 @@ def parse_work_rows(html: str, course: dict, now: datetime) -> list[dict]:
             status = clean_html_text(sm.group(1)) if sm else ""
         if not title:
             continue
+        title = scrub_task_title(title)
         lm = LABEL_RE.search(chunk)
         deadline, exact, rem_text, over = _row_deadline(chunk, now)
         label = clean_html_text(lm.group(1)) if lm else ""
@@ -294,7 +309,8 @@ def parse_work_rows(html: str, course: dict, now: datetime) -> list[dict]:
     return out
 
 
-def parse_exam_rows(html: str, course: dict, now: datetime) -> list[dict]:
+def parse_exam_rows(html: str, course: dict, now: datetime,
+                    tokens: dict | None = None) -> list[dict]:
     out = []
     # 考试行是 <li> 里嵌 onclick="viewExamAnswer('id','rel')" / enterExam(...)
     for m in re.finditer(r"<li>(.*?)</li>", html, re.S):
@@ -306,10 +322,19 @@ def parse_exam_rows(html: str, course: dict, now: datetime) -> list[dict]:
         title = clean_html_text(tm.group(1))
         if not title:
             continue
+        title = scrub_task_title(title)
         sm = STATUS_RE.search(chunk)
         status = clean_html_text(sm.group(1)) if sm else ""
         exam_id, relation_id = om.group(2), om.group(3)
         deadline, exact, rem_text, _over = _row_deadline(chunk, now)
+        # §3.7 原来这个 URL 没带 stuenc/enc，按四步链的实测结论必然「参数传递不正确」。
+        # 补上现铸 token，至少课程级考试列表能打开。单场考试的深链需要 viewExamAnswer
+        # 的 JS 实现，未实测前不猜（见 diagnose 的 JS dump）。
+        url = (f"https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list"
+               f"?courseid={course['course_id']}&clazzid={course['class_id']}"
+               f"&cpi={course['cpi']}&ut=s")
+        if tokens:
+            url += f"&stuenc={tokens.get('enc', '')}&enc={tokens.get('examEnc', '')}"
         out.append({
             "id": make_id(course["course_id"], course["class_id"], "exam", exam_id, relation_id),
             "kind": "exam",
@@ -326,9 +351,7 @@ def parse_exam_rows(html: str, course: dict, now: datetime) -> list[dict]:
             "deadline": deadline,
             "deadline_exact": exact,
             "remaining_text": rem_text,
-            "url": (f"https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list"
-                    f"?courseid={course['course_id']}&clazzid={course['class_id']}"
-                    f"&cpi={course['cpi']}&ut=s"),
+            "url": url,
         })
     return out
 
@@ -359,12 +382,16 @@ def detail_time_hints(html: str, limit: int = 5) -> list[str]:
     return out
 
 
-def detail_eval_window(html: str, now: datetime) -> tuple[datetime | None, datetime | None]:
-    """互评页的真实时间窗 → (开始, 截止)。窗口一结束就不能再互评，所以结束时间即截止时间。"""
-    m = EVAL_WINDOW_RE.search(html)
+def detail_time_window(html: str, now: datetime, label: str) -> tuple[datetime | None, datetime | None]:
+    """详情页里「<label>：起 至 止」形式的真实时间窗 → (开始, 截止)。
+
+    实测两种标签都给这个形状：互评时间（互评页）、作答时间（作业页）。
+    值可能包在 <em> 里，所以先剥标签再解析。页面不给年份，按当前年推断。
+    """
+    m = re.search(re.escape(label) + r"\s*[：:]\s*(.{0,140})", html or "", re.S)
     if not m:
         return None, None
-    parts = MD_HM_RE.findall(m.group(1))
+    parts = MD_HM_RE.findall(clean_html_text(m.group(1)))
     if len(parts) < 2:
         return None, None
 
@@ -380,53 +407,95 @@ def detail_eval_window(html: str, now: datetime) -> tuple[datetime | None, datet
             dt = dt.replace(year=year - 1)
         return dt
 
-    return build(parts[0]), build(parts[1])
+    start, end = build(parts[0]), build(parts[1])
+    # 跨年窗口（12-28 至 01-05）：止早于起说明止其实是下一年
+    if start and end and end < start and not parts[1][0]:
+        end = end.replace(year=end.year + 1)
+    return start, end
+
+
+def detail_eval_window(html: str, now: datetime) -> tuple[datetime | None, datetime | None]:
+    """互评窗口。窗口一结束就不能再互评，所以结束时间即截止时间。"""
+    return detail_time_window(html, now, "互评时间")
+
+
+def detail_work_window(html: str, now: datetime) -> tuple[datetime | None, datetime | None]:
+    """作业「作答时间」窗口。这是逾期作业唯一的真实截止时间来源。"""
+    return detail_time_window(html, now, "作答时间")
 
 
 # ---------------------------------------------------------------------------
 # 主流程
 # ---------------------------------------------------------------------------
+def _save_meta(now: datetime, **kw) -> dict:
+    """写 meta.json，**保留上一次的 last_success**。
+
+    审计 §3.8：原来三个失败分支都用全新 dict 覆盖，把 last_success 抹掉了，
+    事后无法判断数据有多旧。失败时只更新 last_attempt 与失败原因。
+    """
+    old = load_json(META_PATH) or {}
+    meta = {"last_attempt": now.isoformat(timespec="seconds"),
+            "last_success": old.get("last_success"), **kw}
+    save_json(META_PATH, meta)
+    return meta
+
+
 def run() -> dict:
     cfg = (load_json(DATA_DIR / "sources.json") or {}).get("study") or {}
     username, password = env("CX_USERNAME"), env("CX_PASSWORD")
     if not username or not password:
         log("未配置 CX_USERNAME / CX_PASSWORD，跳过学习通采集", level="WARN")
-        save_json(META_PATH, {"last_attempt": now_bj().isoformat(timespec="seconds"),
-                              "ok": False, "reason": "no_credentials"})
+        _save_meta(now_bj(), ok=False, status="failed", reason="no_credentials")
         return {"ok": False, "skipped": "no_credentials"}
 
     now = now_bj()
     cx = Chaoxing(cfg, username, password)
     if not cx.login():
-        save_json(META_PATH, {"last_attempt": now.isoformat(timespec="seconds"),
-                              "ok": False, "reason": "login_failed"})
+        _save_meta(now, ok=False, status="failed", reason="login_failed")
         return {"ok": False, "reason": "login_failed"}
 
     courses = cx.list_courses()[:int(cfg.get("max_courses") or 40)]
     log(f"课程总数：{len(courses)}")
     if not courses:
-        save_json(META_PATH, {"last_attempt": now.isoformat(timespec="seconds"),
-                              "ok": False, "reason": "no_courses"})
+        _save_meta(now, ok=False, status="failed", reason="no_courses")
         return {"ok": False, "reason": "no_courses"}
 
+    # §3.6 用户明确说「我一共 14 个课」。抓到 3 门也算成功的话，页面改版导致漏抓无人发现。
+    # 不是硬失败：选课会变，所以只告警 + 降级为 partial。
+    expected = int(cfg.get("expected_courses") or 0)
+    anomalies: list[str] = []
+    if expected and len(courses) != expected:
+        anomalies.append(f"课程数 {len(courses)} ≠ 期望 {expected}")
+        log(f"课程数偏离期望：{len(courses)} ≠ {expected}", level="WARN")
+
+    prev_counts = {(c.get("course_id"), c.get("class_id")): (c.get("task_count") or 0)
+                   for c in load_list(COURSES_PATH)}
     all_tasks: list[dict] = []
     ok_courses, failed = 0, 0
     detail_budget = int(cfg.get("max_detail") or 8) if cfg.get("fetch_detail") else 0
 
     for i, c in enumerate(courses):
+        # §5.4 每门课用「当次请求时刻」反推倒计时，而不是循环开始前的 now。
+        # 14 门课几十秒，越靠后的课反推结果越早。
+        req_now = now_bj()
         tokens = cx.mint(c)
         if not tokens:
             failed += 1
             continue
         whtml = cx.work_html(c, tokens)
         if is_tip_page(whtml):
-            log(f"课程 {c.get('name')} 作业列表被拒（token 或权限问题）", level="WARN")
+            log(f"课程 {c.get('name')} 作业列表被拒（token/权限/登录态失效）", level="WARN")
             failed += 1
             continue
-        rows = parse_work_rows(whtml, c, now)
+        rows = parse_work_rows(whtml, c, req_now)
         ehtml = cx.exam_html(c, tokens)
         if ehtml and not is_tip_page(ehtml):
-            rows.extend(parse_exam_rows(ehtml, c, now))
+            rows.extend(parse_exam_rows(ehtml, c, req_now, tokens))
+        # §1.1 从「有任务」变成「0 行」要判可疑，不能当成「真的没作业」
+        prev = prev_counts.get((c.get("course_id"), c.get("class_id")))
+        if prev and not rows:
+            anomalies.append(f"{c.get('name')} 上次 {prev} 条本次 0 条")
+            log(f"可疑：{c.get('name')} 上次 {prev} 条任务，本次解析出 0 条", level="WARN")
         all_tasks.extend(rows)
         ok_courses += 1
         c["task_count"] = len(rows)
@@ -436,41 +505,68 @@ def run() -> dict:
 
     log(f"扫描课程：{ok_courses}，失败：{failed}")
 
-    # 待完成任务抓详情页：补精确截止时间 + 取开始时间。
-    # 列表页只有一个倒计时 div，截止时间是反推的（标 ≈）；精确截止决定逾期判定，必须抓。
-    # 开始时间只用于展示（「超过一周就剔除」规则已按用户要求废除，见 v1.3.0）。
+    # §1.2 一门都没抓到就**不落盘**。merge_tasks 的语义是「新列表即权威列表」，
+    # 空列表会把历史任务全部清空，而 meta.ok 还是 True —— 最危险的静默失败。
+    if ok_courses == 0:
+        _save_meta(now, ok=False, status="failed", reason="all_courses_failed",
+                   courses=len(courses), courses_ok=0, courses_failed=failed)
+        log("全部课程采集失败，保留上一次的任务数据不覆盖", level="ERROR")
+        return {"ok": False, "reason": "all_courses_failed", "courses": len(courses)}
+
+    # 详情页：补真实截止时间 + 开始时间。
+    # §3.5 原来按课程遍历序取前 N 条，排在后面的课里「1 小时后截止」的作业可能拿不到精确时间。
+    # 现在：① 待完成且**无截止**的一律抓（不受预算限制，那正是用户报的 bug）
+    #       ② 其余按反推截止时间从近到远排序，紧急的优先。
     if detail_budget > 0:
-        need = [t for t in all_tasks if t["state"] == "pending"][:detail_budget]
-        got_start = 0
+        pending = [t for t in all_tasks if t["state"] == "pending"]
+        unknown = [t for t in pending if not t.get("deadline")]
+        known = sorted((t for t in pending if t.get("deadline")),
+                       key=lambda t: parse_datetime(t["deadline"]) or now)
+        need = unknown + known[:max(0, detail_budget - len(unknown))]
+        log(f"详情页预算 {detail_budget}，无截止待完成 {len(unknown)} 条优先，实际抓 {len(need)} 条")
+        got_start = got_dl = 0
         for t in need:
+            req_now = now_bj()
             html = cx.get(t["url"])
             if not html or is_tip_page(html):
                 log(f"详情页不可用（{len(html or '')} 字节）：{t['title']}", level="WARN")
                 continue
             dt = detail_deadline(html)
+            ws, we = detail_time_window(html, req_now, "互评时间")
+            if not we:
+                ws, we = detail_work_window(html, req_now)
             if dt and not t.get("deadline_exact"):
                 t["deadline"] = dt.isoformat(timespec="seconds")
                 t["deadline_exact"] = True
+                got_dl += 1
                 log(f"详情页补全截止时间：{t['title']} → {t['deadline']}")
-            st = detail_start(html)
-            ws, we = detail_eval_window(html, now)
-            if ws:
-                st = ws
-            if we and not t.get("deadline_exact"):
+            elif we and not t.get("deadline_exact"):
                 t["deadline"] = we.isoformat(timespec="seconds")
                 t["deadline_exact"] = True
-                log(f"互评窗口截止：{t['title']} → {t['deadline']}")
+                got_dl += 1
+                log(f"时间窗补全截止时间：{t['title']} → {t['deadline']}")
+            st = ws or detail_start(html)
             if st:
                 t["start_time"] = st.isoformat(timespec="seconds")
                 got_start += 1
             if not dt and not st and not we:
                 log(f"详情页无时间字段（{len(html)} 字节）：{t['title']} "
-                    f"片段={detail_time_hints(html)}")
-        log(f"详情页取到开始时间：{got_start}/{len(need)} 条")
+                    f"片段={detail_time_hints(html)}", level="WARN")
+        log(f"详情页补全截止 {got_dl} 条 / 开始时间 {got_start} 条（共 {len(need)} 条）")
+
+    still_unknown = [t for t in all_tasks
+                     if t["state"] == "pending" and not t.get("deadline")]
+    for t in still_unknown:
+        anomalies.append(f"待完成但抓不到截止：{t.get('course')} · {t.get('title')}")
+        log(f"⚠️ 待完成却无截止时间，可能已逾期：{t.get('course')} · {t.get('title')}", level="WARN")
 
     merged = merge_tasks(load_list(TASKS_PATH), all_tasks, now)
+    # 审计 §2.5 / §7.2：data/ 是公开仓库的一部分，不是本地缓存。
+    # cpi / answerId / enc 每生一份，落盘前必须抹掉；完整深链只在本轮内存里用于抓详情页。
+    link_mode = cfg.get("public_links") or "course"
+    merged = [strip_personal_fields(t, link_mode) for t in merged]
     save_list(TASKS_PATH, merged, course_count=len(courses))
-    save_list(COURSES_PATH, courses)
+    save_list(COURSES_PATH, [{k: v for k, v in c.items() if k != "cpi"} for c in courses])
 
     pending = [t for t in merged if t["state"] == "pending"]
     far = now + timedelta(days=3650)
@@ -483,14 +579,18 @@ def run() -> dict:
     for t in sort_by_deadline(overdue + soon)[:5]:
         log(f"[urgent] {t['course']} · {t['title']} · {fmt_remaining(parse_datetime(t['deadline']))}")
 
-    save_json(META_PATH, {"last_attempt": now.isoformat(timespec="seconds"),
-                          "last_success": now.isoformat(timespec="seconds"),
-                          "ok": True, "courses": len(courses),
-                          "courses_ok": ok_courses, "courses_failed": failed,
-                          "tasks": len(merged), "pending": len(pending)})
-    return {"ok": True, "courses": len(courses), "courses_ok": ok_courses,
+    # §1.1 ok 不再无条件为 True：有失败课程 / 可疑清空 / 课程数偏离 / 截止未知 → partial
+    ok = not failed and not anomalies
+    _save_meta(now, ok=ok, status="ok" if ok else "partial",
+               last_success=now.isoformat(timespec="seconds"),
+               courses=len(courses), courses_ok=ok_courses, courses_failed=failed,
+               tasks=len(merged), pending=len(pending),
+               unknown_deadline=len(still_unknown), anomalies=anomalies[:12])
+    return {"ok": ok, "status": "ok" if ok else "partial",
+            "courses": len(courses), "courses_ok": ok_courses,
             "tasks": len(merged), "pending": len(pending),
-            "soon": len(soon), "overdue": len(overdue)}
+            "soon": len(soon), "overdue": len(overdue),
+            "unknown_deadline": len(still_unknown), "anomalies": anomalies[:12]}
 
 
 def _shape(s: str) -> str:
@@ -556,6 +656,13 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
             for r in parse_exam_rows(ehtml, c, now):
                 if r["state"] == "pending" and not r.get("deadline"):
                     problems.append({"course": c.get("name"), "chunk": None, "row": r})
+            # §3.7 单场考试深链：把 JS 函数体打出来看它到底跳哪个 URL，不许猜
+            flat_e = re.sub(r"\s+", " ", ehtml)
+            for fm in re.finditer(r"function\s+(viewExamAnswer|enterExam|goExam|toExam)\s*\([^)]*\)\s*\{.{0,600}", flat_e):
+                log(f"[diag] 考试 JS：{_shape(fm.group(0))[:600]}")
+            for om in EXAM_ONCLICK_RE.finditer(ehtml):
+                log(f"[diag] 考试 onclick 函数名：{om.group(1)}")
+                break
         time.sleep(0.3)
 
     log(f"[diag] time div 形状共 {len(time_shapes)} 种：")
@@ -613,6 +720,48 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
             flat_chunk = re.sub(r"\s+", " ", p["chunk"])
             log(f"[diag]     {_shape(_mask_title(flat_chunk))[:1000]}")
     return {"ok": True, "shapes": len(time_shapes), "problems": len(problems)}
+
+
+# ---------------------------------------------------------------------------
+# 离线解析样本（selftest 与 probe 共用，审计 §4.4 ②）
+# ---------------------------------------------------------------------------
+# ID 一律用合成值。真实 course_id / class_id 也是可定位信息，不进源码。
+SAMPLE_COURSE = {"course_id": "100000001", "class_id": "100000002",
+                 "cpi": "100000003", "name": "示例课程26级高等数学A（一）"}
+SAMPLE_WORK_HTML = '''<h2>示例课程26级高等数学A（一）</h2>
+<li onclick="goTask(this);" data="https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=100000001&classId=100000002&cpi=100000003&workId=58370553&answerId=55746672&enc=abc123" tabindex="0" aria-label="3-5函数的极值与最值 ; 待批阅" role="link">
+  <div class="right-content"><p class="overHidden2 fl">3-5函数的极值与最值</p>
+  <i class="label fl">互评</i><p class="status fl">待批阅</p></div>
+  <div class="time notOver" tabindex="0"><img src="x.png" />剩余1小时12分钟</div>
+</li>
+<li onclick="goTask(this);" data="https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=100000001&classId=100000002&cpi=100000003&workId=58263400&answerId=55727436&enc=def456" aria-label="3.3泰勒公式 ; 待互评">
+  <div class="right-content"><p class="overHidden2 fl">3.3泰勒公式</p>
+  <i class="label fl">互评</i><p class="status fl">待互评</p></div>
+</li>'''
+SAMPLE_EXAM_HTML = '''<div class="bottomList"><ul><li>
+<div onclick="viewExamAnswer('10959519','170844300')">
+<div class="right-content"><p class="overHidden2 fl">第二章测试题</p>
+<p class="status fl">已完成</p></div></div></li></ul></div>'''
+# 实测形状（run 43448758305）：作业详情页的「作答时间」，值在 <em> 里、不带年份
+SAMPLE_DETAIL_HTML = "<p>作答时间:<em>11-05 23:59</em>至<em>11-10 23:59</em></p>"
+SAMPLE_EVAL_HTML = '<p class="hpInfo">互评时间：11-06 07:01 至 11-10 23:01</p>'
+
+
+def parse_smoke(now: datetime | None = None) -> dict:
+    """用内置样本跑一遍解析链，返回各通道产出行数。
+
+    审计 §4.4 ②：probe 原来只测连通性。站点改版导致正则失配时 probe 全绿、
+    采集静默返回空（正是 §1.1 的入口）。这里给 probe 一个「解析得出东西吗」的断言。
+    """
+    now = now or now_bj()
+    work = parse_work_rows(SAMPLE_WORK_HTML, SAMPLE_COURSE, now)
+    exam = parse_exam_rows(SAMPLE_EXAM_HTML, SAMPLE_COURSE, now)
+    ws, we = detail_time_window(SAMPLE_EVAL_HTML, now, "互评时间")
+    ds, de = detail_time_window(SAMPLE_DETAIL_HTML, now, "作答时间")
+    return {"work": len(work), "exam": len(exam),
+            "pending": sum(1 for t in work if t["state"] == "pending"),
+            "eval_window": bool(ws and we), "work_window": bool(ds and de),
+            "deadline": bool(work and work[0].get("deadline"))}
 
 
 if __name__ == "__main__":

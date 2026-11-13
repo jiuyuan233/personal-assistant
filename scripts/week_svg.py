@@ -147,18 +147,17 @@ def run(today: date | None = None) -> bool:
         p.append(f'<text x="{WIDTH / 2}" y="{body_top + 120}" font-size="14" text-anchor="middle" '
                  f'fill="#ADB5BD">本周没有课</text>')
 
-    # 当前时间线（日历样式），画在课程块之上才看得见。
-    # SVG 是静态的，finalize 每 20 分钟重画一次，所以这条线是「20 分钟精度」；
-    # 网页端另有一条 JS 实时移动的同款线，几何参数从 schedule_geo.json 读。
+    # 参考线：SVG 是静态的，每 20 分钟才重画一次。红色「现在」那条只由网页 JS 画
+    # （几何参数在 schedule_geo.json），这里画成浅色，否则两条红线叠在一起，
+    # 用户看到的是 20 分钟前的位置还以为是真的（审计 §5.1）。
     minutes = now.hour * 60 + now.minute
     ny = time_y(minutes, body_top)
     nx = PAD + GUTTER + today_col * COL_W
     p.append(f'<line x1="{nx}" y1="{ny:.1f}" x2="{nx + COL_W}" y2="{ny:.1f}" '
-             f'stroke="#FA5252" stroke-width="2"/>')
-    p.append(f'<circle cx="{nx}" cy="{ny:.1f}" r="4" fill="#FA5252"/>')
-    p.append(f'<rect x="{PAD + 2}" y="{ny - 9:.1f}" width="{GUTTER - 6}" height="16" rx="3" fill="#FA5252"/>')
+             f'stroke="#CED4DA" stroke-width="1" stroke-dasharray="4 3"/>')
+    p.append(f'<rect x="{PAD + 2}" y="{ny - 9:.1f}" width="{GUTTER - 6}" height="16" rx="3" fill="#DEE2E6"/>')
     p.append(f'<text x="{PAD + GUTTER / 2}" y="{ny + 3:.1f}" font-size="10" text-anchor="middle" '
-             f'fill="#FFFFFF">{now.strftime("%H:%M")}</text>')
+             f'fill="#868E96">{now.strftime("%H:%M")}</text>')
 
     p.append(f'<text x="{PAD}" y="{HEIGHT - 8}" font-size="9" fill="#CED4DA">'
              f'自动生成于 {now.strftime("%Y-%m-%d %H:%M")} (UTC+8) · 共 {len(events)} 节课</text>')

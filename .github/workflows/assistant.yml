@@ -1,40 +1,36 @@
 name: 个人助手
 
-# 模式分频：finalize 每 20 分钟（零网络零 token），采集各自独立频率。
-# 登录类任务失败不会拖累渲染。
+# ★ 只有一条 cron（审计 §4.1）。原来 8 条各自映射一个模式，实测出现过连续
+#   1 小时 33 分钟一次都没触发：GitHub 对同一 workflow 的 schedule 有节流，
+#   条数越多越容易被丢；并发组又只保留一个 pending，手动派发会把定时班挤掉。
+#   现在频率由 scripts/main.py 的 do_tick() 按 data/runtime.json 里的时间戳决定：
+#     study 每 60 分钟 · diary 每 120 分钟 · notice 每 360 分钟 · finalize 每轮
+#     飞书 07:00 / 12:00 / 22:00（北京时间），错过后 3 小时内补发，每天各一次
+#   凌晨写回窗口内当天还没写回时，tick 会强制加跑一次 diary。
 #
-# ⚠️ 额度：Actions 按「每个 job 向上取整到分钟」计费。20 分钟一次 = 2160 次/月 = 至少 2160 分钟，
+# ⚠️ 额度：Actions 按「每个 job 向上取整到分钟」计费。20 分钟一次 = 72 轮/天 ≈ 2160 分钟/月，
 #    已经超过私有仓库的 2000 分钟免费额度。所以本默认配置要求 **public 仓库或 self-hosted runner**。
-#    必须用 private + GitHub 托管 runner 的话，见 DEV_GUIDE.md 第 2 节的「省额度 cron 组合」。
+#    必须用 private + GitHub 托管 runner 的话，见 DEV_GUIDE.md 第 2 节的「省额度做法」：
+#    只有两个旋钮 —— 把这一条 cron 改慢（*/30 等），和调大 main.TICK_INTERVALS。不要再加 cron。
 on:
   schedule:
-    - cron: '*/20 * * * *'      # finalize：渲染 README + SVG + 离线重算课表
-    - cron: '7 0,4,8,12 * * *'  # diary：Gitee 日记增量采集（只读），北京时间 08/12/16/20 点
-    # diary 凌晨班：北京时间 00:07 / 02:07 / 04:07。**只有这三次会往日记仓库写**。
-    # 用户白天在 Obsidian 里编辑，写回必须避开；三次是为了失败还有重试机会，
-    # 内容无变化时不提交，所以多跑不产生额外 commit。窗口在 data/sources.json 的 writeback_window。
-    - cron: '7 16,18,20 * * *'
-    - cron: '13 * * * *'        # study：学习通全量四步链
-    - cron: '17 1,7,13 * * *'   # notice：公开公告站，北京时间 09:17 / 15:17 / 21:17
-    # 三时段飞书推送。故意错开整点 2 分钟：整点会和 */20 的 finalize 同时触发，
-    # 同一并发组里后到的 pending 会把先到的挤掉，推送就丢了。
-    - cron: '2 23 * * *'        # morning：北京时间 07:02，今日任务（来源日记，不带课表）+ 一言
-    - cron: '2 4 * * *'         # noon：北京时间 12:02，问好 + 鼓励
-    - cron: '2 14 * * *'        # night：北京时间 22:02，当日总结（来源日记）
+    - cron: '*/20 * * * *'
   workflow_dispatch:
     inputs:
       mode:
         description: '运行模式'
         required: true
-        default: 'finalize'
+        default: 'tick'
         type: choice
         options:
+          - tick
           - finalize
           - diary
           - study
           - notice
           - schedule
           - all
+          - backfill
           - probe
           - studydiag
           - selftest
@@ -45,11 +41,12 @@ on:
 permissions:
   contents: write
 
-# 同一时刻只跑一个，排队而不是取消 —— 取消会丢掉采集结果。
-# 推送单独一个组：三个时段是用户每天等着看的消息，不能被采集任务挤掉。
-# 注意并发组只保留一个 pending，批量派发多个模式会互相取消，必须串行派发。
+# 全仓库只有一个并发组：同一时刻只跑一个，排队而不是取消（取消会丢掉采集结果）。
+# 拆成 push / collect 两组反而会让采集和渲染同时改 README，rebase 必冲突。
+# ⚠️ 并发组只保留一个 pending，批量派发多个模式会互相挤掉，必须串行派发。
+# job 上的 timeout-minutes 是兜底：一个卡死的 run 会堵住整条队列。
 concurrency:
-  group: pa-${{ (inputs.mode == 'morning' || inputs.mode == 'noon' || inputs.mode == 'night' || github.event.schedule == '2 23 * * *' || github.event.schedule == '2 4 * * *' || github.event.schedule == '2 14 * * *') && 'push' || 'collect' }}
+  group: pa-run
   cancel-in-progress: false
 
 env:
@@ -86,29 +83,18 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r scripts/requirements.txt
+          pip install ruff
 
       - name: 决定模式
         id: mode
         env:
           EVENT_NAME: ${{ github.event_name }}
           INPUT_MODE: ${{ inputs.mode }}
-          SCHEDULE: ${{ github.event.schedule }}
         run: |
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             MODE="$INPUT_MODE"
           else
-            # 用 cron 表达式本身判定，而不是当前分钟 —— Actions 经常延迟几分钟触发
-            case "$SCHEDULE" in
-              '*/20 * * * *')    MODE=finalize ;;
-              '7 0,4,8,12 * * *') MODE=diary ;;
-              '7 16,18,20 * * *') MODE=diary ;;
-              '13 * * * *')      MODE=study ;;
-              '17 1,7,13 * * *') MODE=notice ;;
-              '2 23 * * *')      MODE=morning ;;
-              '2 4 * * *')       MODE=noon ;;
-              '2 14 * * *')      MODE=night ;;
-              *)                 MODE=finalize ;;
-            esac
+            MODE=tick
           fi
           case "$MODE" in
             morning|noon|night) PUSH=true ;;
@@ -117,6 +103,14 @@ jobs:
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
           echo "push=$PUSH" >> "$GITHUB_OUTPUT"
           echo "本次模式：$MODE（触发方式 $EVENT_NAME）"
+
+      # 质量门禁（审计 §4.4）。放在执行之前：静态检查 + 离线自检不过就不采集，
+      # 免得带着 NameError 跑一整轮登录链，最后静默写出空数据。
+      # F821（未定义名字）这一条就能抓住「用了 BJ_TZ 却忘了 import」这类事故。
+      - name: 质量门禁
+        run: |
+          ruff check scripts --select E9,F63,F7,F82,F821,F401
+          python scripts/main.py selftest
 
       - name: 执行
         id: execute
@@ -127,6 +121,8 @@ jobs:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           CX_USERNAME: ${{ secrets.CX_USERNAME }}
           CX_PASSWORD: ${{ secrets.CX_PASSWORD }}
+          # 私人日记路径黑名单。值只存在于 Secret，仓库里只出现这个名字（审计 §2.2/§7.3）。
+          DIARY_EXCLUDE: ${{ secrets.DIARY_EXCLUDE }}
           MODE: ${{ steps.mode.outputs.mode }}
         run: |
           set -o pipefail
@@ -144,7 +140,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           case "$MODE" in
-            finalize|all)
+            tick|finalize|all)
               git add data docs README.md
               ;;
             *)

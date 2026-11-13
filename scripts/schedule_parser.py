@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from utils import (ASSETS_DIR, DATA_DIR, BJ_TZ, log, now_bj,
-                   save_json, today_bj)
+                   save_json_stable, today_bj)
 
 ICS_PATH = ASSETS_DIR / "WakeUp导入课表.ics"
 SCHEDULE_DIR = DATA_DIR / "schedule"
@@ -120,6 +120,36 @@ def clean_summary(s: str) -> tuple[str, str]:
         if a.strip() == b.strip():
             s = a.strip()
     return s, topic
+
+
+# 审计 §5.3：实测 186 条 SUMMARY 里 10 条被 WakeUp 污染成
+#   `1：50青协例会计算思维与人工智能`
+# 时钟前缀（**全角冒号**）+ 非课程事件名 + 真实课程名，拼成了一个字符串。
+CLOCK_PREFIX_RE = re.compile(r"^\d{1,2}\s*[：:]\s*\d{2}\s*")
+
+
+def repair_summaries(raw: list[dict]) -> int:
+    """剥掉时钟前缀与非课程事件名，返回修好的条数。
+
+    真实课程名取自其余干净记录 —— **用数据自己修数据，不猜正则**。
+    污染形状只有一种（时钟前缀），但例会名是自由文本，写死名单下次换个例会就失效。
+    """
+    known = set()
+    for p in raw:
+        s = (p.get("SUMMARY") or "").strip()
+        if s and not CLOCK_PREFIX_RE.match(s):
+            known.add(clean_summary(s)[0])
+    fixed = 0
+    for p in raw:
+        s = (p.get("SUMMARY") or "").strip()
+        m = CLOCK_PREFIX_RE.match(s)
+        if not m:
+            continue
+        rest = s[m.end():].strip()
+        hit = max((c for c in known if c and rest.endswith(c)), key=len, default="")
+        p["SUMMARY"] = hit or rest
+        fixed += 1
+    return fixed
 
 
 def slot_range(start: datetime, end: datetime) -> tuple[int, int]:
@@ -233,6 +263,9 @@ def run(today: date | None = None) -> dict:
     raw = parse_ics(ICS_PATH)
     if not raw:
         return {"ok": False, "events": 0}
+    repaired = repair_summaries(raw)
+    if repaired:
+        log(f"课表源文件污染修复：{repaired} 条 SUMMARY 剥掉时钟前缀与非课程事件名")
     events = build_events(raw)
     semester_start = guess_semester_start(events)
     courses = aggregate_courses(events)
@@ -250,12 +283,12 @@ def run(today: date | None = None) -> dict:
         "this_week_count": len(this_week),
         "date_range": [events[0]["date"], events[-1]["date"]] if events else [],
     }
-    save_json(SCHEDULE_DIR / "events.json", {"updated_at": now_bj().isoformat(timespec="seconds"),
-                                             **meta, "items": events})
-    save_json(SCHEDULE_DIR / "courses.json", {"updated_at": now_bj().isoformat(timespec="seconds"),
-                                              **meta, "items": courses})
-    save_json(SCHEDULE_DIR / "this_week.json", {"updated_at": now_bj().isoformat(timespec="seconds"),
-                                                **meta, "items": this_week})
+    save_json_stable(SCHEDULE_DIR / "events.json", {"updated_at": now_bj().isoformat(timespec="seconds"),
+                                                    **meta, "items": events})
+    save_json_stable(SCHEDULE_DIR / "courses.json", {"updated_at": now_bj().isoformat(timespec="seconds"),
+                                                     **meta, "items": courses})
+    save_json_stable(SCHEDULE_DIR / "this_week.json", {"updated_at": now_bj().isoformat(timespec="seconds"),
+                                                       **meta, "items": this_week})
     log(f"课表解析：{len(events)} 条上课记录，{len(courses)} 个课程条目，"
         f"第1周周一={semester_start}，当前第 {cw} 周，本周课时：{len(this_week)}")
     return {"ok": True, **meta}
