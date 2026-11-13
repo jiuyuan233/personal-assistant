@@ -8,6 +8,17 @@
 
 ---
 
+## 🧭 目录
+
+README 只放每天要看的动态，其余内容都在独立文档里：
+
+- 🏆 **[学科竞赛日历 2026–2027](docs/竞赛日历.md)** — 269 项校级竞赛目录 + 已核实的报名/比赛时间、大一资格门槛、建环专业长期目标。**手工维护，不会被 Actions 覆盖。**
+- 🌐 [网页版看板](docs/index.html) · 📢 [公告全量数据](data/notice/notices.json) · 🎯 [潜在计划](data/diary/plans.json) · 📔 [名言](data/diary/quotes.json)
+- 🔧 [技术路径](docs/技术路径.md) · [工作原理](docs/工作原理.md) · [数据结构](docs/数据结构.md) · [AI 提示词](docs/AI提示词.md) · [常见问题](docs/常见问题.md) · [仓库结构](docs/仓库结构.md)
+- 🤝 [维护交接 AGENT.md](AGENT.md) · [开发文档 DEV_GUIDE.md](DEV_GUIDE.md) · [变更日志 CHANGELOG.md](CHANGELOG.md)
+
+---
+
 ## ⏰ 任务清单
 
 **按截止时间从近到远排序。** 共 {{PENDING_COUNT}} 项待完成{{STATS_SUFFIX}}。
