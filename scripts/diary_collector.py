@@ -36,6 +36,15 @@ API = "https://gitee.com/api/v5/repos/{repo}/contents/{path}"
 MAX_DEPTH = 3
 CHECKBOX_RE = re.compile(r"^\s*[-*+]\s*\[([ xX])\]\s*(.+?)\s*$", re.M)
 DATE_IN_NAME_RE = re.compile(r"(\d{4})-(\d{2})-(\d{2})")
+# 助手写回区块。里面的复选框由 diary_writeback 自己管，采集时必须整块跳过，
+# 否则同一句话会被 extract_checkboxes 和 AI 各抽一遍，plans.json 里全是重复项。
+BLOCK_START = "<!-- assistant:plans:start -->"
+BLOCK_END = "<!-- assistant:plans:end -->"
+BLOCK_RE = re.compile(re.escape(BLOCK_START) + r".*?" + re.escape(BLOCK_END), re.S)
+
+
+def strip_assistant_block(text: str) -> str:
+    return BLOCK_RE.sub("", text or "")
 
 
 # ---------------------------------------------------------------------------
@@ -87,6 +96,37 @@ class Gitee:
                 out.append(e)
         return out
 
+    def read_file(self, path: str) -> tuple[str, str | None]:
+        """返回 (正文, sha)。
+
+        ⚠️ 实测：Gitee 对不存在/已删除的文件返回 **HTTP 200 + `{}`**，不是 404。
+        所以判断存在与否必须看 body 里有没有 sha，只看状态码会误判成「文件存在但空」。
+        """
+        d = self.contents(path)
+        if not isinstance(d, dict) or not d.get("sha"):
+            return "", None
+        return decode_content(d), d.get("sha")
+
+    def write_file(self, path: str, text: str, message: str, sha: str | None = None) -> bool:
+        """新建（sha=None 走 POST）或更新（带当前 sha 走 PUT）。不带 sha 更新会被拒。"""
+        url = API.format(repo=self.repo, path=quote(path, safe="/"))
+        payload = {"access_token": self.token, "branch": self.branch,
+                   "content": base64.b64encode(text.encode("utf-8")).decode("ascii"),
+                   "message": message}
+        if sha:
+            payload["sha"] = sha
+        self.calls += 1
+        try:
+            r = (self.session.put(url, json=payload, timeout=30) if sha
+                 else self.session.post(url, json=payload, timeout=30))
+        except requests.RequestException as e:
+            log(f"Gitee 写入失败 {path}: {safe_text(e, 160)}", level="ERROR")
+            return False
+        if r.status_code not in (200, 201):
+            log(f"Gitee 写入 {path} → HTTP {r.status_code}", level="ERROR")
+            return False
+        return True
+
 
 def decode_content(entry: dict) -> str:
     raw = entry.get("content") or ""
@@ -113,7 +153,7 @@ def extract_checkboxes(text: str, entry: dict, today: date) -> list[dict]:
     out = []
     sdate = source_date_of(entry)
     rel = entry.get("path") or entry.get("name") or ""
-    for m in CHECKBOX_RE.finditer(text):
+    for m in CHECKBOX_RE.finditer(strip_assistant_block(text)):
         done = m.group(1).lower() == "x"
         raw = m.group(2).strip()
         # 去掉行内标签和尾部的 Obsidian 链接别名，保留可读文本
@@ -255,7 +295,7 @@ def run() -> dict:
             continue
         new_plans.extend(extract_checkboxes(text, e, today))
         if client:
-            q, p = ai_extract(client, text[:max_chars], e, today)
+            q, p = ai_extract(client, strip_assistant_block(text)[:max_chars], e, today)
             new_quotes.extend(q)
             new_plans.extend(p)
         known[rel] = {"sha": e.get("sha"), "size": e.get("size"),
@@ -273,9 +313,27 @@ def run() -> dict:
     open_plans = [p for p in plans if p.get("state") == "open"]
     log(f"日记完成：处理 {processed} 个文件，名言 {len(quotes)} 条，"
         f"计划 {len(plans)} 条（未完成 {len(open_plans)}）")
+
+    # 写回：昨天挖到的潜在计划 → 今天日记里的复选框；上次没勾完的滚过来。
+    # 写回失败只告警，不影响采集结果 —— 日记数据已经落盘了。
+    wb: dict = {}
+    try:
+        import diary_writeback
+        wb = diary_writeback.run(today=today, g=g, plans=plans, cfg=dcfg)
+    except Exception as e:
+        log(f"日记写回失败：{safe_text(e, 200)}", level="WARN")
+    done = set(wb.get("done") or [])
+    if done:
+        for p in plans:
+            if p.get("id") in done:
+                p["state"] = "done"
+        save_list(PLANS_PATH, plans, repo=repo)
+        log(f"写回复查：{len(done)} 条计划标记完成")
+
     return {"ok": True, "files": len(entries), "changed": len(changed),
             "processed": processed, "quotes": len(quotes),
-            "plans": len(plans), "open_plans": len(open_plans)}
+            "plans": len(plans), "open_plans": len(open_plans),
+            "writeback": wb.get("written", 0)}
 
 
 if __name__ == "__main__":

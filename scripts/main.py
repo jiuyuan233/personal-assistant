@@ -226,6 +226,34 @@ def do_selftest() -> bool:
     check("凌晨钳到顶", ws.time_y(0, bt) == bt)
     check("深夜钳到底", ws.time_y(23 * 60, bt) == bt + ws.ROW_H * len(ws.SLOTS))
 
+    # 日记写回：只动助手区块，区块外一个字节都不碰
+    import diary_collector as dc
+    import diary_writeback as dw
+
+    blk = dw.render_block("2026-11-14", [("p1", "背单词", False), ("p2", "跑步", True)])
+    check("写回区块往返解析", dict(dw.parse_block(blk)) == {"p1": False, "p2": True})
+
+    user_text = "# 今日记录\n\n我自己写的话。\n"
+    merged = dw.upsert_block(user_text, blk)
+    check("区块外正文保留", merged.startswith(user_text))
+    again = dw.upsert_block(merged, dw.render_block("2026-11-14", [("p1", "背单词", True)]))
+    check("重复写回只替换区块", again.count(dw.BLOCK_START) == 1 and "我自己写的话。" in again)
+    check("复查能读到勾选", dict(dw.parse_block(again)).get("p1") is True)
+
+    sample_plans = [
+        {"id": "a", "text": "昨天的", "state": "open", "first_seen": "2026-11-12"},
+        {"id": "b", "text": "滚动的", "state": "open", "first_seen": "2026-11-01"},
+        {"id": "c", "text": "已完成", "state": "done", "first_seen": "2026-11-12"},
+        {"id": "d", "text": "今天的", "state": "open", "first_seen": "2026-11-13"},
+    ]
+    picked = dw.pick_plans(sample_plans, "2026-11-12", {"b"}, 20)
+    check("写回只选昨天新增+滚动未完成", [p["id"] for p in picked] == ["a", "b"],
+          str([p["id"] for p in picked]))
+
+    cb = dc.extract_checkboxes("- [ ] 用户自己写的\n" + blk,
+                               {"path": "日/2026-11-14.md", "name": "2026-11-14.md"}, now.date())
+    check("助手区块不被重复抽取", [c["text"] for c in cb] == ["用户自己写的"], str(cb))
+
     # 真实样本结构：课程名在 li 内的 course-name span，middle 页首个 h2 是全站横幅
     list_html = '''<ul class="course-list"><li class="course clearfix" id="c_219232606">
       <div class="course-cover"><a href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=219232606&clazzid=153566712&cpi=577967959&ismooc2=1"><img src="x.jpg"></a></div>

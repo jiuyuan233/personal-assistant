@@ -55,7 +55,10 @@
     "branch": "master",
     "path": "总仓库个人-Sync/个人信息/个人信息/Tasks",
     "max_files_per_run": 12,
-    "max_chars_per_file": 6000
+    "max_chars_per_file": 6000,
+    "daily_dir": "日",
+    "max_writeback": 20,
+    "_写回说明": "T 日挖到的潜在计划写进 T+1 日的 daily_dir/YYYY-MM-DD.md，只动 assistant:plans 区块；T+2 复查勾选，没勾的滚进当天日记"
   },
   "study": {
     "passport": "https://passport2.huuc.edu.cn",
