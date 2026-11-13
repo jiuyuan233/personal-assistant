@@ -130,6 +130,15 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
   校团委、飞书均 HTTP 200；Gitee 与 AI 中转 HTTP 401（可达，只是未带凭据）。
   **不需要 self-hosted runner，也不需要国内定时任务兜底。**
   学校日后若封海外 IP，重跑 `probe` 即可确认，退路见 DEV_GUIDE 4.3。
+- **`study` / `diary` 尚未端到端跑通**，卡在 Secrets（`CX_USERNAME`/`CX_PASSWORD`、`GITEE_TOKEN`）。
+  Secret 只能在网页填：API 写入需要 libsodium sealed-box 加密，普通 openssl 做不了。
+  已验证成功的模式：`selftest`（26 项断言）、`probe`、`finalize`（含 git 写回）、`notice`。
+- **`notice` 已端到端验证（2026-11-13）**：4 个源全成功，新增 78 条，README 渲染出 12 条竞赛公告。
+  但**关键词打分封顶 3 分**（`keyword_score`：boost=3 / gate=2 / block=0），所以没配 `AI_API_KEY` 时
+  「高相关」恒为 0（飞书阈值 ≥4 永不触发），公告表的「截止」「说明」两列恒为 `—`。
+  而且**只有新增公告送 AI**（`AI_MAX_CANDIDATES=30`/次），已入库的存量不会被重打分。
+  → 配好 key 后必须一次性重灌：清空 `data/notice/notices.json`，临时把 `AI_MAX_CANDIDATES`
+  调大到覆盖存量，跑一次 `notice`，再改回 30。详见 CHANGELOG 已知限制第 6 条。
 - **考试列表解析未经真实待考数据验证。** 目前样本里两场考试都是「已完成」，
   待考行的 `onclick` 函数名和倒计时结构可能与作业不同。第一次遇到待考时要核对。
 - **详情页精确截止时间未经样本验证。** `DETAIL_DT_RE` 是容错猜测，
