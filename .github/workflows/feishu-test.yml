@@ -1,0 +1,75 @@
+name: 飞书推送测试
+
+# 单独验证 webhook 是否可用，不跑任何采集。
+# 配好 FS_WEBHOOK 后第一件事就是手动跑一次这个。
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: '自定义文本消息（留空则发卡片）'
+        required: false
+        default: ''
+        type: string
+      title:
+        description: '卡片标题'
+        required: false
+        default: '个人助手'
+        type: string
+      mode:
+        description: '卡片模式模板'
+        required: false
+        default: 'finalize'
+        type: choice
+        options:
+          - finalize
+          - study
+          - notice
+          - diary
+          - probe
+      status:
+        description: '模拟状态'
+        required: false
+        default: 'success'
+        type: choice
+        options:
+          - success
+          - failure
+          - cancelled
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 发送测试消息
+        env:
+          FS_WEBHOOK: ${{ secrets.FS_WEBHOOK }}
+          NOTIFY_TITLE: ${{ inputs.title }}
+          NOTIFY_TASK: ${{ inputs.mode }}
+          NOTIFY_STATUS: ${{ inputs.status }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          # 用户输入一律走环境变量，不要直接插值进 shell，否则可被注入命令
+          TEST_MESSAGE: ${{ inputs.message }}
+        run: |
+          if [ -n "$TEST_MESSAGE" ]; then
+            node scripts/notify_feishu.js "$TEST_MESSAGE"
+          else
+            export NOTIFY_OUTPUT='[selftest] 这是一条测试日志
+            课程总数：28
+            待完成：3
+            24小时内截止：1
+            已逾期：0
+            [urgent] 高等数学A（一） · 3-5函数的极值与最值 · 剩余1小时12分
+            任务清单：3 条'
+            node scripts/notify_feishu.js
+          fi

@@ -1,0 +1,71 @@
+{
+  "_说明": "本文件是唯一允许手工编辑的数据文件。改这里即可增删公告源，不用动代码。",
+  "notice": [
+    {
+      "name": "校网通知公告",
+      "url": "https://www.huuc.edu.cn/index/tzgg.htm",
+      "enabled": true,
+      "pages": 2,
+      "weight": 1.0
+    },
+    {
+      "name": "教务处",
+      "url": "https://jwc.huuc.edu.cn/index.htm",
+      "enabled": true,
+      "pages": 1,
+      "weight": 1.0
+    },
+    {
+      "name": "教务处活动通知",
+      "url": "https://jwc.huuc.edu.cn/AIfnjyjx/hdtz.htm",
+      "enabled": true,
+      "pages": 1,
+      "weight": 0.9
+    },
+    {
+      "name": "校团委通知公告",
+      "url": "https://tw.huuc.edu.cn/tzgg.htm",
+      "enabled": true,
+      "pages": 2,
+      "weight": 1.0
+    },
+    {
+      "name": "招生就业处",
+      "url": "https://hncj.goworkla.cn/",
+      "enabled": false,
+      "pages": 1,
+      "weight": 0.8,
+      "_备注": "第三方建站系统，列表结构与校内站不同，默认关闭；需要时再适配"
+    }
+  ],
+  "keywords": {
+    "_说明": "命中即送 AI 评分；未命中的公告仍会入库但 score=0，不消耗 token",
+    "gate": [
+      "竞赛", "大赛", "比赛", "挑战杯", "互联网+", "数学建模", "建模",
+      "创新创业", "大创", "立项", "申报", "报名", "征集", "选拔", "招募",
+      "奖学金", "助学金", "评优", "表彰", "项目", "科研", "课题", "基金",
+      "实习", "招聘", "双选会", "就业", "讲座", "培训", "证书", "考试",
+      "志愿者", "作品", "公示", "通知"
+    ],
+    "boost": ["竞赛", "大赛", "挑战杯", "互联网+", "数学建模", "大创", "创新创业", "奖学金", "报名", "立项"],
+    "block": ["放假", "调课", "值班", "控烟", "校友联谊", "党委", "党支部", "主题党日"]
+  },
+  "diary": {
+    "repo": "jiuyuan233/obsidion-gitee",
+    "branch": "master",
+    "path": "总仓库个人-Sync/个人信息/个人信息/Tasks",
+    "max_files_per_run": 12,
+    "max_chars_per_file": 6000
+  },
+  "study": {
+    "passport": "https://passport2.huuc.edu.cn",
+    "course_list": "https://mooc2-ans.huuc.edu.cn/visit/courses/list",
+    "middle": "https://mooc1.huuc.edu.cn/visit/stucoursemiddle",
+    "work_list": "https://mooc1.huuc.edu.cn/mooc2/work/list",
+    "fid": "12",
+    "refer": "https://dzi.huuc.edu.cn/space/index?ws=2",
+    "max_courses": 40,
+    "fetch_detail": true,
+    "max_detail": 8
+  }
+}

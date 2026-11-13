@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>个人助手 · 任务看板</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <h1>🎓 个人助手</h1>
+  <p class="sub">按截止时间排序的任务看板 · 数据来自 GitHub Actions，每 20 分钟刷新</p>
+  <p class="meta" id="meta">加载中…</p>
+</header>
+
+<main>
+  <section>
+    <h2>⏰ 待完成任务</h2>
+    <div id="stats" class="stats"></div>
+    <div id="tasks"></div>
+  </section>
+
+  <section>
+    <h2>📅 本周课表</h2>
+    <img id="weeksvg" src="week.svg" alt="本周课表">
+  </section>
+
+  <section>
+    <h2>📢 值得关注的公告</h2>
+    <div id="notices"></div>
+  </section>
+
+  <section>
+    <h2>🎯 潜在计划</h2>
+    <div id="plans"></div>
+  </section>
+
+  <section>
+    <h2>📔 我的名言</h2>
+    <div id="quotes"></div>
+  </section>
+</main>
+
+<footer>
+  <a href="../README.md">README</a> ·
+  <a href="技术路径.md">技术路径</a> ·
+  <a href="../AGENT.md">维护交接</a>
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>
