@@ -493,5 +493,103 @@ def run() -> dict:
             "soon": len(soon), "overdue": len(overdue)}
 
 
+def _shape(s: str) -> str:
+    """数字一律换成 D，只保留标点与标签结构。
+
+    Actions 日志是公开的：要看见「页面给的是什么格式」，但不能把真实日期、
+    学号、ID 写进日志。形状足够写正则，值不需要。
+    """
+    return re.sub(r"\d", "D", s or "")
+
+
+def _mask_title(chunk: str) -> str:
+    """标题里可能带教师姓名，dump 前换成占位符。"""
+    chunk = re.sub(r'aria-label="[^"]*"', 'aria-label="TITLE"', chunk)
+    return re.sub(r'(<p class="overHidden2[^"]*">)[^<]*(</p>)', r"\1TITLE\2", chunk)
+
+
+def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
+    """实测：为什么有的任务抓不到截止时间。
+
+    用户报「明明有截止时间却找不到，已截止的任务被显示进 README」。
+    落盘数据里确实有 pending 且 deadline=null 的任务。
+    这个模式把那些行的**真实 HTML 形状**打出来，用来写正则 —— 不许猜。
+    """
+    cfg = (load_json(DATA_DIR / "sources.json") or {}).get("study") or {}
+    username, password = env("CX_USERNAME"), env("CX_PASSWORD")
+    if not username or not password:
+        log("未配置凭据，无法诊断", level="ERROR")
+        return {"ok": False}
+    now = now_bj()
+    cx = Chaoxing(cfg, username, password)
+    if not cx.login():
+        return {"ok": False, "reason": "login_failed"}
+    courses = cx.list_courses()[:max_courses]
+    log(f"[diag] 课程 {len(courses)} 门")
+
+    time_shapes: dict[str, int] = {}
+    problems: list[dict] = []
+    for c in courses:
+        tokens = cx.mint(c)
+        if not tokens:
+            continue
+        whtml = cx.work_html(c, tokens)
+        if is_tip_page(whtml):
+            log(f"[diag] 作业列表被拒：{c.get('name')}", level="WARN")
+            continue
+        marks = list(WORK_ROW_RE.finditer(whtml))
+        rows = parse_work_rows(whtml, c, now)
+        for i, m in enumerate(marks):
+            end = marks[i + 1].start() if i + 1 < len(marks) else min(len(whtml), m.start() + 2500)
+            chunk = whtml[m.start():end]
+            for tm in TIME_RE.finditer(chunk):
+                key = f'class="time {tm.group(1)}" → {_shape(clean_html_text(tm.group(2)))[:60]}'
+                time_shapes[key] = time_shapes.get(key, 0) + 1
+            # 没有 time div 的行：整行形状都要看
+            if not TIME_RE.search(chunk):
+                problems.append({"course": c.get("name"), "chunk": chunk, "row": None})
+        for r in rows:
+            if r["state"] == "pending" and not r.get("deadline"):
+                problems.append({"course": c.get("name"), "chunk": None, "row": r})
+        ehtml = cx.exam_html(c, tokens)
+        if ehtml and not is_tip_page(ehtml):
+            for r in parse_exam_rows(ehtml, c, now):
+                if r["state"] == "pending" and not r.get("deadline"):
+                    problems.append({"course": c.get("name"), "chunk": None, "row": r})
+        time.sleep(0.3)
+
+    log(f"[diag] time div 形状共 {len(time_shapes)} 种：")
+    for k, v in sorted(time_shapes.items(), key=lambda x: -x[1]):
+        log(f"[diag]   ×{v} {k}")
+
+    log(f"[diag] 抓不到截止时间的待完成/无time行：{len(problems)} 条，dump 前 {max_dump} 条")
+    for p in problems[:max_dump]:
+        r = p.get("row")
+        if r:
+            log(f"[diag] --- pending 无截止：kind={r['kind']} status={r['status']} "
+                f"label={r['label']} rem={_shape(r['remaining_text'])}")
+            html = cx.get(r["url"])
+            if not html or is_tip_page(html):
+                log(f"[diag]     详情页不可用（{len(html or '')} 字节）")
+                continue
+            log(f"[diag]     详情页 {len(html)} 字节，含日期形状的文本节点：")
+            seen = set()
+            for m in re.finditer(r"[^<>]{0,70}(?:\d{4}[-/年]|\d{1,2}[-/月]\d{1,2})[^<>]{0,70}", html):
+                s = _shape(clean_html_text(m.group(0)))
+                if s and s not in seen:
+                    seen.add(s)
+                    log(f"[diag]       {s[:150]}")
+                if len(seen) >= 14:
+                    break
+            log(f"[diag]     时间标签附近的原始 HTML（保留标签）：")
+            for m in re.finditer(r"(?:截止时间|结束时间|作答时间|开始时间|发布时间|互评时间|剩余)", html):
+                seg = html[max(0, m.start() - 120):m.start() + 260]
+                log(f"[diag]       {_shape(_mask_title(seg))[:380]}")
+        else:
+            log(f"[diag] --- 无 time div 的行（课程 {p['course']}）：")
+            log(f"[diag]     {_shape(_mask_title(p['chunk']))[:1200]}")
+    return {"ok": True, "shapes": len(time_shapes), "problems": len(problems)}
+
+
 if __name__ == "__main__":
     run()

@@ -565,6 +565,7 @@ HANDLERS = {
     "study": do_study,
     "notice": do_notice,
     "probe": do_probe,
+    "studydiag": lambda: __import__("study_collector").diagnose().get("ok", False),
     "selftest": do_selftest,
     "morning": lambda: do_push("morning"),
     "noon": lambda: do_push("noon"),
