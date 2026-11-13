@@ -265,11 +265,13 @@ def do_selftest() -> bool:
     check("gitignore 拒绝 har 且不开例外",
           "*.har" in gi and "!assets/*-脱敏.har" not in gi)
 
-    # 课程名里嵌过同学学号（16044261…），已渲染进公开 README。
-    # 采集层 scrub_course_name() 负责清洗，这里兜底断言清洗结果与落盘数据。
+    # 课程名里嵌过同学学号（8 位数字串），已渲染进公开 README。
+    # 采集层 scrub_course_name() 负责清洗，这里兜底断言清洗结果与全仓库残留。
+    # 测试数据用代码合成：源码里写死真实学号本身就是泄露，而且会被下面的扫描扫到。
     import re as _re2
     from utils import scrub_course_name
-    leaked = "计算思维与人工智能"
+    ids = ",".join(str(9 * 10**7 + i) for i in range(4))
+    leaked = f"计算思维与人工智能{ids}(111)"
     check("课程名去掉学号与教学班号",
           scrub_course_name(leaked) == "计算思维与人工智能", scrub_course_name(leaked))
     keep = ["高等数学A", "2026级-校规校纪", "新世纪大学英语综合教程(一)",
@@ -285,6 +287,29 @@ def do_selftest() -> bool:
                                   p.read_text(encoding="utf-8"))
     bad_names = [n for n in names if _re2.search(r"\d{7,}", n)]
     check("学习通落盘课程名无学号", not bad_names, str(bad_names))
+
+    # 全仓库扫学号形状：修 bug 时把真实学号抄进文档同样是泄露，只扫 data/ 扫不到。
+    # 两种形状：① 逗号串起的长数字串 ② 汉字紧跟 7 位以上数字。
+    # ② 必须排掉 20YYMMDD 日期 —— 实测任务标题「作业20261022」是合法的，不能误报。
+    # 也不能扫「任意 7 位以上数字」：course_id / cpi / ICS UID 全是长数字，会全库飘红。
+    pats = [_re2.compile(r"\d{7,}[,，、]\d{7,}"),
+            _re2.compile(r"[\u4e00-\u9fff]"
+                         r"(?!20\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01]))\d{7,}")]
+    exts = {".md", ".py", ".json", ".yml", ".yaml", ".js", ".html", ".svg", ".ics", ".txt"}
+    hits = []
+    for p in sorted(rr.REPO_ROOT.rglob("*")):
+        if ".git" in p.parts or "__pycache__" in p.parts or not p.is_file():
+            continue
+        if p.suffix.lower() not in exts:
+            continue
+        try:
+            txt = p.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        for pat in pats:
+            hits += [f"{p.relative_to(rr.REPO_ROOT)}:{m.group(0)[:20]}"
+                     for m in pat.finditer(txt)]
+    check("全仓库无学号形状残留", not hits, str(hits[:8]))
 
     # 用户硬要求：所有说明性文档都必须能在 README 目录里找到。
     # 新增文档忘了挂链接，这条会直接红，不用等人肉发现。
