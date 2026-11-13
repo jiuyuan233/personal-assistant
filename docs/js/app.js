@@ -111,8 +111,55 @@ function renderQuotes(data) {
   const items = ((data && data.items) || []).slice(0, 10);
   if (!items.length) { $('quotes').innerHTML = '<p class="empty">暂无摘录。</p>'; return; }
   $('quotes').innerHTML = items.map((q) =>
-    `<blockquote>${esc(q.text)}<span class="ctx">${esc(q.context || '')}${q.source_date ? ' · ' + esc(q.source_date) : ''}</span></blockquote>`
+    `<blockquote>${esc(q.text)}<span class="ctx">${esc(q.context || '')}${q.source_date ? ' · ' + esc(q.source_date) : ''}</span>${
+      q.comment ? `<span class="ctx">💬 ${esc(q.comment)}</span>` : ''}</blockquote>`
   ).join('');
+}
+
+// 实时时间线。几何参数由 week_svg.py 导出，和 SVG 里那条静态线共用一套算法，
+// 区别只是这条由浏览器每 30 秒重算，不用等 20 分钟一次的 finalize。
+function nowLineY(minutes, geo) {
+  const anchors = [];
+  geo.slots.forEach((hhmm, r) => {
+    const [h, m] = hhmm.split(':').map(Number);
+    const start = h * 60 + m;
+    const y = geo.body_top + r * geo.row_h;
+    anchors.push([start, y], [start + geo.class_minutes, y + geo.row_h]);
+  });
+  if (minutes <= anchors[0][0]) return anchors[0][1];
+  if (minutes >= anchors[anchors.length - 1][0]) return anchors[anchors.length - 1][1];
+  for (let i = 0; i < anchors.length - 1; i++) {
+    const [t0, y0] = anchors[i], [t1, y1] = anchors[i + 1];
+    if (minutes >= t0 && minutes <= t1) return t1 === t0 ? y0 : y0 + (y1 - y0) * (minutes - t0) / (t1 - t0);
+  }
+  return anchors[anchors.length - 1][1];
+}
+
+async function startNowLine() {
+  const geo = await load('schedule_geo');
+  const line = $('nowline');
+  if (!geo || !line || !Array.isArray(geo.slots)) return;
+
+  const tick = () => {
+    // 用北京时间算，和 SVG 一致；浏览器时区不一定是 UTC+8
+    const bj = new Date(Date.now() + (8 * 60 + new Date().getTimezoneOffset()) * 60000);
+    const iso = `${bj.getFullYear()}-${String(bj.getMonth() + 1).padStart(2, '0')}-${String(bj.getDate()).padStart(2, '0')}`;
+    // 图是某一周的快照，跨周后 today_col 就不对了，宁可隐藏也不画歪
+    const drift = Math.round((new Date(iso) - new Date(geo.date)) / 86400000);
+    const col = geo.today_col + drift;
+    if (col < 0 || col > 6) { line.hidden = true; return; }
+
+    const y = nowLineY(bj.getHours() * 60 + bj.getMinutes(), geo);
+    const x = geo.pad + geo.gutter + col * geo.col_w;
+    line.hidden = false;
+    line.style.top = (y / geo.height * 100) + '%';
+    line.style.left = (x / geo.width * 100) + '%';
+    line.style.width = (geo.col_w / geo.width * 100) + '%';
+    $('nowlabel').textContent = `${String(bj.getHours()).padStart(2, '0')}:${String(bj.getMinutes()).padStart(2, '0')}`;
+  };
+
+  tick();
+  setInterval(tick, 30000);
 }
 
 (async function main() {
@@ -125,4 +172,5 @@ function renderQuotes(data) {
   renderNotices(notices);
   renderPlans(plans);
   renderQuotes(quotes);
+  startNowLine();
 })();

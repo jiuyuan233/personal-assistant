@@ -215,6 +215,17 @@ def do_selftest() -> bool:
         fb = dp.fallback_message(k, facts, "测试一言（来源）")
         check(f"{k} 降级文案含事实与一言", len(fb) > 20 and "测试一言" in fb and "未完成计划" in fb)
 
+    # 时间线映射：节课内按真实比例走，课间停在两行交界，超出当天范围钳住
+    import week_svg as ws
+
+    bt = 100.0
+    check("第一节课开始对在行顶", ws.time_y(8 * 60, bt) == bt)
+    check("第一节课结束对在行底", ws.time_y(8 * 60 + 45, bt) == bt + ws.ROW_H)
+    check("小课间停在行交界", ws.time_y(8 * 60 + 47, bt) == bt + ws.ROW_H)
+    check("大课间不拉伸", ws.time_y(9 * 60 + 50, bt) == bt + ws.ROW_H * 2)
+    check("凌晨钳到顶", ws.time_y(0, bt) == bt)
+    check("深夜钳到底", ws.time_y(23 * 60, bt) == bt + ws.ROW_H * len(ws.SLOTS))
+
     # 真实样本结构：课程名在 li 内的 course-name span，middle 页首个 h2 是全站横幅
     list_html = '''<ul class="course-list"><li class="course clearfix" id="c_219232606">
       <div class="course-cover"><a href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=219232606&clazzid=153566712&cpi=577967959&ismooc2=1"><img src="x.jpg"></a></div>

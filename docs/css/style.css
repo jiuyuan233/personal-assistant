@@ -65,7 +65,23 @@ blockquote {
 }
 blockquote .ctx { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
 
-#weeksvg { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; }
+#weeksvg { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; display: block; }
+
+/* 实时时间线：覆盖在 SVG 上，位置用百分比算，图片缩放也不会歪 */
+.svg-wrap { position: relative; }
+.now-line {
+  position: absolute; height: 0; border-top: 2px solid #FA5252;
+  pointer-events: none; z-index: 2;
+}
+.now-line::before {
+  content: ''; position: absolute; left: -4px; top: -5px;
+  width: 8px; height: 8px; border-radius: 50%; background: #FA5252;
+}
+.now-line span {
+  position: absolute; right: 100%; top: -9px; margin-right: 4px;
+  background: #FA5252; color: #fff; font-size: 10px; line-height: 16px;
+  padding: 0 4px; border-radius: 3px; white-space: nowrap;
+}
 
 footer { padding: 8px 16px 32px; color: var(--muted); font-size: 12px; }
 

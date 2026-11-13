@@ -22,7 +22,11 @@
 
   <section>
     <h2>📅 本周课表</h2>
-    <img id="weeksvg" src="week.svg" alt="本周课表">
+    <div class="svg-wrap" id="svgwrap">
+      <img id="weeksvg" src="week.svg" alt="本周课表">
+      <div class="now-line" id="nowline" hidden><span id="nowlabel"></span></div>
+    </div>
+    <p class="meta">红线是当前时间。图里的线每 20 分钟重画一次，这条覆盖线由浏览器实时移动。</p>
   </section>
 
   <section>

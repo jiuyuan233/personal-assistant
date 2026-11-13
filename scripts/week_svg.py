@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 from datetime import date, timedelta
 
-from utils import DATA_DIR, DOCS_DIR, load_json, log, now_bj, today_bj
+from utils import DATA_DIR, DOCS_DIR, load_json, log, now_bj, save_json, today_bj
 
 OUT = DOCS_DIR / "week.svg"
 
@@ -27,6 +27,32 @@ HEIGHT = HEAD_H + ROW_H * len(SLOTS) + PAD * 2 + 26
 
 PALETTE = ["#4C6EF5", "#0CA678", "#E8590C", "#9C36B5", "#1098AD",
            "#D6336C", "#5C940D", "#E67700", "#3B5BDB", "#0B7285"]
+
+CLASS_MINUTES = 45
+
+
+def time_y(minutes: float, body_top: float) -> float:
+    """当天第几分钟 → SVG 的 y 坐标。
+
+    每节课 45 分钟正好占满一行；课间线停在两行交界，不拉伸 ——
+    否则大课间（08:50→10:05 有 75 分钟）会让线看着像还在上课。
+    早于第一节课钳到顶，晚于最后一节钳到底。
+    """
+    anchors: list[tuple[float, float]] = []
+    for r, (_, hhmm) in enumerate(SLOTS):
+        h, m = map(int, hhmm.split(":"))
+        start = h * 60 + m
+        y = body_top + r * ROW_H
+        anchors.append((start, y))
+        anchors.append((start + CLASS_MINUTES, y + ROW_H))
+    if minutes <= anchors[0][0]:
+        return anchors[0][1]
+    if minutes >= anchors[-1][0]:
+        return anchors[-1][1]
+    for (t0, y0), (t1, y1) in zip(anchors, anchors[1:]):
+        if t0 <= minutes <= t1:
+            return y0 if t1 == t0 else y0 + (y1 - y0) * (minutes - t0) / (t1 - t0)
+    return anchors[-1][1]
 
 
 def esc(s: str) -> str:
@@ -121,13 +147,36 @@ def run(today: date | None = None) -> bool:
         p.append(f'<text x="{WIDTH / 2}" y="{body_top + 120}" font-size="14" text-anchor="middle" '
                  f'fill="#ADB5BD">本周没有课</text>')
 
+    # 当前时间线（日历样式），画在课程块之上才看得见。
+    # SVG 是静态的，finalize 每 20 分钟重画一次，所以这条线是「20 分钟精度」；
+    # 网页端另有一条 JS 实时移动的同款线，几何参数从 schedule_geo.json 读。
+    minutes = now.hour * 60 + now.minute
+    ny = time_y(minutes, body_top)
+    nx = PAD + GUTTER + today_col * COL_W
+    p.append(f'<line x1="{nx}" y1="{ny:.1f}" x2="{nx + COL_W}" y2="{ny:.1f}" '
+             f'stroke="#FA5252" stroke-width="2"/>')
+    p.append(f'<circle cx="{nx}" cy="{ny:.1f}" r="4" fill="#FA5252"/>')
+    p.append(f'<rect x="{PAD + 2}" y="{ny - 9:.1f}" width="{GUTTER - 6}" height="16" rx="3" fill="#FA5252"/>')
+    p.append(f'<text x="{PAD + GUTTER / 2}" y="{ny + 3:.1f}" font-size="10" text-anchor="middle" '
+             f'fill="#FFFFFF">{now.strftime("%H:%M")}</text>')
+
     p.append(f'<text x="{PAD}" y="{HEIGHT - 8}" font-size="9" fill="#CED4DA">'
              f'自动生成于 {now.strftime("%Y-%m-%d %H:%M")} (UTC+8) · 共 {len(events)} 节课</text>')
     p.append("</svg>")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(p), encoding="utf-8")
-    log(f"本周课表 SVG 已生成：{len(events)} 节课")
+
+    # 前端实时线要用同一套几何，避免两处各算一遍算歪
+    save_json(DOCS_DIR / "data" / "schedule_geo.json", {
+        "width": WIDTH, "height": HEIGHT, "pad": PAD, "gutter": GUTTER,
+        "col_w": COL_W, "row_h": ROW_H, "body_top": body_top,
+        "today_col": today_col, "date": today.isoformat(),
+        "class_minutes": CLASS_MINUTES,
+        "slots": [hhmm for _, hhmm in SLOTS],
+        "generated_at": now.isoformat(timespec="seconds"),
+    })
+    log(f"本周课表 SVG 已生成：{len(events)} 节课，时间线 {now.strftime('%H:%M')}")
     return True
 
 
