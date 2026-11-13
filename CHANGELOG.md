@@ -55,6 +55,8 @@
 - 两处 workflow 脚本注入（`${{ inputs.* }}` 直接插进 shell）→ 全部改走环境变量
 - `docs/data/meta.json` 的 `week` 带 `**` 而前端用 `textContent` 渲染 → 写 JSON 时剥掉 Markdown 标记
 - 教学周会停在最后一次手动跑 `schedule` 的那一周 → `finalize` 每次离线重算课表
+- README 里「标记完成请改 `data/diary/plans.json`」在 diary 首次成功前是 404
+  → 预置空封装 `{updated_at, count: 0, items: []}`，与 `save_list` 格式一致，`load_list` 读作 `[]`
 
 ### 已知限制
 
