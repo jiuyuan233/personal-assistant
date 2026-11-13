@@ -160,7 +160,7 @@ def render_notices(limit: int = 12) -> str:
         lines.append("| {} | {} | {} | {} | {} | {} |".format(
             n.get("score") or 0, n.get("publish_date") or "—",
             md_link(n.get("title"), n.get("url")), esc(n.get("source")),
-            n.get("deadline") or "—", esc(n.get("reason")) or "—"))
+            n.get("deadline") or "—", esc(n.get("description") or n.get("reason")) or "—"))
     return "\n".join(lines) + "\n"
 
 

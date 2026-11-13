@@ -267,17 +267,20 @@ def ai_detail(session: requests.Session, items: list[dict]) -> None:
     for n in items:
         html = fetch(session, n["url"])
         if not html:
+            log(f"正文抓取失败：{n['url']}", level="WARN")
             continue
         text = body_text(html)
         if len(text) < 80:
+            log(f"正文过短（{len(text)} 字），跳过：{n['url']}", level="WARN")
             continue
         try:
             d = client.chat_json(detail_messages(n["title"], text),
-                                 schema_hint=DETAIL_SCHEMA, temperature=0.1, max_tokens=1000)
+                                 schema_hint=DETAIL_SCHEMA, temperature=0.1, max_tokens=2000)
         except Exception as e:
             log(f"公告正文摘要失败：{safe_text(e, 200)}", level="ERROR")
             continue
         if not isinstance(d, dict):
+            log(f"正文摘要返回非对象（{type(d).__name__}）：{safe_text(d, 120)}", level="WARN")
             continue
         n["description"] = safe_text(d.get("summary"), 120)
         dl = d.get("deadline")
