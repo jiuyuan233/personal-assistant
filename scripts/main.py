@@ -216,6 +216,14 @@ def do_selftest() -> bool:
     check("两份独立文档模板存在",
           rr.NOTICE_TEMPLATE.exists() and rr.PLANS_TEMPLATE.exists())
 
+    # 用户硬要求：所有说明性文档都必须能在 README 目录里找到。
+    # 新增文档忘了挂链接，这条会直接红，不用等人肉发现。
+    docs = sorted((rr.REPO_ROOT / "docs").glob("*.md"))
+    docs += [rr.REPO_ROOT / n for n in ("AGENT.md", "DEV_GUIDE.md", "CHANGELOG.md")]
+    missing = [p.name for p in docs
+               if f"docs/{p.name}" not in tpl and f"]({p.name})" not in tpl]
+    check("所有说明性文档都挂进 README 目录", not missing, str(missing))
+
     # 占位符漏一个就会在页面上留下字面量 {{X}}，这里做结构性守卫
     import inspect
     import re as _re

@@ -380,6 +380,8 @@ JS 侧按 `geo.date` 算日期漂移来平移 `today_col`，超出 0..6 就隐�
 | [docs/仓库结构.md](docs/仓库结构.md) | 目录树 + 每个文件的职责 |
 | [docs/AI提示词.md](docs/AI提示词.md) | 提示词设计说明与调参建议 |
 | [docs/常见问题.md](docs/常见问题.md) | 故障排查 |
+| [docs/个人画像.md](docs/个人画像.md) | 用户是谁 / 关注什么 / 说话风格硬边界（**public，不含凭据**） |
+| [docs/开发习惯.md](docs/开发习惯.md) | 15 条协作规则，每条附用户原话 —— **接手前必读** |
 | [docs/原始文件.md](docs/原始文件.md) | `assets/` 四个上传文件的脱敏口径、审计结果、换文件流程 |
 | [docs/竞赛日历.md](docs/竞赛日历.md) | 269 项校级竞赛目录 + 已核实时间（**手工维护，Actions 不覆盖**） |
 | [CHANGELOG.md](CHANGELOG.md) | 版本记录 |
