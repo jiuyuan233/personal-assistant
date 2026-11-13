@@ -1,7 +1,7 @@
 # 🎓 个人助手
 
 > **本文件由 GitHub Actions 自动生成，请勿手工编辑**（改了也会被下次运行覆盖）。
-> 最后更新：`2026-11-13 18:35:15 (UTC+8)` · 第 **10** 周 / 共 18 周
+> 最后更新：`2026-11-13 18:41:59 (UTC+8)` · 第 **10** 周 / 共 18 周
 > 渲染每 20 分钟一次，学习通每小时一次，公告每天 3 次，日记每 20 分钟增量检查。
 
 
@@ -27,10 +27,10 @@ README 只放每天要看的动态，**所有说明性文档都挂在下面**：
 
 | 课程 | 作业数 | 待完成 | 任务（截止近 → 远） |
 | --- | --- | --- | --- |
-| 高等数学A | 14 | 1 | [3-6函数图形的描绘3-7曲率](https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&cpi=577967959&workId=58467962&answerId=0&enc=f4d70d033ef384444abee3d14c6b537e)（作业·11-15 23:57 ≈） |
+| 高等数学A | 14 | 1 | [3-6函数图形的描绘3-7曲率](https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&cpi=577967959&workId=58467962&answerId=55752412&enc=f4d70d033ef384444abee3d14c6b537e)（作业·11-15 23:57 ≈） |
 | 建筑环境与能源应用工程概论 | 8 | 1 | [人造空间的热湿声光环境调控工程](https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58204754&answerId=0&enc=b44f71b3bb99323ca0b941bba238632a)（作业·无截止） |
 | 大学生心理健康教育（智慧课程） | 8 | **无** | — |
-| 新世纪大学英语综合教程(一) | 3 | 2 | [Unit 1 words in action (第2-3大题)](https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&cpi=577967959&workId=58170556&answerId=55245377&enc=a09ae9b3af415c3b6b1c6c0ff1635cd1)（作业·11-19 23:54 ≈）<br>[unit 1 翻译](https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&cpi=577967959&workId=58170689&answerId=55291283&enc=f4dedc558df97cac491d887b57101799)（作业·11-20 23:54 ≈） |
+| 新世纪大学英语综合教程(一) | 3 | 2 | [Unit 1 words in action (第2-3大题)](https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&cpi=577967959&workId=58170556&answerId=55245377&enc=a09ae9b3af415c3b6b1c6c0ff1635cd1)（作业·11-19 23:53 ≈）<br>[unit 1 翻译](https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&cpi=577967959&workId=58170689&answerId=55291283&enc=f4dedc558df97cac491d887b57101799)（作业·11-20 23:54 ≈） |
 | 军事理论课教学 | 3 | **无** | — |
 | 2026级-校规校纪 | 1 | **无** | — |
 | 军事理论（同济大学版） | 1 | **无** | — |
@@ -121,9 +121,9 @@ README 只放每天要看的动态，**所有说明性文档都挂在下面**：
 
 | 数据源 | 状态 | 最近成功 | 规模 |
 | --- | --- | --- | --- |
-| 学习通作业 | ✅ 正常 | 1 小时前 | 14/14 门课，38 条任务 |
-| 校园公告 | ✅ 有数据 | 1 小时前 | 78 条入库 |
-| Gitee 日记 | ✅ 有数据 | 1 小时前 | 23 个 md 文件 |
+| 学习通作业 | ✅ 正常 | 3 分钟前 | 14/14 门课，38 条任务 |
+| 校园公告 | ✅ 有数据 | 2 小时前 | 78 条入库 |
+| Gitee 日记 | ✅ 有数据 | 2 小时前 | 23 个 md 文件 |
 | WakeUp 课表 | ✅ 已解析 | 刚刚 | 186 条上课记录 |
 
 
