@@ -1,11 +1,13 @@
 {
-  "updated_at": "2026-11-13T23:25:06+08:00",
-  "count": 78,
+  "updated_at": "2026-11-14T01:06:54+08:00",
+  "count": 122,
   "sources": [
     "校网通知公告",
     "教务处",
     "教务处活动通知",
-    "校团委通知公告"
+    "校团委通知公告",
+    "科研处通知公告",
+    "研究生处学科建设"
   ],
   "items": [
     {
@@ -25,7 +27,7 @@
       ],
       "score": 4,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-d7329f44c2",
@@ -43,7 +45,7 @@
       ],
       "score": 4,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-76fa45004a",
@@ -62,7 +64,7 @@
       ],
       "score": 4,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-81f58765df",
@@ -81,7 +83,7 @@
       ],
       "score": 3,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-72e3132e19",
@@ -99,7 +101,7 @@
       ],
       "score": 3,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "ai-ai-97a2c55cf9",
@@ -118,7 +120,7 @@
       ],
       "score": 3,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-a90c4255c5",
@@ -137,7 +139,25 @@
       ],
       "score": 3,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-09c574172f",
+      "title": "关于中国工程院院士徐明岗教授报告会的通知",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1438.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2025-11-25",
+      "description": "",
+      "deadline": null,
+      "category": "讲座培训",
+      "reason": "院士报告会，可拓展视野",
+      "tags": [
+        "院士",
+        "讲座"
+      ],
+      "score": 3,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-2afe69ad96",
@@ -155,7 +175,7 @@
       ],
       "score": 2,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-f2dafaa2bd",
@@ -174,7 +194,7 @@
       ],
       "score": 2,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-d8e96e5170",
@@ -192,7 +212,7 @@
       ],
       "score": 2,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2027-1f7b494d7f",
@@ -210,7 +230,7 @@
       ],
       "score": 2,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-8ea0aa2a9d",
@@ -228,7 +248,7 @@
       ],
       "score": 2,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-b08d4502d2",
@@ -246,7 +266,25 @@
       ],
       "score": 2,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2026-7240a1e9b7",
+      "title": "2026年度平顶山市社科联调研课题立项名单",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3288.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-09-07",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "课题立项名单，可了解可参与项目",
+      "tags": [
+        "社科课题",
+        "立项"
+      ],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-18054e14b7",
@@ -264,7 +302,7 @@
       ],
       "score": 2,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-06a1ddade7",
@@ -283,7 +321,7 @@
       ],
       "score": 2,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-f88d6cafcf",
@@ -302,7 +340,7 @@
       ],
       "score": 2,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-b242fb03c8",
@@ -320,7 +358,73 @@
       ],
       "score": 2,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-4bc80fad20",
+      "title": "关于组织申报研究阐释党的二十届四中全会精神河南省社科规划专项项目的通知",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3207.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-02-09",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "社科专项申报，学生一般不符条件",
+      "tags": [
+        "社科规划",
+        "申报"
+      ],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2027-2a170a41e9",
+      "title": "关于组织申报2027年度河南省高等学校人文社会科学研究一般项目的通知",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3208.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-02-03",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "人文社科项目，本科生难申报",
+      "tags": [
+        "科研项目",
+        "人文社科"
+      ],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-49074b065e",
+      "title": "关于河南理工大学陈俊杰教授报告会的通知",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1419.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2025-11-25",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-692d72a6b3",
+      "title": "关于河南师范大学刘玉芳教授报告会的通知",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1399.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2025-11-10",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-ab1839b9b2",
@@ -338,7 +442,112 @@
       ],
       "score": 2,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-182098d2d7",
+      "title": "关于河南大学张宝明教授报告会的通知",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1370.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2025-10-20",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2025-d50f4d6562",
+      "title": "2025年度硕士研究生导师岗前与岗位培训班顺利开班",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1346.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2025-09-27",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2025-64cfa9c148",
+      "title": "关于开展2025年度硕士生导师岗前与岗位培训工作的通知",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1343.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2025-09-07",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-1fcf66929e",
+      "title": "关于郑州轻工业大学闻英教授报告会的通知",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1327.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2025-09-05",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-82589e6345",
+      "title": "关于召开“学科建设年”第一期院长论坛的通知",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1314.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2025-06-26",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-7847c4d807",
+      "title": "关于同济大学黄宏伟教授报告会的通知",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1290.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2025-05-16",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-afdfd924f9",
+      "title": "关于西北大学原副校长赖绍聪教授报告会的通知",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1282.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2025-04-08",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2024-2025-10beb11673",
@@ -356,7 +565,7 @@
       ],
       "score": 2,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2023-2024-6fb7a0873b",
@@ -374,7 +583,52 @@
       ],
       "score": 2,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2022-557ce9f14c",
+      "title": "关于申报2022年河南省工程技术研究中心评审推荐结果的公示",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1087.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2023-08-03",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-3741da299f",
+      "title": "最美科技工作者推荐名单公示",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1088.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2022-03-22",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2021-54225b211c",
+      "title": "关于推荐2021年度河南省工程技术研究中心的公示",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1090.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2022-03-21",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 2,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-f0ccdc5795",
@@ -392,7 +646,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-ba1c7ff710",
@@ -410,7 +664,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-ba1440bc63",
@@ -428,7 +682,43 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2026-2872e02710",
+      "title": "2026年度湖南省科学技术奖申报项目公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3332.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-10-19",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "外省科技奖公示，本科生无法参与",
+      "tags": [
+        "科技奖",
+        "公示"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2027-203c8a20ce",
+      "title": "关于申报2027年度省自然科学基金项目评审推荐结果的公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3331.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-10-16",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "基金评审推荐结果公示，面向教师",
+      "tags": [
+        "自然科学基金",
+        "公示"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-21bac9d4d0",
@@ -445,7 +735,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-96e34eaec5",
@@ -463,7 +753,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-92a4ec4e33",
@@ -481,7 +771,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-a9897dd838",
@@ -499,7 +789,25 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2027-96acb38113",
+      "title": "关于申报2027年度省软科学项目评审推荐结果的公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3320.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-09-30",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "软科学项目推荐公示，非学生事项",
+      "tags": [
+        "软科学",
+        "公示"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-2027-9444110e43",
@@ -517,7 +825,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-2027-9feb142353",
@@ -534,7 +842,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-804eb7851a",
@@ -552,7 +860,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "ai-6af793f223",
@@ -571,7 +879,61 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2026-77bd71e309",
+      "title": "关于2026年度河南省政府决策招标课题评审推荐结果的公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3284.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-08-27",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "决策招标课题推荐公示，面向教师",
+      "tags": [
+        "招标课题",
+        "公示"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2026-463f113497",
+      "title": "关于2026年河南省哲学社会科学规划项目评审推荐结果的公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3283.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-08-27",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "社科规划项目推荐公示，学生无关",
+      "tags": [
+        "社科规划",
+        "公示"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2027-4dcf1262c6",
+      "title": "2027年度河南省教育强省专项研究项目申报推荐名单",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3270.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-07-22",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "专项研究推荐名单，非学生申报",
+      "tags": [
+        "教育研究",
+        "名单"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
     },
     {
       "id": "ai-o-lis-e-9eb2b31bfe",
@@ -590,7 +952,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-921aa8ddc8",
@@ -608,7 +970,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-6c17615be8",
@@ -627,7 +989,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-1b1f59da9f",
@@ -645,7 +1007,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-6db575592f",
@@ -663,7 +1025,97 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2025-b5524c8524",
+      "title": "关于公布2025年度平顶山市社会科学调研课题结项结果的通知",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3239.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-05-08",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "社科课题结项结果通知，纯行政",
+      "tags": [
+        "结项",
+        "通知"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2026-8aefc9b8b4",
+      "title": "2026年度河南省科学技术奖申报项目公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3241.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-05-07",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "科技奖申报公示，本科生无法参与",
+      "tags": [
+        "科技奖",
+        "公示"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2026-228e4a0a76",
+      "title": "2026年度河南省科学技术奖申报项目公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3237.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-05-06",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "科技奖申报公示，与用户无关",
+      "tags": [
+        "科技奖",
+        "公示"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2026-c3f3afd345",
+      "title": "2026年度河南省科学技术奖申报项目公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3238.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-05-06",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "奖项申报公示，本科生无法参与",
+      "tags": [
+        "科技奖",
+        "公示"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2026-9c0de52403",
+      "title": "2026年度河南省科学技术奖申报项目公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3236.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-04-29",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "重复公示，与本科生无关",
+      "tags": [
+        "科技奖",
+        "公示"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2025-2026-f50c9961e9",
@@ -681,7 +1133,277 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2027-7530779b13",
+      "title": "关于2027年度河南省教育厅高校人文社会科学研究一般项目评审推荐结果的公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3224.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-03-31",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "项目评审结果公示，非学生事项",
+      "tags": [
+        "社科项目",
+        "公示"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-3e5f830adc",
+      "title": "关于举办“国家自然科学基金申报专家指导”系列活动（六）的通知",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3214.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-03-11",
+      "description": "",
+      "deadline": null,
+      "category": "讲座培训",
+      "reason": "面向教师的基金申报指导",
+      "tags": [
+        "基金申报",
+        "教师"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-8e5fbea29c",
+      "title": "关于举办“国家自然科学基金申报专家指导”系列活动（五）的通知",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3213.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-03-11",
+      "description": "",
+      "deadline": null,
+      "category": "讲座培训",
+      "reason": "面向教师的基金申报指导",
+      "tags": [
+        "基金申报",
+        "教师"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-8487f02b66",
+      "title": "关于举办“国家自然科学基金申报专家指导”系列活动（四）的通知",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3212.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-03-11",
+      "description": "",
+      "deadline": null,
+      "category": "讲座培训",
+      "reason": "面向教师的基金申报指导",
+      "tags": [
+        "基金申报",
+        "教师"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-2ba6b433c8",
+      "title": "关于举办“国家自然科学基金申报专家指导”系列活动（三）的通知",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3211.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-03-10",
+      "description": "",
+      "deadline": null,
+      "category": "讲座培训",
+      "reason": "面向教师的基金申报指导",
+      "tags": [
+        "基金申报",
+        "教师"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-67532f06f4",
+      "title": "关于举办 “国家自然科学基金申报专家指导” 系列活动（二）的通知",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3210.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-03-10",
+      "description": "",
+      "deadline": null,
+      "category": "讲座培训",
+      "reason": "面向教师的基金申报指导",
+      "tags": [
+        "基金申报",
+        "教师"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-3d783d253d",
+      "title": "关于举办“国家自然科学基金申报专家指导”系列活动（一）的通知",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3209.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2026-03-10",
+      "description": "",
+      "deadline": null,
+      "category": "讲座培训",
+      "reason": "面向教师的基金申报指导",
+      "tags": [
+        "基金申报",
+        "教师"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2026-0de03675bd",
+      "title": "关于申报2026年度省自然科学基金项目评审推荐结果的公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3187.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2025-12-04",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "评审结果公示，无参与机会",
+      "tags": [
+        "公示",
+        "基金"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2026-d4cf934ce6",
+      "title": "关于申报2026年度省科技攻关、软科学项目评审推荐结果的公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3170.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2025-10-20",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "评审结果公示，无法参与",
+      "tags": [
+        "公示",
+        "科技攻关"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2025-e344bceb4c",
+      "title": "2025年度河南省社科联调研课题立项名单",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3165.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2025-10-16",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "社科立项名单，与专业无关",
+      "tags": [
+        "立项",
+        "社科"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2026-64d15dd55a",
+      "title": "关于2026年度河南省校企协同创新项目推荐结果的公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3157.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2025-10-05",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "推荐结果公示，非报名机会",
+      "tags": [
+        "公示",
+        "校企"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2025-0a7c79b23e",
+      "title": "关于2025年河南省哲学社会科学规划项目评审推荐结果的公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3151.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2025-09-24",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "社科项目公示，与用户无关",
+      "tags": [
+        "公示",
+        "社科"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2024-9603dcb0e9",
+      "title": "2024年度科研工作先进个人和优秀科研工作者评选结果公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3141.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2025-09-12",
+      "description": "",
+      "deadline": null,
+      "category": "其他",
+      "reason": "教师科研评优公示",
+      "tags": [
+        "评优",
+        "教师"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2025-bfbcff7c85",
+      "title": "2025年度平顶山市社科联调研课题立项名单",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3144.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2025-09-10",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "社科立项名单，专业不相关",
+      "tags": [
+        "立项",
+        "社科"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2025-0bbee98dc9",
+      "title": "2025年度中国电工技术学会科学技术奖公示",
+      "url": "https://kyc.huuc.edu.cn/info/1046/3116.htm",
+      "source": "科研处通知公告",
+      "publish_date": "2025-08-24",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "科技奖公示，非学生可参与",
+      "tags": [
+        "奖项",
+        "公示"
+      ],
+      "score": 1,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2025-b32e75adda",
@@ -699,7 +1421,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2025-07b7cf9a32",
@@ -717,7 +1439,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2025-5b12603875",
@@ -735,7 +1457,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-a79eabb058",
@@ -753,7 +1475,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "75-2024-a237959fd5",
@@ -771,7 +1493,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2023-2024-37f54708c6",
@@ -789,7 +1511,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-3ef0d1d388",
@@ -807,7 +1529,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-241f78a870",
@@ -825,7 +1547,7 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-ae8d2c0054",
@@ -840,7 +1562,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-f42726f64a",
@@ -855,7 +1577,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "18-13cc2775fb",
@@ -870,7 +1592,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-695fe835f4",
@@ -888,7 +1610,7 @@
       ],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-20fbdfa47c",
@@ -906,7 +1628,7 @@
       ],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-2027-dc248d5286",
@@ -921,7 +1643,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-90e63ea854",
@@ -939,7 +1661,7 @@
       ],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-650cdc30ed",
@@ -954,7 +1676,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-900bff9305",
@@ -971,7 +1693,7 @@
       ],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-46268ea631",
@@ -988,7 +1710,7 @@
       ],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "77-46694d3bb2",
@@ -1005,7 +1727,7 @@
       ],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-675692f43d",
@@ -1020,7 +1742,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-93cdcbcf75",
@@ -1035,7 +1757,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-4f8659a772",
@@ -1050,7 +1772,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-7b096d6fea",
@@ -1065,7 +1787,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-38ae4834ac",
@@ -1080,7 +1802,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-a2cfd558cd",
@@ -1095,7 +1817,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-ce7878bf40",
@@ -1110,7 +1832,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "ai-9a0dbfc5b0",
@@ -1125,7 +1847,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-313b04a5bd",
@@ -1140,7 +1862,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2025-31bec259b2",
@@ -1155,7 +1877,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2025-640f3cfd4f",
@@ -1170,7 +1892,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2025-60ac941bfb",
@@ -1185,7 +1907,22 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "-64e3b9896f",
+      "title": "我校三个平台获批列入河南省城乡建设科技创新平台培育名单（第一批）",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1086.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2025-04-01",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 0,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-ac5a6840ba",
@@ -1200,7 +1937,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2023-bf917b9b62",
@@ -1215,7 +1952,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2024-48a2553f5a",
@@ -1230,7 +1967,22 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
+    },
+    {
+      "id": "2022-5b1c65d35a",
+      "title": "关于统计2022年第一季度硕士学位授予单位培育建设工作目标任务完成情况的…",
+      "url": "https://yjsc.huuc.edu.cn/info/1130/1089.htm",
+      "source": "研究生处学科建设",
+      "publish_date": "2022-10-23",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 0,
+      "first_seen": "2026-11-14",
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-b2f5fdc1d3",
@@ -1245,7 +1997,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-2027-147f833597",
@@ -1260,7 +2012,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-2027-97f5fe92d8",
@@ -1275,7 +2027,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-a380c5631f",
@@ -1290,7 +2042,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-999533ffc8",
@@ -1305,7 +2057,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "2026-2027-f9540ced0b",
@@ -1320,7 +2072,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     },
     {
       "id": "-fc0df357be",
@@ -1335,7 +2087,7 @@
       "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-14"
     }
   ]
 }

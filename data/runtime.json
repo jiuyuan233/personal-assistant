@@ -1,0 +1,22 @@
+{
+  "last_ok": {
+    "study": "2026-11-14T01:05:11+08:00",
+    "diary": "2026-11-14T01:05:11+08:00",
+    "notice": "2026-11-14T01:05:11+08:00"
+  },
+  "last_try": {
+    "study": "2026-11-14T01:05:11+08:00",
+    "diary": "2026-11-14T01:05:11+08:00",
+    "notice": "2026-11-14T01:05:11+08:00"
+  },
+  "pushed": {},
+  "errors": {},
+  "writeback_date": "2026-11-14",
+  "last_tick": "2026-11-14T01:05:11+08:00",
+  "last_results": {
+    "study": true,
+    "diary": true,
+    "notice": true,
+    "finalize": true
+  }
+}
