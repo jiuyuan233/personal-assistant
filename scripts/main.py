@@ -103,7 +103,7 @@ def do_probe() -> bool:
 
 def do_selftest() -> bool:
     """离线自检：用内置样本验证解析器，不需要凭据也不需要网络。"""
-    from datetime import datetime
+    from datetime import datetime, timedelta
 
     from utils import BJ_TZ, parse_remaining, fmt_remaining
     import schedule_parser
@@ -160,6 +160,37 @@ def do_selftest() -> bool:
 
     check("未交 归为 pending", study_collector.classify("未交") == "pending",
           study_collector.classify("未交"))
+
+    # 清单只留能做的：非待完成 / 已逾期 / 开始超过一周，三类全部剔除
+    import render_readme as rr
+
+    def mk(**kw):
+        return dict({"state": "pending", "course_id": "c1", "title": "t",
+                     "kind": "work", "url": "u"}, **kw)
+
+    iso = lambda d: d.isoformat(timespec="seconds")
+    sample = [
+        mk(),                                                  # 无截止无开始 → 留
+        mk(state="done"),                                      # 已完成 → 剔
+        mk(state="submitted"),                                 # 已批阅 → 剔
+        mk(deadline=iso(now - timedelta(hours=1))),             # 已逾期 → 剔
+        mk(start_time=iso(now - timedelta(days=8))),            # 开始超一周 → 剔
+        mk(start_time=iso(now - timedelta(days=2))),            # 开始两天前 → 留
+        mk(first_seen=iso(now - timedelta(days=9))),            # 无开始时间，退回 first_seen → 剔
+    ]
+    kept, dropped = rr.actionable(sample, now)
+    check("可做过滤：留 2 剔 5", len(kept) == 2 and sum(dropped.values()) == 5,
+          f"kept={len(kept)} dropped={dropped}")
+    check("逾期任务不进清单", dropped["overdue"] == 1, str(dropped))
+    check("开始超一周不进清单", dropped["stale"] == 2, str(dropped))
+    check("已完成/已批阅不进清单", dropped["not_pending"] == 2, str(dropped))
+
+    crows = rr.course_rows([{"course_id": "c1", "name": "高等数学A", "task_count": 14},
+                            {"course_id": "c2", "name": "军事理论", "task_count": 1}], kept)
+    joined = "\n".join(crows)
+    check("无任务的课程也列出", len(crows) == 4 and "军事理论" in joined, f"rows={len(crows)}")
+    check("无任务写「无」", "**无**" in joined)
+    check("活跃度高的课程排前面", crows[2].index("高等数学A") < crows[3].index("军事理论"))
 
     # 真实样本结构：课程名在 li 内的 course-name span，middle 页首个 h2 是全站横幅
     list_html = '''<ul class="course-list"><li class="course clearfix" id="c_219232606">

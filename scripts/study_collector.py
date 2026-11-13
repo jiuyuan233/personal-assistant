@@ -64,6 +64,9 @@ TIME_RE = re.compile(r'<div class="time\s+(\w+)"[^>]*>(.*?)</div>', re.I | re.S)
 EXAM_ONCLICK_RE = re.compile("onclick=\"(\\w+)\\('(\\d+)','(\\d+)'\\)\"")
 DETAIL_DT_RE = re.compile(
     r"(?:截止时间|结束时间|截止|结束)[^0-9]{0,40}(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日]?\s*\d{1,2}:\d{2})")
+# 列表页只有倒计时 div，不给发布/开始时间，只能从详情页取。取不到就退回 first_seen
+DETAIL_START_RE = re.compile(
+    r"(?:开始时间|发布时间|布置时间|起始时间|开始)[^0-9]{0,40}(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日]?(?:\s*\d{1,2}:\d{2})?)")
 
 
 # ---------------------------------------------------------------------------
@@ -333,6 +336,13 @@ def detail_deadline(html: str) -> datetime | None:
     return parse_datetime(m.group(1).replace("年", "-").replace("月", "-").replace("日", ""))
 
 
+def detail_start(html: str) -> datetime | None:
+    m = DETAIL_START_RE.search(html)
+    if not m:
+        return None
+    return parse_datetime(m.group(1).replace("年", "-").replace("月", "-").replace("日", ""))
+
+
 # ---------------------------------------------------------------------------
 # 主流程
 # ---------------------------------------------------------------------------
@@ -386,18 +396,25 @@ def run() -> dict:
 
     log(f"扫描课程：{ok_courses}，失败：{failed}")
 
-    # 只对「待完成且没有倒计时」的任务抓详情页补精确截止时间
+    # 待完成任务抓详情页：补精确截止时间 + 取开始时间。
+    # 列表页只有一个倒计时 div，没有发布/开始时间，「超过一周就剔除」只能靠详情页。
     if detail_budget > 0:
-        need = [t for t in all_tasks if t["state"] == "pending" and not t["deadline"]][:detail_budget]
+        need = [t for t in all_tasks if t["state"] == "pending"][:detail_budget]
+        got_start = 0
         for t in need:
             html = cx.get(t["url"])
             if not html or is_tip_page(html):
                 continue
             dt = detail_deadline(html)
-            if dt:
+            if dt and not t.get("deadline_exact"):
                 t["deadline"] = dt.isoformat(timespec="seconds")
                 t["deadline_exact"] = True
                 log(f"详情页补全截止时间：{t['title']} → {t['deadline']}")
+            st = detail_start(html)
+            if st:
+                t["start_time"] = st.isoformat(timespec="seconds")
+                got_start += 1
+        log(f"详情页取到开始时间：{got_start}/{len(need)} 条")
 
     merged = merge_tasks(load_list(TASKS_PATH), all_tasks, now)
     save_list(TASKS_PATH, merged, course_count=len(courses))

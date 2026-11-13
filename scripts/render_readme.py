@@ -3,22 +3,24 @@
 纯离线：只读 data/ 下的 JSON，不发任何网络请求、不花任何 token。
 这是它能每 20 分钟跑一次的前提。
 
-任务清单按截止时间分四档（逾期 / 今天 / 7天内 / 更远），档内升序。
+任务清单只列「能做的」：待完成、未逾期、开始不超过一周。
+全部课程都出现，按活跃度（作业发表数量）降序，没任务的写「无」。
 """
 from __future__ import annotations
 
 from datetime import datetime, timedelta
 
 from dedup import load_list, sort_by_deadline
-from utils import (DATA_DIR, DOCS_DATA_DIR, REPO_ROOT, fmt_remaining, load_json,
+from utils import (DATA_DIR, DOCS_DATA_DIR, REPO_ROOT, load_json,
                    log, now_bj, parse_datetime, save_json)
 
 TEMPLATE = REPO_ROOT / "scripts" / "readme_template.md"
 README = REPO_ROOT / "README.md"
 
 KIND_CN = {"work": "作业", "eval": "互评", "exam": "考试"}
-STATE_CN = {"pending": "待完成", "submitted": "已提交", "done": "已完成", "unknown": "未知"}
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+# 开始时间距今超过这么多天的任务视为陈旧，不再显示（用户做不动了）
+STALE_DAYS = 7
 
 
 def esc(s: str) -> str:
@@ -33,85 +35,92 @@ def md_link(text: str, url: str) -> str:
 # ---------------------------------------------------------------------------
 # 任务清单
 # ---------------------------------------------------------------------------
-def bucket_tasks(tasks: list[dict], now: datetime) -> dict[str, list[dict]]:
-    today = now.date()
-    buckets: dict[str, list[dict]] = {"overdue": [], "today": [], "week": [], "later": []}
-    for t in sort_by_deadline(tasks):
-        dt = parse_datetime(t.get("deadline"))
-        if dt is None:
-            buckets["later"].append(t)
-        elif dt < now:
-            buckets["overdue"].append(t)
-        elif dt.date() == today:
-            buckets["today"].append(t)
-        elif dt - now <= timedelta(days=7):
-            buckets["week"].append(t)
-        else:
-            buckets["later"].append(t)
-    return buckets
+def task_start(t: dict) -> datetime | None:
+    """开始时间：优先详情页取到的真实值，取不到退回首次发现时间（列表页不给发布时间）。"""
+    return parse_datetime(t.get("start_time")) or parse_datetime(t.get("first_seen"))
 
 
-def task_table(tasks: list[dict], now: datetime) -> str:
-    if not tasks:
-        return "_无_\n"
-    lines = ["| 截止时间 | 课程 | 任务 | 类型 | 状态 | 倒计时 |",
-             "| --- | --- | --- | --- | --- | --- |"]
+def actionable(tasks: list[dict], now: datetime) -> tuple[list[dict], dict]:
+    """只留能做的：待完成、未逾期、开始不超过一周。已完成/已批阅的一律不进清单。"""
+    kept: list[dict] = []
+    dropped = {"not_pending": 0, "overdue": 0, "stale": 0}
+    cutoff = now - timedelta(days=STALE_DAYS)
     for t in tasks:
+        if t.get("state") != "pending":
+            dropped["not_pending"] += 1
+            continue
         dt = parse_datetime(t.get("deadline"))
-        when = dt.strftime("%m-%d %H:%M") if dt else "—"
-        if dt and not t.get("deadline_exact"):
-            when += " ≈"
-        lines.append("| {} | {} | {} | {} | {} | {} |".format(
-            when,
-            esc(t.get("course")),
-            md_link(t.get("title"), t.get("url")),
-            KIND_CN.get(t.get("kind"), t.get("kind") or ""),
-            STATE_CN.get(t.get("state"), t.get("status") or ""),
-            fmt_remaining(dt, now=now),
-        ))
-    return "\n".join(lines) + "\n"
+        if dt and dt < now:
+            dropped["overdue"] += 1
+            continue
+        st = task_start(t)
+        if st and st < cutoff:
+            dropped["stale"] += 1
+            continue
+        kept.append(t)
+    return kept, dropped
+
+
+def course_rows(courses: list[dict], kept: list[dict]) -> list[str]:
+    """全部课程都列出来，按活跃度（作业发表数量）降序；没任务的写「无」。"""
+    by_course: dict[str, list[dict]] = {}
+    for t in kept:
+        by_course.setdefault(t.get("course_id") or "", []).append(t)
+    ordered = sorted(courses, key=lambda c: (-(c.get("task_count") or 0),
+                                             -(c.get("pending_count") or 0),
+                                             c.get("name") or ""))
+    lines = ["| 课程 | 作业数 | 待完成 | 任务（截止近 → 远） |",
+             "| --- | --- | --- | --- |"]
+    for c in ordered:
+        items = sort_by_deadline(by_course.get(c.get("course_id") or "", []))
+        cells = []
+        for t in items:
+            dt = parse_datetime(t.get("deadline"))
+            when = dt.strftime("%m-%d %H:%M") if dt else "无截止"
+            if dt and not t.get("deadline_exact"):
+                when += " ≈"
+            cells.append("{}（{}·{}）".format(
+                md_link(t.get("title"), t.get("url")),
+                KIND_CN.get(t.get("kind"), t.get("kind") or ""), when))
+        lines.append("| {} | {} | {} | {} |".format(
+            esc(c.get("name")), c.get("task_count") or 0,
+            len(items) if items else "**无**",
+            "<br>".join(cells) if cells else "—"))
+    return lines
 
 
 def render_tasks(tasks: list[dict], now: datetime) -> tuple[str, str, dict]:
-    pending = [t for t in tasks if t.get("state") == "pending"]
-    buckets = bucket_tasks(pending, now)
-    counts = {k: len(v) for k, v in buckets.items()}
+    kept, dropped = actionable(tasks, now)
+    courses = load_list(DATA_DIR / "study" / "courses.json")
+    body = "\n".join(course_rows(courses, kept)) + "\n"
 
-    parts = []
-    headings = [
-        ("overdue", f"### 🔴 已逾期（{counts['overdue']}）"),
-        ("today", f"### 🟠 今天截止（{counts['today']}）"),
-        ("week", f"### 🟡 7 天内（{counts['week']}）"),
-        ("later", f"### ⚪ 更远 / 无截止时间（{counts['later']}）"),
-    ]
-    for key, title in headings:
-        if not buckets[key]:
-            continue
-        parts.append(title + "\n\n" + task_table(buckets[key], now))
-    body = "\n".join(parts) if parts else "_当前没有待完成任务。_\n"
+    today = now.date()
+    counts = {"today": 0, "week": 0, "later": 0}
+    for t in kept:
+        dt = parse_datetime(t.get("deadline"))
+        if dt is None:
+            counts["later"] += 1
+        elif dt.date() == today:
+            counts["today"] += 1
+        elif dt - now <= timedelta(days=7):
+            counts["week"] += 1
+        else:
+            counts["later"] += 1
 
-    others = [t for t in tasks if t.get("state") in ("submitted", "done")]
-    others = sort_by_deadline(others)[-20:]
-    done_block = ""
-    if others:
-        done_block = ("<details>\n<summary>已提交 / 已完成（最近 {} 项，点击展开）</summary>\n\n".format(len(others))
-                      + task_table(others, now) + "\n</details>\n")
-
-    suffix = ""
-    if counts["overdue"]:
-        suffix = f"，其中 **{counts['overdue']} 项已逾期**"
-    elif counts["today"]:
-        suffix = f"，其中 **{counts['today']} 项今天截止**"
-    return body, done_block, {"pending": len(pending), **counts, "suffix": suffix}
+    note = ("> 已剔除：逾期 {} 项 · 开始超过 {} 天 {} 项 · 非待完成 {} 项。"
+            "课程按活跃度（作业发表数量）排序，共 {} 门。\n").format(
+                dropped["overdue"], STALE_DAYS, dropped["stale"],
+                dropped["not_pending"], len(courses))
+    suffix = f"，其中 **{counts['today']} 项今天截止**" if counts["today"] else ""
+    stats = {"pending": len(kept), "overdue": 0, **counts,
+             "dropped": dropped, "courses": len(courses), "suffix": suffix}
+    return body, note, stats
 
 
 def render_alert(stats: dict, meta: dict) -> str:
-    if stats["overdue"]:
-        return (f"> ## 🔴 有 {stats['overdue']} 项作业已逾期\n"
-                f"> 立刻处理，别等下次提醒。\n")
     if stats["today"]:
         return (f"> ## 🟠 今天有 {stats['today']} 项截止\n"
-                f"> 见下方「今天截止」分区。\n")
+                f"> 就在下方清单里，别拖到明天。\n")
     if not meta.get("study", {}).get("ok"):
         return ("> ## ⚠️ 学习通数据未同步\n"
                 "> 最近一次采集失败或未配置凭据，下方清单可能不是最新的。详见「数据源状态」。\n")
@@ -237,7 +246,7 @@ def render_sources(now: datetime) -> tuple[str, dict]:
 def run() -> bool:
     now = now_bj()
     tasks = load_list(DATA_DIR / "study" / "tasks.json")
-    body, done_block, stats = render_tasks(tasks, now)
+    body, filter_note, stats = render_tasks(tasks, now)
     week_info, sched_table, week_detail = render_schedule(now)
     sources, meta = render_sources(now)
     alert = render_alert(stats, meta)
@@ -254,7 +263,7 @@ def run() -> bool:
         "{{PENDING_COUNT}}": str(stats["pending"]),
         "{{STATS_SUFFIX}}": stats["suffix"],
         "{{TASKS}}": body,
-        "{{DONE_BLOCK}}": done_block,
+        "{{FILTER_NOTE}}": filter_note,
         "{{SCHEDULE_TABLE}}": sched_table,
         "{{NOTICES}}": render_notices(),
         "{{PLANS}}": render_plans(),
@@ -266,9 +275,12 @@ def run() -> bool:
     README.write_text(text, encoding="utf-8")
 
     # 网页版数据（docs/ 是 GitHub Pages 目录，前端只能读到这里面的文件）
+    # 前端自己按 state 分桶，所以这里必须只喂可做的任务，否则网页会显示出 README 已剔除的逾期项
+    kept, _ = actionable(tasks, now)
     save_json(DOCS_DATA_DIR / "tasks.json", {"updated_at": now.isoformat(timespec="seconds"),
                                              "stats": {k: v for k, v in stats.items() if k != "suffix"},
-                                             "items": tasks})
+                                             "items": kept,
+                                             "courses": load_list(DATA_DIR / "study" / "courses.json")})
     save_json(DOCS_DATA_DIR / "meta.json", {"updated_at": now.isoformat(timespec="seconds"),
                                             "week": week_info.replace("**", ""), "stats": stats,
                                             "sources": meta})
@@ -277,8 +289,10 @@ def run() -> bool:
                "plans": DATA_DIR / "diary" / "plans.json",
                "quotes": DATA_DIR / "diary" / "quotes.json"}[name]
         save_json(DOCS_DATA_DIR / f"{name}.json", load_json(src) or {"items": []})
-    log(f"任务清单：{stats['pending']} 条（逾期 {stats['overdue']} / 今天 {stats['today']} / "
-        f"7天内 {stats['week']} / 更远 {stats['later']}）")
+    d = stats["dropped"]
+    log(f"任务清单：{stats['pending']} 条可做 / {stats['courses']} 门课"
+        f"（今天 {stats['today']} / 7天内 {stats['week']} / 更远 {stats['later']}）")
+    log(f"已剔除：逾期 {d['overdue']} / 超过{STALE_DAYS}天 {d['stale']} / 非待完成 {d['not_pending']}")
     log("README 已生成")
     return True
 

@@ -21,11 +21,11 @@ README 只放每天要看的动态，其余内容都在独立文档里：
 
 ## ⏰ 任务清单
 
-**按截止时间从近到远排序。** 共 {{PENDING_COUNT}} 项待完成{{STATS_SUFFIX}}。
+**只列能做的任务**，共 {{PENDING_COUNT}} 项{{STATS_SUFFIX}}。全部课程按活跃度（作业发表数量）排序，组内按截止时间近 → 远；没任务的课写「无」。
 
 {{TASKS}}
 
-{{DONE_BLOCK}}
+{{FILTER_NOTE}}
 
 ---
 
