@@ -12,6 +12,11 @@ on:
     - cron: '7 0,4,8,12 * * *'  # diary：Gitee 日记增量，北京时间 08/12/16/20 点（日记一天最多改一次）
     - cron: '13 * * * *'        # study：学习通全量四步链
     - cron: '17 1,7,13 * * *'   # notice：公开公告站，北京时间 09:17 / 15:17 / 21:17
+    # 三时段飞书推送。故意错开整点 2 分钟：整点会和 */20 的 finalize 同时触发，
+    # 同一并发组里后到的 pending 会把先到的挤掉，推送就丢了。
+    - cron: '2 23 * * *'        # morning：北京时间 07:02，今日任务（来源日记，不带课表）+ 一言
+    - cron: '2 4 * * *'         # noon：北京时间 12:02，问好 + 鼓励
+    - cron: '2 14 * * *'        # night：北京时间 22:02，当日总结（来源日记）
   workflow_dispatch:
     inputs:
       mode:
@@ -28,13 +33,18 @@ on:
           - all
           - probe
           - selftest
+          - morning
+          - noon
+          - night
 
 permissions:
   contents: write
 
-# 同一时刻只跑一个，排队而不是取消 —— 取消会丢掉采集结果
+# 同一时刻只跑一个，排队而不是取消 —— 取消会丢掉采集结果。
+# 推送单独一个组：三个时段是用户每天等着看的消息，不能被采集任务挤掉。
+# 注意并发组只保留一个 pending，批量派发多个模式会互相取消，必须串行派发。
 concurrency:
-  group: personal-assistant
+  group: pa-${{ (inputs.mode == 'morning' || inputs.mode == 'noon' || inputs.mode == 'night' || github.event.schedule == '2 23 * * *' || github.event.schedule == '2 4 * * *' || github.event.schedule == '2 14 * * *') && 'push' || 'collect' }}
   cancel-in-progress: false
 
 env:
@@ -88,10 +98,18 @@ jobs:
               '7 0,4,8,12 * * *') MODE=diary ;;
               '13 * * * *')      MODE=study ;;
               '17 1,7,13 * * *') MODE=notice ;;
+              '2 23 * * *')      MODE=morning ;;
+              '2 4 * * *')       MODE=noon ;;
+              '2 14 * * *')      MODE=night ;;
               *)                 MODE=finalize ;;
             esac
           fi
+          case "$MODE" in
+            morning|noon|night) PUSH=true ;;
+            *)                  PUSH=false ;;
+          esac
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "push=$PUSH" >> "$GITHUB_OUTPUT"
           echo "本次模式：$MODE（触发方式 $EVENT_NAME）"
 
       - name: 执行
@@ -107,11 +125,12 @@ jobs:
         run: |
           set -o pipefail
           : > /tmp/task-output.log
+          rm -f /tmp/push-message.txt
           python scripts/main.py "$MODE" 2>&1 | tee -a /tmp/task-output.log
 
       - name: 提交数据
-        # probe / selftest 不产生数据，跳过提交
-        if: steps.mode.outputs.mode != 'probe' && steps.mode.outputs.mode != 'selftest'
+        # probe / selftest 不产生数据，三时段推送只读日记，都跳过提交
+        if: steps.mode.outputs.push != 'true' && steps.mode.outputs.mode != 'probe' && steps.mode.outputs.mode != 'selftest'
         env:
           MODE: ${{ steps.mode.outputs.mode }}
           REF_NAME: ${{ github.ref_name }}
@@ -149,4 +168,10 @@ jobs:
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
           export NOTIFY_OUTPUT="$(tail -200 /tmp/task-output.log 2>/dev/null)"
-          node scripts/notify_feishu.js
+          # 三时段推送：daily_push.py 把文案写进这个文件，发纯文本。
+          # 文件不存在（采集模式，或推送模式在写文案前就崩了）就走原来的状态卡片，失败照样报红。
+          if [ -s /tmp/push-message.txt ]; then
+            node scripts/notify_feishu.js "$(cat /tmp/push-message.txt)"
+          else
+            node scripts/notify_feishu.js
+          fi

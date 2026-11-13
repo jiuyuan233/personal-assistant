@@ -11,6 +11,12 @@
   python scripts/main.py all        # 全部采集 → 渲染
   python scripts/main.py probe      # 海外 IP 连通性探测
   python scripts/main.py selftest   # 解析器自检（离线，不需要凭据）
+  python scripts/main.py morning    # 早 7 点飞书：今日任务（来源日记，不带课表）+ 一言
+  python scripts/main.py noon       # 中午飞书：问好 + 鼓励
+  python scripts/main.py night      # 晚上飞书：当日总结（来源日记）
+
+三个推送模式只读 data/diary，不写数据、不渲染 README，文案落到 /tmp/push-message.txt，
+由 workflow 的飞书步骤读出来发纯文本。AI 或一言失败会降级推送，不会静默不发。
 """
 from __future__ import annotations
 
@@ -199,6 +205,16 @@ def do_selftest() -> bool:
     check("窗口已结束的互评会被剔除", we is not None and we < now)
     check("空标签不产生开始时间", study_collector.detail_start("<p>作答时间:</p>") is None)
 
+    # 三时段推送：事实清单和降级文案都是确定性的，离线可测（一言和 AI 不测，要联网）
+    import daily_push as dp
+
+    facts = dp.diary_facts("morning", now.date())
+    check("早报事实含计划统计", "未完成计划" in facts)
+    check("早报不带课表", "课表" not in facts and "上课" not in facts)
+    for k in dp.KINDS:
+        fb = dp.fallback_message(k, facts, "测试一言（来源）")
+        check(f"{k} 降级文案含事实与一言", len(fb) > 20 and "测试一言" in fb and "未完成计划" in fb)
+
     # 真实样本结构：课程名在 li 内的 course-name span，middle 页首个 h2 是全站横幅
     list_html = '''<ul class="course-list"><li class="course clearfix" id="c_219232606">
       <div class="course-cover"><a href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=219232606&clazzid=153566712&cpi=577967959&ismooc2=1"><img src="x.jpg"></a></div>
@@ -279,6 +295,11 @@ def do_selftest() -> bool:
     return not failures
 
 
+def do_push(kind: str) -> bool:
+    import daily_push
+    return bool(daily_push.run(kind).get("ok"))
+
+
 HANDLERS = {
     "finalize": do_finalize,
     "schedule": do_schedule,
@@ -287,6 +308,9 @@ HANDLERS = {
     "notice": do_notice,
     "probe": do_probe,
     "selftest": do_selftest,
+    "morning": lambda: do_push("morning"),
+    "noon": lambda: do_push("noon"),
+    "night": lambda: do_push("night"),
 }
 
 
