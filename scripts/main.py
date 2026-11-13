@@ -295,6 +295,89 @@ def do_selftest() -> bool:
                                {"path": "日/2026-11-14.md", "name": "2026-11-14.md"}, now.date())
     check("助手区块不被重复抽取", [c["text"] for c in cb] == ["用户自己写的"], str(cb))
 
+    # 用户硬要求：往他的 Obsidian 仓库写东西只能在凌晨，避开他白天编辑。
+    check("窗口解析成分钟", dw.parse_window("00:00-05:00") == (0, 300))
+    check("窗口含头", dw.in_window(datetime(2026, 11, 14, 0, 0, tzinfo=BJ_TZ), "00:00-05:00"))
+    check("窗口不含尾", not dw.in_window(datetime(2026, 11, 14, 5, 0, tzinfo=BJ_TZ), "00:00-05:00"))
+    check("白天不在凌晨窗口", not dw.in_window(datetime(2026, 11, 14, 15, 45, tzinfo=BJ_TZ), "00:00-05:00"))
+    cross = "23:00-02:00"
+    check("跨零点窗口", dw.in_window(datetime(2026, 11, 14, 23, 30, tzinfo=BJ_TZ), cross)
+          and dw.in_window(datetime(2026, 11, 14, 1, 0, tzinfo=BJ_TZ), cross)
+          and not dw.in_window(datetime(2026, 11, 14, 2, 0, tzinfo=BJ_TZ), cross))
+    check("窗口格式非法失败关闭",
+          not dw.in_window(datetime(2026, 11, 14, 1, 0, tzinfo=BJ_TZ), "白天")
+          and dw.parse_window("25:00-26:00") is None)
+
+    class FakeGitee:
+        """只实现写回用到的两个方法，attempts 记录每次提交尝试（含被拒的）。"""
+
+        def __init__(self, files, reject_first=False):
+            self.files = dict(files)
+            self.attempts = []
+            self.reject_first = reject_first
+
+        def read_file(self, path):
+            f = self.files.get(path)
+            return (f[0], f[1]) if f else ("", None)
+
+        def write_file(self, path, text, message, sha=None):
+            self.attempts.append(sha)
+            if self.reject_first and len(self.attempts) == 1:
+                # 模拟用户此刻正好保存了自己的编辑：sha 变了，正文多了一句
+                old = self.files.get(path, ("", None))[0]
+                self.files[path] = (old + "\n用户凌晨补的一句话\n", "sha-new")
+                return False
+            self.files[path] = (text, f"sha{len(self.attempts)}")
+            return True
+
+    import tempfile
+    from pathlib import Path
+
+    prev_blk = dw.render_block("2026-11-13", [("a", "昨天的", True), ("b", "滚动的", False)])
+    fake_files = {"Tasks/日/2026-11-13.md": ("# 昨天我自己写的\n" + prev_blk, "s0"),
+                  "Tasks/日/2026-11-14.md": ("# 今天我自己写的\n", "s1")}
+    wb_plans = [{"id": "a", "text": "昨天的", "state": "open", "first_seen": "2026-11-12"},
+                {"id": "b", "text": "滚动的", "state": "open", "first_seen": "2026-11-01"},
+                {"id": "c", "text": "新挖到的", "state": "open", "first_seen": "2026-11-13"}]
+    wb_cfg = {"path": "Tasks", "daily_dir": "日", "writeback_window": "00:00-05:00"}
+    saved_wb = dw.WB_PATH
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            dw.WB_PATH = Path(td) / "writeback.json"
+            dw.save_json(dw.WB_PATH, {"last_date": "2026-11-13",
+                                      "last_path": "Tasks/日/2026-11-13.md"})
+
+            fg = FakeGitee(fake_files)
+            r = dw.run(g=fg, plans=wb_plans, cfg=wb_cfg,
+                       now=datetime(2026, 11, 14, 12, 7, tzinfo=BJ_TZ))
+            check("窗口外一次都不提交", not fg.attempts and r.get("skipped") == "outside_window", str(r))
+            check("窗口外仍然复查勾选", r.get("done") == ["a"], str(r.get("done")))
+            check("窗口外不推进 last_date",
+                  (dw.load_json(dw.WB_PATH) or {}).get("last_date") == "2026-11-13")
+
+            fg2 = FakeGitee(fake_files)
+            r2 = dw.run(g=fg2, plans=wb_plans, cfg=wb_cfg,
+                        now=datetime(2026, 11, 14, 0, 7, tzinfo=BJ_TZ))
+            check("凌晨窗口内正常写入", len(fg2.attempts) == 1 and r2.get("written") == 2, str(r2))
+            body = fg2.files["Tasks/日/2026-11-14.md"][0]
+            check("写入保留用户正文", body.startswith("# 今天我自己写的"))
+            check("已完成计划不再滚进新一天", "pid:a" not in body and "pid:b" in body and "pid:c" in body)
+
+            fg3 = FakeGitee(fake_files, reject_first=True)
+            r3 = dw.run(g=fg3, plans=wb_plans, cfg=wb_cfg,
+                        now=datetime(2026, 11, 14, 2, 7, tzinfo=BJ_TZ))
+            check("sha 冲突重读后重试", len(fg3.attempts) == 2 and r3.get("ok"), str(r3))
+            check("重试保住用户并发编辑",
+                  "用户凌晨补的一句话" in fg3.files["Tasks/日/2026-11-14.md"][0])
+    finally:
+        dw.WB_PATH = saved_wb
+
+    yml = (rr.REPO_ROOT / ".github" / "workflows" / "assistant.yml").read_text(encoding="utf-8")
+    check("凌晨写回 cron 已配且映射到 diary",
+          "'7 16,18,20 * * *'" in yml and "'7 16,18,20 * * *') MODE=diary" in yml)
+    wcfg = ((dw.load_json(dw.DATA_DIR / "sources.json") or {}).get("diary") or {}).get("writeback_window")
+    check("sources.json 的写回窗口可解析", dw.parse_window(wcfg or dw.DEFAULT_WINDOW) is not None, str(wcfg))
+
     # 真实样本结构：课程名在 li 内的 course-name span，middle 页首个 h2 是全站横幅
     list_html = '''<ul class="course-list"><li class="course clearfix" id="c_219232606">
       <div class="course-cover"><a href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=219232606&clazzid=153566712&cpi=100000001&ismooc2=1"><img src="x.jpg"></a></div>

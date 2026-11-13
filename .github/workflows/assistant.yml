@@ -9,7 +9,11 @@ name: 个人助手
 on:
   schedule:
     - cron: '*/20 * * * *'      # finalize：渲染 README + SVG + 离线重算课表
-    - cron: '7 0,4,8,12 * * *'  # diary：Gitee 日记增量，北京时间 08/12/16/20 点（日记一天最多改一次）
+    - cron: '7 0,4,8,12 * * *'  # diary：Gitee 日记增量采集（只读），北京时间 08/12/16/20 点
+    # diary 凌晨班：北京时间 00:07 / 02:07 / 04:07。**只有这三次会往日记仓库写**。
+    # 用户白天在 Obsidian 里编辑，写回必须避开；三次是为了失败还有重试机会，
+    # 内容无变化时不提交，所以多跑不产生额外 commit。窗口在 data/sources.json 的 writeback_window。
+    - cron: '7 16,18,20 * * *'
     - cron: '13 * * * *'        # study：学习通全量四步链
     - cron: '17 1,7,13 * * *'   # notice：公开公告站，北京时间 09:17 / 15:17 / 21:17
     # 三时段飞书推送。故意错开整点 2 分钟：整点会和 */20 的 finalize 同时触发，
@@ -96,6 +100,7 @@ jobs:
             case "$SCHEDULE" in
               '*/20 * * * *')    MODE=finalize ;;
               '7 0,4,8,12 * * *') MODE=diary ;;
+              '7 16,18,20 * * *') MODE=diary ;;
               '13 * * * *')      MODE=study ;;
               '17 1,7,13 * * *') MODE=notice ;;
               '2 23 * * *')      MODE=morning ;;

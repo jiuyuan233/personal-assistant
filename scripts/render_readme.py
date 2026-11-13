@@ -317,8 +317,13 @@ def run() -> bool:
     # 公告与潜在计划不再占 README 篇幅，各自渲染成独立文档，README 目录区只留链接
     ok_n = render_doc(NOTICE_TEMPLATE, NOTICE_DOC,
                       {"{{NOTICES}}": notices, "{{NOTICE_LIMIT}}": str(NOTICE_LIMIT)}, now)
+    # 写回窗口以 sources.json 为准，默认值只在 diary_writeback 里定义一份，避免两处漂移
+    from diary_writeback import DEFAULT_WINDOW
+    wb_window = ((load_json(DATA_DIR / "sources.json") or {}).get("diary") or {}).get(
+        "writeback_window") or DEFAULT_WINDOW
     ok_p = render_doc(PLANS_TEMPLATE, PLANS_DOC,
-                      {"{{PLANS}}": plans, "{{PLAN_LIMIT}}": str(PLAN_LIMIT)}, now)
+                      {"{{PLANS}}": plans, "{{PLAN_LIMIT}}": str(PLAN_LIMIT),
+                       "{{WRITEBACK_WINDOW}}": wb_window}, now)
 
     # 网页版数据（docs/ 是 GitHub Pages 目录，前端只能读到这里面的文件）
     # 前端自己按 state 分桶，所以这里必须只喂可做的任务，否则网页会显示出 README 已剔除的逾期项

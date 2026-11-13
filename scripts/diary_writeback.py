@@ -4,6 +4,8 @@
 15 号复查，勾了的算完成，没勾的滚进 15 号的日记。
 
 安全边界（这是往用户自己的日记仓库里写东西，必须守住）：
+- **只在凌晨窗口内写**（默认北京时间 00:00–05:00，`sources.json` 的 `writeback_window` 可改）。
+  用户白天在 Obsidian 里写日记，白天写回会和他的编辑撞车。窗口外只复查勾选、绝不提交。
 - 只动 `<!-- assistant:plans:start/end -->` 之间的内容，区块外的正文一个字节都不碰
 - 区块已存在就按 pid 合并，保留用户已经勾上的 [x]，不重置
 - 每行尾部带 `<!-- pid:xxx -->`，Obsidian 预览里不显示，但能精确对回 plans.json
@@ -12,16 +14,40 @@
 from __future__ import annotations
 
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from dedup import load_list
 from diary_collector import BLOCK_END, BLOCK_START, PLANS_PATH, Gitee, strip_assistant_block
-from utils import DATA_DIR, load_json, log, now_bj, safe_text, save_json, today_bj
+from utils import DATA_DIR, load_json, log, now_bj, safe_text, save_json
 
 WB_PATH = DATA_DIR / "diary" / "writeback.json"
 PID_LINE_RE = re.compile(r"^\s*[-*+]\s*\[([ xX])\]\s*(.+?)\s*<!--\s*pid:(\S+?)\s*-->\s*$", re.M)
+WINDOW_RE = re.compile(r"\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*")
 DEFAULT_MAX = 20
+DEFAULT_WINDOW = "00:00-05:00"
 NEW_FILE_TEMPLATE = "# 今日记录\n\n# 随笔 / 感想\n\n# 明日计划\n\n"
+
+
+def parse_window(spec: str) -> tuple[int, int] | None:
+    """"00:00-05:00" → (0, 300)，单位分钟。格式不对返回 None。"""
+    m = WINDOW_RE.fullmatch(spec or "")
+    if not m:
+        return None
+    a, b = int(m[1]) * 60 + int(m[2]), int(m[3]) * 60 + int(m[4])
+    return (a, b) if 0 <= a < 1440 and 0 <= b < 1440 else None
+
+
+def in_window(now: datetime, spec: str) -> bool:
+    """含头不含尾，支持跨零点（"23:00-02:00"）。
+
+    配置写错时**失败关闭**（返回 False 不写），宁可当天不写回也不能在用户编辑时提交。
+    """
+    w = parse_window(spec)
+    if w is None:
+        log(f"写回时间窗格式非法：{spec!r}，本次不写入（应为 HH:MM-HH:MM）", level="ERROR")
+        return False
+    cur, a, b = now.hour * 60 + now.minute, w[0], w[1]
+    return a <= cur < b if a <= b else (cur >= a or cur < b)
 
 
 def render_block(day: str, entries: list[tuple[str, str, bool]]) -> str:
@@ -77,8 +103,10 @@ def pick_plans(plans: list[dict], yesterday: str, rolling: set[str],
 
 
 def run(today: date | None = None, g: Gitee | None = None,
-        plans: list[dict] | None = None, cfg: dict | None = None) -> dict:
-    today = today or today_bj()
+        plans: list[dict] | None = None, cfg: dict | None = None,
+        now: datetime | None = None) -> dict:
+    now = now or now_bj()
+    today = today or now.date()
     cfg = cfg if cfg is not None else ((load_json(DATA_DIR / "sources.json") or {}).get("diary") or {})
     if g is None:
         log("写回需要已登录的 Gitee 客户端，跳过", level="WARN")
@@ -110,7 +138,15 @@ def run(today: date | None = None, g: Gitee | None = None,
     done_ids |= {pid for pid, done in existing.items() if done}
     rolling |= {pid for pid, done in existing.items() if not done}
 
-    # 3) 选出今天要写的
+    # 3) 凌晨窗口守卫：窗口外只复查（上面两步都是只读），绝不往用户仓库提交。
+    #    不推进 last_date，等下一个凌晨窗口再写，滚动链条不会断。
+    window = cfg.get("writeback_window") or DEFAULT_WINDOW
+    if not in_window(now, window):
+        log(f"写回：北京时间 {now:%H:%M} 不在凌晨窗口 {window} 内，只复查不写入")
+        return {"ok": True, "skipped": "outside_window", "written": 0,
+                "done": sorted(done_ids), "path": path}
+
+    # 4) 选出今天要写的
     yesterday = (today - timedelta(days=1)).isoformat()
     picked = pick_plans(plans, yesterday, rolling, limit)
     entries = [(p["id"], safe_text(p.get("text"), 100), p["id"] in done_ids) for p in picked]
@@ -127,7 +163,18 @@ def run(today: date | None = None, g: Gitee | None = None,
         log(f"写回：{iso} 内容无变化，跳过提交")
     else:
         msg = f"chore(diary): 助手待办 {iso}（{len(entries)} 条）"
-        if not g.write_file(path, new_text, msg, sha=sha):
+        ok = g.write_file(path, new_text, msg, sha=sha)
+        if not ok and sha:
+            # sha 被拒 = 用户/同步刚好改过这个文件。重读最新正文再合并一次，
+            # 区块外以他的最新内容为准，只重试一次，不覆盖他的编辑。
+            log(f"写回：{iso} 提交被拒（文件刚被改过），重读后重试一次", level="WARN")
+            text, sha = g.read_file(path)
+            new_text = upsert_block(text or NEW_FILE_TEMPLATE, block)
+            if new_text == text:
+                ok = True
+            elif sha:
+                ok = g.write_file(path, new_text, msg, sha=sha)
+        if not ok:
             return {"ok": False, "written": 0, "done": sorted(done_ids), "path": path}
         log(f"写回：{iso} 写入 {len(entries)} 条 → {path}（{'更新' if sha else '新建'}）")
 

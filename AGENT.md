@@ -222,6 +222,13 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
 
 用户要的闭环：**13 号挖到的潜在计划 → 写进 14 号日记（md 复选框）→ 15 号复查，没勾的滚到 15 号**。
 
+- **只在凌晨写（用户硬要求）**：他白天在 Obsidian 里编辑，白天提交会撞车。
+  守卫在 `in_window()`，窗口取 `data/sources.json` → `diary.writeback_window`
+  （默认 `00:00-05:00`，北京时间，含头不含尾，支持跨零点）。
+  **窗口外只复查勾选、一次都不提交**，返回 `skipped=outside_window`，且**不推进 `last_date`**，
+  所以滚动链条不会断，下一个凌晨窗口接着写。格式写错时**失败关闭**（当天不写），不会退化成随时写。
+  cron 侧对应 `7 16,18,20 * * *`（北京 00:07 / 02:07 / 04:07）；白天班 `7 0,4,8,12 * * *` 只读。
+  **守卫在代码里而不是 cron 里**，手动派发 `diary` 或 Actions 延迟到白天也写不进去。
 - 落点：`{root}/{daily_dir}/{YYYY-MM-DD}.md`，`daily_dir` 在 `data/sources.json` 里配（当前是 `日`）。
 - **只动助手区块**，边界是 `<!-- assistant:plans:start -->` / `<!-- assistant:plans:end -->`。
   区块外是用户正文，**一个字节都不许碰**。`upsert_block()` 有 markers 就替换区间，没有就追加。
@@ -241,6 +248,9 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
 **⚠️ Gitee API v5 的坑：不存在/已删除的文件 GET 返回 HTTP 200 + `{}`，不是 404。**
 所以 `read_file()` 判断存在与否**看 body 里有没有 `sha`**，只看状态码会误判成「文件存在但空」，
 接着不带 sha 去 PUT 就会被拒。写入：新建走 POST，更新走 PUT **且必须带当前 sha**。
+
+**sha 被拒会自动重试一次**：重读最新正文 → 重新 `upsert_block()` → 再提交。
+区块外以用户最新内容为准，所以他凌晨临时补的一句话不会被覆盖。只重试一次，不无限循环。
 
 写回失败只 WARN，不影响采集结果 —— 日记数据已经落盘了。
 
@@ -358,6 +368,7 @@ JS 侧按 `geo.date` 算日期漂移来平移 `today_col`，超出 0..6 就隐�
 - [ ] 改了人格/说话风格 → 只改 `prompts.py` 的 `PERSONA`，别在各处复制一份；确认硬边界还在
 - [ ] 改了推送事实来源 → 确认仍然**不含课表**，且只用 `data/diary/*`
 - [ ] 改了日记写回 → 确认 `strip_assistant_block()` 仍在抽取前调用，区块外正文零改动，`[x]` 不被覆盖
+- [ ] 改了日记写回 → 确认凌晨窗口守卫还在（`in_window()`），**白天一次都不提交**，窗口外不推进 `last_date`
 - [ ] 改了课表几何（ROW_H/SLOTS/45分钟）→ Python `time_y()` 和 JS `nowLineY()` 必须同步改，并重跑 selftest
 - [ ] 改了名言字段 → `dedup.merge_quotes` 的 `_carry` 元组、README 渲染、前端 `renderQuotes` 三处都要跟
 - [ ] 派发 Actions → **串行，一次一个**，等上一个 completed 再派下一个（同 group 只留一个 pending）

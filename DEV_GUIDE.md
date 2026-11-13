@@ -49,12 +49,13 @@ git push -u origin main
 > 默认配置按「public 或 self-hosted」设计。README 里有课程名、作业标题、日记摘录和名言，
 > 公开前请自己权衡。**飞书是主要查看入口，README 只是存档**，所以 private 也不影响日常体验。
 >
-> **省额度 cron 组合**（private + GitHub 托管，预算约 1600 分钟/月）：
-> 把 `assistant.yml` 的 7 条 cron 换成下面这组，并同步改「决定模式」步骤里的 `case` 分支：
+> **省额度 cron 组合**（private + GitHub 托管，预算约 1700 分钟/月）：
+> 把 `assistant.yml` 的 8 条 cron 换成下面这组，并同步改「决定模式」步骤里的 `case` 分支：
 >
 > ```yaml
 > - cron: '11 */2 * * *'    # finalize 每 2 小时 → 12 次/天 ≈ 360 分钟/月
-> - cron: '7 0,4,8,12 * * *' # diary 每天 4 次 ≈ 120 分钟/月
+> - cron: '7 0,4,8,12 * * *' # diary 白天只读采集，每天 4 次 ≈ 120 分钟/月
+> - cron: '7 16,18,20 * * *' # diary 凌晨写回，每天 3 次 ≈ 90 分钟/月（**不要省**，见下）
 > - cron: '13 */3 * * *'    # study 每 3 小时 → 8 次/天 ≈ 720 分钟/月
 > - cron: '17 1,7,13 * * *' # notice 每天 3 次 ≈ 270 分钟/月
 > - cron: '2 23 * * *'      # morning 每天 1 次 ≈ 30 分钟/月
@@ -64,6 +65,10 @@ git push -u origin main
 >
 > **三条推送 cron 不要省**：它们是用户直接感知的每日陪伴，一天就 3 次、共约 90 分钟/月，
 > 而且**不提交任何文件**，不会和别人抢 rebase。
+>
+> **凌晨写回 cron 也不要省**：这是唯一往用户 Obsidian 仓库提交的班次。
+> 白天班只读，删掉凌晨班等于写回功能永久关闭（代码里的窗口守卫会一直返回 `outside_window`）。
+> 三次是为了失败有重试机会；内容无变化时不提交，所以不会多出 commit。
 >
 > 放宽采集节奏的代价：**README 只由 `finalize`/`all` 刷新**。
 > 采集模式虽然也会渲染，但提交前会 `git checkout -- README.md docs` 丢弃派生产物

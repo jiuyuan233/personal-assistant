@@ -58,7 +58,9 @@
     "max_chars_per_file": 6000,
     "daily_dir": "日",
     "max_writeback": 20,
-    "_写回说明": "T 日挖到的潜在计划写进 T+1 日的 daily_dir/YYYY-MM-DD.md，只动 assistant:plans 区块；T+2 复查勾选，没勾的滚进当天日记"
+    "writeback_window": "00:00-05:00",
+    "_写回说明": "T 日挖到的潜在计划写进 T+1 日的 daily_dir/YYYY-MM-DD.md，只动 assistant:plans 区块；T+2 复查勾选，没勾的滚进当天日记",
+    "_writeback_window说明": "北京时间 HH:MM-HH:MM，含头不含尾，支持跨零点。只有落在这个窗口内的 diary 运行才会提交到日记仓库；窗口外只复查勾选、不写。改这里即可调整凌晨时段，格式写错会失败关闭（当天不写）"
   },
   "study": {
     "passport": "https://passport2.huuc.edu.cn",
