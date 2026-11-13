@@ -190,7 +190,7 @@ def do_selftest() -> bool:
     joined = "\n".join(crows)
     check("无任务的课程也列出", len(crows) == 4 and "军事理论" in joined, f"rows={len(crows)}")
     check("无任务写「无」", "**无**" in joined)
-    check("活跃度高的课程排前面", crows[2].index("高等数学A") < crows[3].index("军事理论"))
+    check("活跃度高的课程排前面", joined.index("高等数学A") < joined.index("军事理论"))
 
     # 真实样本结构：课程名在 li 内的 course-name span，middle 页首个 h2 是全站横幅
     list_html = '''<ul class="course-list"><li class="course clearfix" id="c_219232606">

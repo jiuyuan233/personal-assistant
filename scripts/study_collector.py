@@ -343,6 +343,18 @@ def detail_start(html: str) -> datetime | None:
     return parse_datetime(m.group(1).replace("年", "-").replace("月", "-").replace("日", ""))
 
 
+def detail_time_hints(html: str, limit: int = 5) -> list[str]:
+    """详情页里含时间字样的文本片段。正则失配时用它看清页面到底给了什么。"""
+    out: list[str] = []
+    for m in re.finditer(r"[^<>]{0,40}(?:时间|截止|开始)[^<>]{0,60}", html):
+        s = clean_html_text(m.group(0)).strip()
+        if s and s not in out:
+            out.append(s)
+        if len(out) >= limit:
+            break
+    return out
+
+
 # ---------------------------------------------------------------------------
 # 主流程
 # ---------------------------------------------------------------------------
@@ -404,6 +416,7 @@ def run() -> dict:
         for t in need:
             html = cx.get(t["url"])
             if not html or is_tip_page(html):
+                log(f"详情页不可用（{len(html or '')} 字节）：{t['title']}", level="WARN")
                 continue
             dt = detail_deadline(html)
             if dt and not t.get("deadline_exact"):
@@ -414,6 +427,9 @@ def run() -> dict:
             if st:
                 t["start_time"] = st.isoformat(timespec="seconds")
                 got_start += 1
+            if not dt and not st:
+                log(f"详情页无时间字段（{len(html)} 字节）：{t['title']} "
+                    f"片段={detail_time_hints(html)}")
         log(f"详情页取到开始时间：{got_start}/{len(need)} 条")
 
     merged = merge_tasks(load_list(TASKS_PATH), all_tasks, now)
