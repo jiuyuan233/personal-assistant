@@ -167,7 +167,8 @@ def do_selftest() -> bool:
     check("未交 归为 pending", study_collector.classify("未交") == "pending",
           study_collector.classify("未交"))
 
-    # 清单只留能做的：非待完成 / 已逾期 / 开始超过一周，三类全部剔除
+    # 清单只留能做的：非待完成 / 已逾期，两类剔除。
+    # 「开始超过一周就剔除」已按用户要求废除（v1.3.0），下面有专门的回归断言。
     import render_readme as rr
 
     def mk(**kw):
@@ -177,31 +178,58 @@ def do_selftest() -> bool:
     iso = lambda d: d.isoformat(timespec="seconds")
     sample = [
         mk(),                                                  # 无截止无开始 → 留
-        mk(state="done"),                                      # 已完成 → 剔
+        mk(state="done", first_seen=iso(now - timedelta(days=9))),  # 已完成 → 剔（开始列退化）
         mk(state="submitted"),                                 # 已批阅 → 剔
         mk(deadline=iso(now - timedelta(hours=1))),             # 已逾期 → 剔
-        mk(start_time=iso(now - timedelta(days=8))),            # 开始超一周 → 剔
+        mk(start_time=iso(now - timedelta(days=8))),            # 开始超一周 → 现在留
         mk(start_time=iso(now - timedelta(days=2))),            # 开始两天前 → 留
-        mk(first_seen=iso(now - timedelta(days=9))),            # 无开始时间，退回 first_seen → 剔
+        mk(first_seen=iso(now - timedelta(days=9))),            # 只有 first_seen → 现在留
     ]
     kept, dropped = rr.actionable(sample, now)
-    check("可做过滤：留 2 剔 5", len(kept) == 2 and sum(dropped.values()) == 5,
+    check("可做过滤：留 4 剔 3", len(kept) == 4 and sum(dropped.values()) == 3,
           f"kept={len(kept)} dropped={dropped}")
     check("逾期任务不进清单", dropped["overdue"] == 1, str(dropped))
-    check("开始超一周不进清单", dropped["stale"] == 2, str(dropped))
     check("已完成/已批阅不进清单", dropped["not_pending"] == 2, str(dropped))
+    check("一周规则已废除：开始 8 天前仍留在清单",
+          "stale" not in dropped
+          and rr.drop_reason(mk(start_time=iso(now - timedelta(days=8))), now) is None)
+    check("一周规则已废除：first_seen 9 天前仍留在清单",
+          rr.drop_reason(mk(first_seen=iso(now - timedelta(days=9))), now) is None)
+    check("剔除原因只剩两类", rr.REASON_ORDER == ("overdue", "not_pending"),
+          str(rr.REASON_ORDER))
 
     # 被剔除的任务要逐项留档：判定与清单共用 drop_reason()，条数必须对得上
     ex_body, ex_n = rr.render_excluded(sample, now)
     check("已剔除条数与过滤统计一致", ex_n == sum(dropped.values()), f"{ex_n} vs {dropped}")
-    check("已剔除逐项写明三类原因",
-          all(k in ex_body for k in ("已逾期", "开始过久", "非待完成")), ex_body[:120])
+    check("已剔除逐项写明两类原因",
+          all(k in ex_body for k in ("已逾期", "非待完成")), ex_body[:120])
+    check("已剔除不再出现开始过久", "开始过久" not in ex_body)
     check("开始时间退化标注首次发现", "（首次发现）" in ex_body)
     check("无剔除时给说明不给空表",
           rr.render_excluded([], now) == ("_本次没有被剔除的任务。_\n", 0))
     note = rr.render_tasks(sample, now)[1]
     check("已剔除文档链接挂在清单最下面",
           note.rstrip().splitlines()[-1].endswith("(docs/已剔除任务.md)"), note)
+    check("清单底部计数不再提一周规则", "开始超过" not in note, note)
+
+    # 已剔除文档按课程分组：课程顺序必须与任务清单的活跃度排序一致
+    gc = [{"course_id": "c1", "class_id": "", "name": "高等数学A", "task_count": 14},
+          {"course_id": "c2", "class_id": "", "name": "军事理论", "task_count": 1}]
+    gsample = [
+        mk(state="done", course="高等数学A", title="高数已交"),
+        mk(state="submitted", course="高等数学A", title="高数已批"),
+        mk(course="军事理论", course_id="c2", title="军理逾期",
+           deadline=iso(now - timedelta(hours=1))),
+    ]
+    gb, gn = rr.render_excluded(gsample, now, gc)
+    check("已剔除按课程分节", "### 高等数学A（2 项）" in gb and "### 军事理论（1 项）" in gb, gb)
+    check("已剔除课程顺序随活跃度", gb.index("### 高等数学A") < gb.index("### 军事理论"))
+    check("已剔除表头去掉课程列",
+          "| 任务 | 类型 | 截止 | 开始 | 剔除原因 |" in gb and "| 课程 | 任务 |" not in gb)
+    check("已剔除分节数等于有剔除的课数", gb.count("### ") == 2 and gn == 3, f"{gn}")
+    check("courses.json 里没有的课也不丢",
+          "### 孤儿课（1 项）" in rr.render_excluded(
+              [mk(state="done", course="孤儿课", course_id="zz")], now, gc)[0])
 
     crows = rr.course_rows([{"course_id": "c1", "name": "高等数学A", "task_count": 14},
                             {"course_id": "c2", "name": "军事理论", "task_count": 1}], kept)

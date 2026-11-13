@@ -437,7 +437,8 @@ def run() -> dict:
     log(f"扫描课程：{ok_courses}，失败：{failed}")
 
     # 待完成任务抓详情页：补精确截止时间 + 取开始时间。
-    # 列表页只有一个倒计时 div，没有发布/开始时间，「超过一周就剔除」只能靠详情页。
+    # 列表页只有一个倒计时 div，截止时间是反推的（标 ≈）；精确截止决定逾期判定，必须抓。
+    # 开始时间只用于展示（「超过一周就剔除」规则已按用户要求废除，见 v1.3.0）。
     if detail_budget > 0:
         need = [t for t in all_tasks if t["state"] == "pending"][:detail_budget]
         got_start = 0
