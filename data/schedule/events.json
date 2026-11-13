@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-13T15:04:37+08:00",
+  "updated_at": "2026-11-13T15:26:27+08:00",
   "semester_start": "2026-09-07",
   "total_weeks": 18,
   "current_week": 10,
@@ -25,7 +25,7 @@
       "course": "军事理论",
       "topic": "",
       "room": "美荟楼1#122",
-      "teacher": "王迪",
+      "teacher": "",
       "week": 2
     },
     {
@@ -41,7 +41,7 @@
       "course": "军事理论",
       "topic": "",
       "room": "美荟楼1#122",
-      "teacher": "王迪",
+      "teacher": "",
       "week": 2
     },
     {
@@ -57,7 +57,7 @@
       "course": "军事理论",
       "topic": "",
       "room": "美荟楼1#122",
-      "teacher": "王迪",
+      "teacher": "",
       "week": 3
     },
     {
@@ -73,7 +73,7 @@
       "course": "军事理论",
       "topic": "",
       "room": "美荟楼1#122",
-      "teacher": "王迪",
+      "teacher": "",
       "week": 3
     },
     {
@@ -89,7 +89,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "美荟楼1#205",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 5
     },
     {
@@ -105,7 +105,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 5
     },
     {
@@ -121,7 +121,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 5
     },
     {
@@ -137,7 +137,7 @@
       "course": "建筑环境与能源应用工程概论",
       "topic": "",
       "room": "筑真楼8#B109",
-      "teacher": "虞婷婷",
+      "teacher": "",
       "week": 5
     },
     {
@@ -153,7 +153,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 5
     },
     {
@@ -169,7 +169,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "筑真楼8#B202",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 5
     },
     {
@@ -185,7 +185,7 @@
       "course": "1：50青协例会计算思维与人工智能",
       "topic": "",
       "room": "建业楼7#B115",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 5
     },
     {
@@ -201,7 +201,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 5
     },
     {
@@ -217,7 +217,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 5
     },
     {
@@ -233,7 +233,7 @@
       "course": "大学生职业生涯与发展规划",
       "topic": "",
       "room": "美荟楼1#226",
-      "teacher": "李欣",
+      "teacher": "",
       "week": 5
     },
     {
@@ -249,7 +249,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 5
     },
     {
@@ -265,7 +265,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 5
     },
     {
@@ -281,7 +281,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 5
     },
     {
@@ -297,7 +297,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 5
     },
     {
@@ -313,7 +313,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 5
     },
     {
@@ -329,7 +329,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#203",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 5
     },
     {
@@ -345,7 +345,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "美荟楼1#205",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 6
     },
     {
@@ -361,7 +361,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 6
     },
     {
@@ -377,7 +377,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 6
     },
     {
@@ -393,7 +393,7 @@
       "course": "建筑环境与能源应用工程概论",
       "topic": "",
       "room": "筑真楼8#B109",
-      "teacher": "虞婷婷",
+      "teacher": "",
       "week": 6
     },
     {
@@ -409,7 +409,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 6
     },
     {
@@ -425,7 +425,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "筑真楼8#B202",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 6
     },
     {
@@ -441,7 +441,7 @@
       "course": "1：50青协例会计算思维与人工智能",
       "topic": "",
       "room": "建业楼7#B115",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 6
     },
     {
@@ -457,7 +457,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 6
     },
     {
@@ -473,7 +473,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 6
     },
     {
@@ -489,7 +489,7 @@
       "course": "大学生职业生涯与发展规划",
       "topic": "",
       "room": "美荟楼1#226",
-      "teacher": "李欣",
+      "teacher": "",
       "week": 6
     },
     {
@@ -505,7 +505,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 6
     },
     {
@@ -521,7 +521,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 6
     },
     {
@@ -537,7 +537,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 6
     },
     {
@@ -553,7 +553,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 6
     },
     {
@@ -569,7 +569,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 6
     },
     {
@@ -585,7 +585,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#203",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 6
     },
     {
@@ -601,7 +601,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "美荟楼1#205",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 7
     },
     {
@@ -617,7 +617,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 7
     },
     {
@@ -633,7 +633,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 7
     },
     {
@@ -649,7 +649,7 @@
       "course": "建筑环境与能源应用工程概论",
       "topic": "",
       "room": "筑真楼8#B109",
-      "teacher": "虞婷婷",
+      "teacher": "",
       "week": 7
     },
     {
@@ -665,7 +665,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 7
     },
     {
@@ -681,7 +681,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "筑真楼8#B202",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 7
     },
     {
@@ -697,7 +697,7 @@
       "course": "1：50青协例会计算思维与人工智能",
       "topic": "",
       "room": "建业楼7#B115",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 7
     },
     {
@@ -713,7 +713,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 7
     },
     {
@@ -729,7 +729,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 7
     },
     {
@@ -745,7 +745,7 @@
       "course": "大学生职业生涯与发展规划",
       "topic": "",
       "room": "美荟楼1#226",
-      "teacher": "李欣",
+      "teacher": "",
       "week": 7
     },
     {
@@ -761,7 +761,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 7
     },
     {
@@ -777,7 +777,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 7
     },
     {
@@ -793,7 +793,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 7
     },
     {
@@ -809,7 +809,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 7
     },
     {
@@ -825,7 +825,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 7
     },
     {
@@ -841,7 +841,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#203",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 7
     },
     {
@@ -857,7 +857,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "美荟楼1#205",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 8
     },
     {
@@ -873,7 +873,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 8
     },
     {
@@ -889,7 +889,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 8
     },
     {
@@ -905,7 +905,7 @@
       "course": "建筑环境与能源应用工程概论",
       "topic": "",
       "room": "筑真楼8#B109",
-      "teacher": "虞婷婷",
+      "teacher": "",
       "week": 8
     },
     {
@@ -921,7 +921,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 8
     },
     {
@@ -937,7 +937,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "筑真楼8#B202",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 8
     },
     {
@@ -953,7 +953,7 @@
       "course": "1：50青协例会计算思维与人工智能",
       "topic": "",
       "room": "建业楼7#B115",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 8
     },
     {
@@ -969,7 +969,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 8
     },
     {
@@ -985,7 +985,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 8
     },
     {
@@ -1001,7 +1001,7 @@
       "course": "大学生职业生涯与发展规划",
       "topic": "",
       "room": "美荟楼1#226",
-      "teacher": "李欣",
+      "teacher": "",
       "week": 8
     },
     {
@@ -1017,7 +1017,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 8
     },
     {
@@ -1033,7 +1033,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 8
     },
     {
@@ -1049,7 +1049,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 8
     },
     {
@@ -1065,7 +1065,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 8
     },
     {
@@ -1081,7 +1081,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 8
     },
     {
@@ -1097,7 +1097,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#203",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 8
     },
     {
@@ -1113,7 +1113,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "美荟楼1#205",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1129,7 +1129,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1145,7 +1145,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1161,7 +1161,7 @@
       "course": "建筑环境与能源应用工程概论",
       "topic": "",
       "room": "筑真楼8#B109",
-      "teacher": "虞婷婷",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1177,7 +1177,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1193,7 +1193,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "筑真楼8#B202",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1209,7 +1209,7 @@
       "course": "1：50青协例会计算思维与人工智能",
       "topic": "",
       "room": "建业楼7#B115",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1225,7 +1225,7 @@
       "course": "国家安全教育",
       "topic": "",
       "room": "美荟楼1#426",
-      "teacher": "龚乐乐",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1241,7 +1241,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1257,7 +1257,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1273,7 +1273,7 @@
       "course": "大学生职业生涯与发展规划",
       "topic": "",
       "room": "美荟楼1#226",
-      "teacher": "李欣",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1289,7 +1289,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1305,7 +1305,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1321,7 +1321,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1337,7 +1337,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1353,7 +1353,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1369,7 +1369,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#203",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 9
     },
     {
@@ -1385,7 +1385,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "美荟楼1#205",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1401,7 +1401,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1417,7 +1417,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1433,7 +1433,7 @@
       "course": "建筑环境与能源应用工程概论",
       "topic": "",
       "room": "筑真楼8#B109",
-      "teacher": "虞婷婷",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1449,7 +1449,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1465,7 +1465,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "筑真楼8#B202",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1481,7 +1481,7 @@
       "course": "1：50青协例会计算思维与人工智能",
       "topic": "",
       "room": "建业楼7#B115",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1497,7 +1497,7 @@
       "course": "国家安全教育",
       "topic": "",
       "room": "美荟楼1#426",
-      "teacher": "龚乐乐",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1513,7 +1513,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1529,7 +1529,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1545,7 +1545,7 @@
       "course": "大学生职业生涯与发展规划",
       "topic": "",
       "room": "美荟楼1#226",
-      "teacher": "李欣",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1561,7 +1561,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1577,7 +1577,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1593,7 +1593,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1609,7 +1609,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1625,7 +1625,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1641,7 +1641,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#203",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 10
     },
     {
@@ -1657,7 +1657,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "美荟楼1#205",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1673,7 +1673,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1689,7 +1689,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1705,7 +1705,7 @@
       "course": "建筑环境与能源应用工程概论",
       "topic": "",
       "room": "筑真楼8#B109",
-      "teacher": "虞婷婷",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1721,7 +1721,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1737,7 +1737,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "筑真楼8#B202",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1753,7 +1753,7 @@
       "course": "计算思维与人工智能",
       "topic": "WPS办公软件的使用",
       "room": "公共计算机教学中心基础实验室6",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1769,7 +1769,7 @@
       "course": "国家安全教育",
       "topic": "",
       "room": "美荟楼1#426",
-      "teacher": "龚乐乐",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1785,7 +1785,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1801,7 +1801,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1817,7 +1817,7 @@
       "course": "大学生职业生涯与发展规划",
       "topic": "",
       "room": "美荟楼1#226",
-      "teacher": "李欣",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1833,7 +1833,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1849,7 +1849,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1865,7 +1865,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1881,7 +1881,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1897,7 +1897,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1913,7 +1913,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#203",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 11
     },
     {
@@ -1929,7 +1929,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "美荟楼1#205",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 12
     },
     {
@@ -1945,7 +1945,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 12
     },
     {
@@ -1961,7 +1961,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 12
     },
     {
@@ -1977,7 +1977,7 @@
       "course": "建筑环境与能源应用工程概论",
       "topic": "",
       "room": "筑真楼8#B109",
-      "teacher": "虞婷婷",
+      "teacher": "",
       "week": 12
     },
     {
@@ -1993,7 +1993,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 12
     },
     {
@@ -2009,7 +2009,7 @@
       "course": "英语听力及口语（一）",
       "topic": "",
       "room": "筑真楼8#B202",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 12
     },
     {
@@ -2025,7 +2025,7 @@
       "course": "1：50青协例会计算思维与人工智能",
       "topic": "",
       "room": "建业楼7#B115",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 12
     },
     {
@@ -2041,7 +2041,7 @@
       "course": "国家安全教育",
       "topic": "",
       "room": "美荟楼1#426",
-      "teacher": "龚乐乐",
+      "teacher": "",
       "week": 12
     },
     {
@@ -2057,7 +2057,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 12
     },
     {
@@ -2073,7 +2073,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 12
     },
     {
@@ -2089,7 +2089,7 @@
       "course": "大学生职业生涯与发展规划",
       "topic": "",
       "room": "美荟楼1#226",
-      "teacher": "李欣",
+      "teacher": "",
       "week": 12
     },
     {
@@ -2105,7 +2105,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 12
     },
     {
@@ -2121,7 +2121,7 @@
       "course": "大学生心理健康教育",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "贾汛",
+      "teacher": "",
       "week": 12
     },
     {
@@ -2137,7 +2137,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 12
     },
     {
@@ -2153,7 +2153,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 12
     },
     {
@@ -2169,7 +2169,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 12
     },
     {
@@ -2185,7 +2185,7 @@
       "course": "英语写作（一）",
       "topic": "",
       "room": "美荟楼1#203",
-      "teacher": "DESMOND",
+      "teacher": "",
       "week": 12
     },
     {
@@ -2201,7 +2201,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 13
     },
     {
@@ -2217,7 +2217,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 13
     },
     {
@@ -2233,7 +2233,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 13
     },
     {
@@ -2249,7 +2249,7 @@
       "course": "计算思维与人工智能",
       "topic": "强化学习-路径规划",
       "room": "公共计算机教学中心基础实验室6",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 13
     },
     {
@@ -2265,7 +2265,7 @@
       "course": "国家安全教育",
       "topic": "",
       "room": "美荟楼1#426",
-      "teacher": "龚乐乐",
+      "teacher": "",
       "week": 13
     },
     {
@@ -2281,7 +2281,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 13
     },
     {
@@ -2297,7 +2297,7 @@
       "course": "大学生职业生涯与发展规划",
       "topic": "",
       "room": "美荟楼1#226",
-      "teacher": "李欣",
+      "teacher": "",
       "week": 13
     },
     {
@@ -2313,7 +2313,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 13
     },
     {
@@ -2329,7 +2329,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 13
     },
     {
@@ -2345,7 +2345,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 13
     },
     {
@@ -2361,7 +2361,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 14
     },
     {
@@ -2377,7 +2377,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 14
     },
     {
@@ -2393,7 +2393,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 14
     },
     {
@@ -2409,7 +2409,7 @@
       "course": "1：50青协例会计算思维与人工智能",
       "topic": "",
       "room": "建业楼7#B115",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 14
     },
     {
@@ -2425,7 +2425,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 14
     },
     {
@@ -2441,7 +2441,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 14
     },
     {
@@ -2457,7 +2457,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 14
     },
     {
@@ -2473,7 +2473,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 14
     },
     {
@@ -2489,7 +2489,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 15
     },
     {
@@ -2505,7 +2505,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 15
     },
     {
@@ -2521,7 +2521,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 15
     },
     {
@@ -2537,7 +2537,7 @@
       "course": "计算思维与人工智能",
       "topic": "Agent系统搭建",
       "room": "公共计算机教学中心基础实验室6",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 15
     },
     {
@@ -2553,7 +2553,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 15
     },
     {
@@ -2569,7 +2569,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 15
     },
     {
@@ -2585,7 +2585,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 15
     },
     {
@@ -2601,7 +2601,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 15
     },
     {
@@ -2617,7 +2617,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 16
     },
     {
@@ -2633,7 +2633,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 16
     },
     {
@@ -2649,7 +2649,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 16
     },
     {
@@ -2665,7 +2665,7 @@
       "course": "1：50青协例会计算思维与人工智能",
       "topic": "",
       "room": "建业楼7#B115",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 16
     },
     {
@@ -2681,7 +2681,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 16
     },
     {
@@ -2697,7 +2697,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 16
     },
     {
@@ -2713,7 +2713,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 16
     },
     {
@@ -2729,7 +2729,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 16
     },
     {
@@ -2745,7 +2745,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 17
     },
     {
@@ -2761,7 +2761,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 17
     },
     {
@@ -2777,7 +2777,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 17
     },
     {
@@ -2793,7 +2793,7 @@
       "course": "计算思维与人工智能",
       "topic": "智能数据分析与报告生成",
       "room": "公共计算机教学中心基础实验室6",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 17
     },
     {
@@ -2809,7 +2809,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 17
     },
     {
@@ -2825,7 +2825,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 17
     },
     {
@@ -2841,7 +2841,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 17
     },
     {
@@ -2857,7 +2857,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 17
     },
     {
@@ -2873,7 +2873,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 18
     },
     {
@@ -2889,7 +2889,7 @@
       "course": "大学体育（一）",
       "topic": "",
       "room": "",
-      "teacher": "胡肄军",
+      "teacher": "",
       "week": 18
     },
     {
@@ -2905,7 +2905,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#228",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 18
     },
     {
@@ -2921,7 +2921,7 @@
       "course": "1：50青协例会计算思维与人工智能",
       "topic": "",
       "room": "建业楼7#B115",
-      "teacher": "何燚",
+      "teacher": "",
       "week": 18
     },
     {
@@ -2937,7 +2937,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 18
     },
     {
@@ -2953,7 +2953,7 @@
       "course": "大学英语A",
       "topic": "",
       "room": "美荟楼1#224",
-      "teacher": "胥文华",
+      "teacher": "",
       "week": 18
     },
     {
@@ -2969,7 +2969,7 @@
       "course": "高等数学A(一)",
       "topic": "",
       "room": "建德楼6#C216",
-      "teacher": "陈蒙",
+      "teacher": "",
       "week": 18
     },
     {
@@ -2985,7 +2985,7 @@
       "course": "思想道德与法治",
       "topic": "",
       "room": "美荟楼1#328",
-      "teacher": "张永霞",
+      "teacher": "",
       "week": 18
     }
   ]
