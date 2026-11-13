@@ -1,19 +1,39 @@
 {
-  "updated_at": "2026-11-13T16:01:34+08:00",
+  "updated_at": "2026-11-13T16:38:36+08:00",
   "stats": {
-    "pending": 3,
+    "pending": 4,
     "overdue": 0,
     "today": 0,
-    "week": 1,
+    "week": 2,
     "later": 2,
     "dropped": {
-      "not_pending": 34,
+      "not_pending": 33,
       "overdue": 1,
       "stale": 0
     },
     "courses": 14
   },
   "items": [
+    {
+      "id": "219232606-2f15f510e8",
+      "kind": "work",
+      "course": "高等数学A",
+      "course_id": "219232606",
+      "class_id": "153566712",
+      "cpi": "577967959",
+      "title": "3-6函数图形的描绘3-7曲率",
+      "work_id": "58467962",
+      "answer_id": "0",
+      "label": "",
+      "status": "未交",
+      "state": "pending",
+      "deadline": "2026-11-15T23:57:52+08:00",
+      "deadline_exact": false,
+      "remaining_text": "剩余55小时22分钟",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&cpi=577967959&workId=58467962&answerId=0&enc=f4d70d033ef384444abee3d14c6b537e",
+      "first_seen": "2026-11-13T16:35:52+08:00",
+      "last_seen": "2026-11-13T16:35:52+08:00"
+    },
     {
       "id": "201780805-ba99d83e8f",
       "kind": "work",
@@ -27,12 +47,12 @@
       "label": "",
       "status": "未交",
       "state": "pending",
-      "deadline": "2026-11-19T23:54:25+08:00",
+      "deadline": "2026-11-19T23:54:52+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余153小时20分钟",
+      "remaining_text": "剩余151小时19分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&cpi=577967959&workId=58170556&answerId=55245377&enc=a09ae9b3af415c3b6b1c6c0ff1635cd1",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T14:34:25+08:00"
+      "last_seen": "2026-11-13T16:35:52+08:00"
     },
     {
       "id": "201780805-8722437faf",
@@ -47,12 +67,12 @@
       "label": "",
       "status": "未交",
       "state": "pending",
-      "deadline": "2026-11-20T23:55:25+08:00",
+      "deadline": "2026-11-20T23:54:52+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余177小时21分钟",
+      "remaining_text": "剩余175小时19分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&cpi=577967959&workId=58170689&answerId=55291283&enc=f4dedc558df97cac491d887b57101799",
       "first_seen": "2026-11-13T14:28:50+08:00",
-      "last_seen": "2026-11-13T14:34:25+08:00"
+      "last_seen": "2026-11-13T16:35:52+08:00"
     },
     {
       "id": "228141406-dad3429abf",
@@ -72,7 +92,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58204754&answerId=0&enc=b44f71b3bb99323ca0b941bba238632a",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T14:34:25+08:00"
+      "last_seen": "2026-11-13T16:35:52+08:00"
     }
   ],
   "courses": [
@@ -191,7 +211,7 @@
       "ismooc2": "1",
       "name": "高等数学A",
       "task_count": 14,
-      "pending_count": 1
+      "pending_count": 2
     },
     {
       "course_id": "205372276",
