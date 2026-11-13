@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-13T13:48:42+08:00",
+  "updated_at": "2026-11-13T14:03:00+08:00",
   "count": 78,
   "sources": [
     "校网通知公告",
@@ -14,8 +14,8 @@
       "url": "https://www.huuc.edu.cn/info/1061/27048.htm",
       "source": "校网通知公告",
       "publish_date": "2026-10-10",
-      "description": "第二十一届河南城建学院大学生职业规划大赛校赛，设成长、就业赛道，分初赛、复赛、总决赛。",
-      "deadline": "2026-10-30",
+      "description": "校大学生职业规划大赛，设成长与就业赛道，分初赛、复赛、总决赛。",
+      "deadline": null,
       "category": "竞赛",
       "reason": "职业规划大赛，可写进简历，有校赛机会",
       "tags": [
@@ -34,7 +34,7 @@
       "source": "校网通知公告",
       "publish_date": "2026-09-14",
       "description": "组织我校本科生参加第十八届全国大学生数学竞赛。",
-      "deadline": "2026-09-18",
+      "deadline": null,
       "category": "竞赛",
       "reason": "全国性学科竞赛，可提升简历",
       "tags": [
