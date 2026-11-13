@@ -130,8 +130,17 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
   校团委、飞书均 HTTP 200；Gitee 与 AI 中转 HTTP 401（可达，只是未带凭据）。
   **不需要 self-hosted runner，也不需要国内定时任务兜底。**
   学校日后若封海外 IP，重跑 `probe` 即可确认，退路见 DEV_GUIDE 4.3。
-- **`study` / `diary` 尚未端到端跑通**，卡在 Secrets（`CX_USERNAME`/`CX_PASSWORD`、`GITEE_TOKEN`）。
-  Secret 只能在网页填：API 写入需要 libsodium sealed-box 加密，普通 openssl 做不了。
+- **Secrets 已配置完成（2026-11-13）**：`FS_WEBHOOK`、`AI_API_KEY`、`GITEE_TOKEN`、
+  `CX_USERNAME`、`CX_PASSWORD` 共 5 个，Variables `AI_BASE_URL`、`AI_MODEL` 共 2 个，全部 HTTP 201。
+  **能用 API 写，不必走网页**（轮换凭据时照这个做）：
+  GET `/actions/secrets/public-key` 取 base64 公钥与 `key_id` → 用 libsodium `crypto_box_seal`
+  加密 → PUT `/actions/secrets/{name}`，body 为 `{encrypted_value, key_id}`。
+  本机 PATH 里没有 node/npm/python/gh，但搜到一个可用运行时：
+  `C:/Program Files/Adobe/Adobe Creative Cloud Experience/libs/node.exe`（Node v24，自带 fetch）。
+  加密库从 npm 官方 registry 取 `libsodium-wrappers`，**它依赖 `libsodium`，要一并下载**；
+  解压到仓库外的临时目录充当 `node_modules`。两个坑：GNU tar 会把 `C:/...` 的冒号当远程主机，
+  必须加 `--force-local`；脚本要写成真实文件再跑，`node -e` 里 `process.chdir` 不改变模块解析基准。
+  明文值走环境变量传入、不落盘不进 git，用完删掉临时目录。
   已验证成功的模式：`selftest`（26 项断言）、`probe`、`finalize`（含 git 写回）、`notice`。
 - **`notice` 已端到端验证（2026-11-13）**：4 个源全成功，新增 78 条，README 渲染出 12 条竞赛公告。
   但**关键词打分封顶 3 分**（`keyword_score`：boost=3 / gate=2 / block=0），所以没配 `AI_API_KEY` 时

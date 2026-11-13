@@ -70,6 +70,9 @@ git push -u origin main
 
 仓库 → **Settings → Secrets and variables → Actions**。
 
+> ✅ **本仓库这 5 个 Secrets 与 2 个 Variables 已于 2026-11-13 配置完成**（走 API 写入，全部 HTTP 201）。
+> 下面保留清单与做法，供日后轮换凭据或重建仓库时使用。
+
 ### Secrets（敏感，必须）
 
 | 名称 | 值 | 说明 |
@@ -88,6 +91,17 @@ git push -u origin main
 | `AI_MODEL` | `deepseek-v3-2` | 换模型时改这里 |
 
 不配 Variables 就用 workflow 里写死的默认值。
+
+### 用 API 轮换（已实测可行，不必开网页）
+
+1. `GET /repos/{owner}/{repo}/actions/secrets/public-key` → 取 `key`（base64 公钥）与 `key_id`
+2. 用 libsodium 的 `crypto_box_seal(明文, 公钥)` 加密，结果转 base64
+3. `PUT /repos/{owner}/{repo}/actions/secrets/{名称}`，body 为 `{"encrypted_value": "...", "key_id": "..."}`
+
+Variables 不用加密：`POST /actions/variables`，已存在则 `PATCH /actions/variables/{名称}`。
+
+本机 PATH 里没有 node/npm/python/gh 时的可行路径，以及 GNU tar 冒号、`node -e` 模块解析这两个坑，
+见 [AGENT.md 第 5 节](AGENT.md)。**明文值只走环境变量，不要写进仓库里的任何文件。**
 
 > ⚠️ **开发期间在聊天里贴过的所有凭据都应视为已泄露，请全部轮换后再填进 Secrets。**
 > 包括 Gitee 令牌、GitHub PAT、两个学校密码、两个 AI key。
