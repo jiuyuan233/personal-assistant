@@ -237,6 +237,27 @@ def do_selftest() -> bool:
     check("gitignore 拒绝 har 且不开例外",
           "*.har" in gi and "!assets/*-脱敏.har" not in gi)
 
+    # 课程名里嵌过同学学号（16044261…），已渲染进公开 README。
+    # 采集层 scrub_course_name() 负责清洗，这里兜底断言清洗结果与落盘数据。
+    import re as _re2
+    from utils import scrub_course_name
+    leaked = "计算思维与人工智能"
+    check("课程名去掉学号与教学班号",
+          scrub_course_name(leaked) == "计算思维与人工智能", scrub_course_name(leaked))
+    keep = ["高等数学A", "2026级-校规校纪", "新世纪大学英语综合教程(一)",
+            "2026-2027第一学期星期一下午七八体育课", "军事理论（同济大学版）"]
+    check("正常课程名不被误伤",
+          all(scrub_course_name(n) == n for n in keep),
+          str([n for n in keep if scrub_course_name(n) != n]))
+    names = []
+    for f in ("courses.json", "tasks.json"):
+        p = rr.REPO_ROOT / "data" / "study" / f
+        if p.exists():
+            names += _re2.findall(r'"(?:name|course)"\s*:\s*"([^"]*)"',
+                                  p.read_text(encoding="utf-8"))
+    bad_names = [n for n in names if _re2.search(r"\d{7,}", n)]
+    check("学习通落盘课程名无学号", not bad_names, str(bad_names))
+
     # 用户硬要求：所有说明性文档都必须能在 README 目录里找到。
     # 新增文档忘了挂链接，这条会直接红，不用等人肉发现。
     docs = sorted((rr.REPO_ROOT / "docs").glob("*.md"))

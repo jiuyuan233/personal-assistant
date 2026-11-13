@@ -175,6 +175,21 @@ def clean_html_text(s: str) -> str:
     return re.sub(r"\s+", " ", html.unescape(s)).strip()
 
 
+# 学号是 8 位以上数字；课程名里的年级/学期（2026、2026-2027）只有 4 位，不会被误伤。
+_STUDENT_ID = re.compile(r"\d{7,}[,，、]?")
+_CLASS_NO = re.compile(r"[（(]\s*\d+\s*[)）]")
+
+
+def scrub_course_name(s: str) -> str:
+    """去掉课程名里嵌的同学学号与教学班编号。
+
+    真实案例：`计算思维与人工智能`。
+    学号 + 学校域名足以定位到具体的人，公开仓库里不能留。
+    """
+    s = _CLASS_NO.sub("", _STUDENT_ID.sub("", s or ""))
+    return re.sub(r"\s+", " ", re.sub(r"[,，、\s]+$", "", s)).strip()
+
+
 _REDACT_PATTERNS = [
     re.compile(r"(access_token=)[^&\s\"']+"),
     re.compile(r"(Bearer\s+)[A-Za-z0-9._\-]+"),

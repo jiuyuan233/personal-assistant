@@ -31,7 +31,7 @@ import requests
 from dedup import load_list, merge_tasks, save_list, sort_by_deadline
 from utils import (DATA_DIR, clean_html_text, env, fmt_remaining, load_json, log,
                    make_id, now_bj, parse_datetime, parse_remaining, safe_text,
-                   save_json)
+                   save_json, scrub_course_name)
 
 STUDY_DIR = DATA_DIR / "study"
 TASKS_PATH = STUDY_DIR / "tasks.json"
@@ -171,7 +171,7 @@ class Chaoxing:
             nm = COURSE_NAME_RE.search(html[m.end():m.end() + NAME_LOOKAHEAD])
             out.append({"course_id": cid, "class_id": clazz, "cpi": cpi,
                         "ismooc2": q.get("ismooc2", "1"),
-                        "name": clean_html_text(nm.group(1)) if nm else ""})
+                        "name": scrub_course_name(clean_html_text(nm.group(1))) if nm else ""})
         return out
 
     def mint(self, course: dict) -> dict | None:
@@ -193,7 +193,7 @@ class Chaoxing:
             return None
         if not course.get("name"):
             tm = TITLE_TAG_RE.search(html)
-            name = clean_html_text(tm.group(1)) if tm else ""
+            name = scrub_course_name(clean_html_text(tm.group(1))) if tm else ""
             course["name"] = name if name and name != "提示" else f"课程{course['course_id']}"
         return tokens
 
