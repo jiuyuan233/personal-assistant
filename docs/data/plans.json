@@ -1,8 +1,24 @@
 {
-  "updated_at": "2026-11-13T13:23:28+08:00",
-  "count": 17,
+  "updated_at": "2026-11-13T14:53:30+08:00",
+  "count": 40,
   "repo": "jiuyuan233/obsidion-gitee",
   "items": [
+    {
+      "id": "-c4671332f9",
+      "text": "周清：回顾前几天落下的内容",
+      "due_date": "2026-10-11",
+      "confidence": 0.7,
+      "state": "open",
+      "tags": [
+        "学习",
+        "复盘"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-11.md",
+      "source_date": "2026-10-11",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
     {
       "id": "-84eedcb1ba",
       "text": "周六下午两点半进社区",
@@ -260,6 +276,342 @@
       "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-14.md",
       "source_date": "2026-10-14",
       "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-41b5525ee9",
+      "text": "每天先写下最重要的任务",
+      "due_date": null,
+      "confidence": 0.4,
+      "state": "open",
+      "tags": [
+        "习惯",
+        "规划"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-13.md",
+      "source_date": "2026-10-13",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-a372863e5b",
+      "text": "是否周清",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-11.md",
+      "source_date": "2026-10-11",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "3-0b9dad151c",
+      "text": "大概就是3天一篇文章吧今天继续阅读，今天就全部阅读完",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-09.md",
+      "source_date": "2026-10-09",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-fd8e984f02",
+      "text": "还有就是高数老师讲的太烂了还是听宋浩老师吧，第一章映射",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-09.md",
+      "source_date": "2026-10-09",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-84142a9782",
+      "text": "试着从利己转向利他，多做志愿服务",
+      "due_date": null,
+      "confidence": 0.35,
+      "state": "open",
+      "tags": [
+        "生活",
+        "心态"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-09.md",
+      "source_date": "2026-10-09",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "free-f5587b47b1",
+      "text": "阅读free第一章",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-04.md",
+      "source_date": "2026-10-04",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "free-21e5de2715",
+      "text": "学习free第一章",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-01.md",
+      "source_date": "2026-10-01",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-869ac21c54",
+      "text": "准备学高数",
+      "due_date": null,
+      "confidence": 0.8,
+      "state": "open",
+      "tags": [
+        "学习",
+        "高数"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-09-28.md",
+      "source_date": "2026-09-28",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-aac6719e5f",
+      "text": "继续练英语和盲打",
+      "due_date": null,
+      "confidence": 0.6,
+      "state": "open",
+      "tags": [
+        "学习",
+        "技能"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-09-28.md",
+      "source_date": "2026-09-28",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-46e93b75ce",
+      "text": "坚持写日记",
+      "due_date": null,
+      "confidence": 0.4,
+      "state": "open",
+      "tags": [
+        "生活"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-09-28.md",
+      "source_date": "2026-09-28",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-04b55ae85b",
+      "text": "参加全国证券模拟大赛",
+      "due_date": null,
+      "confidence": 0.6,
+      "state": "open",
+      "tags": [
+        "竞赛",
+        "金融"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/11月.md",
+      "source_date": "",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-f066a04900",
+      "text": "学斯维尔软件（建模/算量）",
+      "due_date": null,
+      "confidence": 0.5,
+      "state": "open",
+      "tags": [
+        "技能",
+        "软件"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/11月.md",
+      "source_date": "",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-fab34dd012",
+      "text": "不抽烟",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-2a8159dce1",
+      "text": "跑步",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "4-free-0e46cdf207",
+      "text": "4篇free",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-ae3f98ed3f",
+      "text": "数学提前学（内容待定）",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "open",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "10-ff72f57765",
+      "text": "查10月份有哪些比赛可参加",
+      "due_date": null,
+      "confidence": 0.5,
+      "state": "open",
+      "tags": [
+        "竞赛"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
+      "source_date": "",
+      "origin": "ai",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "jb-a0e1c35a76",
+      "text": "这jb弱智高数老师高数已经是一坨了",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-10.md",
+      "source_date": "2026-10-10",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-7d69ede8c2",
+      "text": "办建行银行卡",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-02.md",
+      "source_date": "2026-10-02",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-87e228dd4e",
+      "text": "买衣服",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-02.md",
+      "source_date": "2026-10-02",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-1f561f8af7",
+      "text": "高数映射",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-01.md",
+      "source_date": "2026-10-01",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-f074fccf29",
+      "text": "好好陪父母",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-01.md",
+      "source_date": "2026-10-01",
+      "origin": "checkbox",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13"
     }
