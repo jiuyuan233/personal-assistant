@@ -562,7 +562,9 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
     for k, v in sorted(time_shapes.items(), key=lambda x: -x[1]):
         log(f"[diag]   ×{v} {k}")
 
-    log(f"[diag] 抓不到截止时间的待完成/无time行：{len(problems)} 条，dump 前 {max_dump} 条")
+    log(f"[diag] 抓不到截止时间的待完成/无time行：{len(problems)} 条")
+    # 待完成且无截止的排最前 —— 那才是用户报的 bug；已完成的行没有 time div 是正常的
+    problems.sort(key=lambda p: 0 if p.get("row") else 1)
     for p in problems[:max_dump]:
         r = p.get("row")
         if r:
@@ -572,22 +574,43 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
             if not html or is_tip_page(html):
                 log(f"[diag]     详情页不可用（{len(html or '')} 字节）")
                 continue
+            flat = re.sub(r"\s+", " ", html)
             log(f"[diag]     详情页 {len(html)} 字节，含日期形状的文本节点：")
             seen = set()
-            for m in re.finditer(r"[^<>]{0,70}(?:\d{4}[-/年]|\d{1,2}[-/月]\d{1,2})[^<>]{0,70}", html):
+            for m in re.finditer(r"[^<>]{0,70}(?:\d{4}[-/年]|\d{1,2}[-/月]\d{1,2})[^<>]{0,70}", flat):
                 s = _shape(clean_html_text(m.group(0)))
                 if s and s not in seen:
                     seen.add(s)
-                    log(f"[diag]       {s[:150]}")
-                if len(seen) >= 14:
+                    log(f"[diag]       {s[:160]}")
+                if len(seen) >= 16:
                     break
-            log(f"[diag]     时间标签附近的原始 HTML（保留标签）：")
-            for m in re.finditer(r"(?:截止时间|结束时间|作答时间|开始时间|发布时间|互评时间|剩余)", html):
-                seg = html[max(0, m.start() - 120):m.start() + 260]
-                log(f"[diag]       {_shape(_mask_title(seg))[:380]}")
+            log("[diag]     时间标签附近的原始 HTML（保留标签）：")
+            for m in re.finditer(r"(?:截止时间|结束时间|作答时间|开始时间|发布时间|互评时间|剩余|时间)", flat):
+                seg = flat[max(0, m.start() - 100):m.start() + 240]
+                log(f"[diag]       {_shape(_mask_title(seg))[:340]}")
+            log("[diag]     JS 里与时间/截止有关的赋值：")
+            js_seen = set()
+            for m in re.finditer(r"[\w.$]*(?:[Tt]ime|[Dd]eadline|[Ee]nd[Tt]ime|[Ss]tart)[\w.$]*\s*[:=]\s*[^,;}]{0,90}", flat):
+                s = _shape(m.group(0))[:150]
+                if s not in js_seen:
+                    js_seen.add(s)
+                    log(f"[diag]       {s}")
+                if len(js_seen) >= 20:
+                    break
+            log("[diag]     页面里的 ajax/接口路径：")
+            api_seen = set()
+            for m in re.finditer(r"""["'](/[^"'\s]{4,90}|https?://[^"'\s]{4,90})["']""", flat):
+                u = m.group(1)
+                if re.search(r"work|exam|eval|task|detail|time", u, re.I) and not re.search(r"\.(?:js|css|png|jpg|gif|ico)", u, re.I):
+                    s = _shape(u)[:130]
+                    if s not in api_seen:
+                        api_seen.add(s)
+                        log(f"[diag]       {s}")
+                if len(api_seen) >= 18:
+                    break
         else:
             log(f"[diag] --- 无 time div 的行（课程 {p['course']}）：")
-            log(f"[diag]     {_shape(_mask_title(p['chunk']))[:1200]}")
+            log(f"[diag]     {_shape(_mask_title(re.sub(r'\s+', ' ', p['chunk'])))[:1000]}")
     return {"ok": True, "shapes": len(time_shapes), "problems": len(problems)}
 
 
