@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-11-13T13:07:50+08:00",
+  "updated_at": "2026-11-13T13:21:50+08:00",
   "count": 38,
   "course_count": 14,
   "items": [
     {
       "id": "201780805-ba99d83e8f",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "新世纪大学英语综合教程(一)",
       "course_id": "201780805",
       "class_id": "156290484",
       "cpi": "577967959",
@@ -15,18 +15,18 @@
       "answer_id": "55245377",
       "label": "",
       "status": "未交",
-      "state": "unknown",
-      "deadline": "2026-11-19T23:54:02+08:00",
+      "state": "pending",
+      "deadline": "2026-11-19T23:54:01+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余154小时47分钟",
+      "remaining_text": "剩余154小时33分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&cpi=577967959&workId=58170556&answerId=55245377&enc=a09ae9b3af415c3b6b1c6c0ff1635cd1",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "201780805-ef7492f38b",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "新世纪大学英语综合教程(一)",
       "course_id": "201780805",
       "class_id": "156290484",
       "cpi": "577967959",
@@ -35,18 +35,18 @@
       "answer_id": "0",
       "label": "",
       "status": "未交",
-      "state": "unknown",
-      "deadline": "2026-11-20T23:55:02+08:00",
+      "state": "pending",
+      "deadline": "2026-11-20T23:55:01+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余178小时48分钟",
+      "remaining_text": "剩余178小时34分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&cpi=577967959&workId=58170689&answerId=0&enc=f4dedc558df97cac491d887b57101799",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "268008349-7bcd10c306",
       "kind": "exam",
-      "course": "在线学习诚信承诺书",
+      "course": "军事理论（同济大学版）",
       "course_id": "268008349",
       "class_id": "157042838",
       "cpi": "577967959",
@@ -56,17 +56,17 @@
       "label": "考试",
       "status": "已完成",
       "state": "done",
-      "deadline": "2026-12-13T23:59:02+08:00",
+      "deadline": "2026-12-13T23:59:01+08:00",
       "deadline_exact": false,
-      "remaining_text": "100 分 剩余730小时52分钟",
+      "remaining_text": "100 分 剩余730小时38分钟",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=268008349&clazzid=157042838&cpi=577967959&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "268371439-d050c4254c",
       "kind": "exam",
-      "course": "在线学习诚信承诺书",
+      "course": "2026级-校规校纪",
       "course_id": "268371439",
       "class_id": "158553251",
       "cpi": "577967959",
@@ -81,12 +81,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=268371439&clazzid=158553251&cpi=577967959&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "228141406-147d7af1f3",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "建筑环境与能源应用工程概论",
       "course_id": "228141406",
       "class_id": "157088208",
       "cpi": "577967959",
@@ -101,12 +101,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58204806&answerId=55982601&enc=4aa092d2e328ebf1c5ba24f5a130bf29",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "228141406-dad3429abf",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "建筑环境与能源应用工程概论",
       "course_id": "228141406",
       "class_id": "157088208",
       "cpi": "577967959",
@@ -115,18 +115,18 @@
       "answer_id": "0",
       "label": "",
       "status": "未交",
-      "state": "unknown",
+      "state": "pending",
       "deadline": null,
       "deadline_exact": false,
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58204754&answerId=0&enc=b44f71b3bb99323ca0b941bba238632a",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "228141406-6713fb5201",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "建筑环境与能源应用工程概论",
       "course_id": "228141406",
       "class_id": "157088208",
       "cpi": "577967959",
@@ -141,12 +141,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58204711&answerId=55982143&enc=a7d89d7a2b327df7dd6d0bd7b7b58e53",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "228141406-74b5bf3ad2",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "建筑环境与能源应用工程概论",
       "course_id": "228141406",
       "class_id": "157088208",
       "cpi": "577967959",
@@ -161,12 +161,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=57870752&answerId=55931617&enc=e9902668753f5c65476999f382798121",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "228141406-630f844e89",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "建筑环境与能源应用工程概论",
       "course_id": "228141406",
       "class_id": "157088208",
       "cpi": "577967959",
@@ -181,12 +181,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=57870732&answerId=55933232&enc=ea777df336184d1275f9016c2f81b68f",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "228141406-497e31d3cf",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "建筑环境与能源应用工程概论",
       "course_id": "228141406",
       "class_id": "157088208",
       "cpi": "577967959",
@@ -201,12 +201,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=57526332&answerId=55890468&enc=160d98ac05d672cf29a92036d6c06ea0",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "228141406-1506755d1d",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "建筑环境与能源应用工程概论",
       "course_id": "228141406",
       "class_id": "157088208",
       "cpi": "577967959",
@@ -221,12 +221,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=57160680&answerId=55828205&enc=f81b3ede9300d8358d85802d5d8e1eb3",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "228141406-c34f632c7c",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "建筑环境与能源应用工程概论",
       "course_id": "228141406",
       "class_id": "157088208",
       "cpi": "577967959",
@@ -241,12 +241,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=56737893&answerId=55716060&enc=bb375a0e063dc5f8c495de38895d84c5",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "260598171-61a8809da6",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "大学生心理健康教育（智慧课程）",
       "course_id": "260598171",
       "class_id": "156188851",
       "cpi": "577967959",
@@ -261,12 +261,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&cpi=577967959&workId=58301119&answerId=55792162&enc=b7d1e95d2d58ca8f7bd729e15f79628e",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "260598171-1c99ab59f3",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "大学生心理健康教育（智慧课程）",
       "course_id": "260598171",
       "class_id": "156188851",
       "cpi": "577967959",
@@ -281,12 +281,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&cpi=577967959&workId=57984053&answerId=55754797&enc=86f21abd3d70727265dae27ab3be59ee",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "260598171-72b229d891",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "大学生心理健康教育（智慧课程）",
       "course_id": "260598171",
       "class_id": "156188851",
       "cpi": "577967959",
@@ -301,12 +301,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&cpi=577967959&workId=57648797&answerId=55714214&enc=156045a36367a264b10f5952aa435802",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "260598171-a6fef1114b",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "大学生心理健康教育（智慧课程）",
       "course_id": "260598171",
       "class_id": "156188851",
       "cpi": "577967959",
@@ -321,12 +321,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&cpi=577967959&workId=57576073&answerId=55707835&enc=859d3559169b507f20ffc53c9d0e5326",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "260598171-96bd1e26e2",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "大学生心理健康教育（智慧课程）",
       "course_id": "260598171",
       "class_id": "156188851",
       "cpi": "577967959",
@@ -341,12 +341,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&cpi=577967959&workId=57576023&answerId=55707497&enc=20ed3f09146080b3b5007dbfc34ea24e",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "260598171-8fecdc421f",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "大学生心理健康教育（智慧课程）",
       "course_id": "260598171",
       "class_id": "156188851",
       "cpi": "577967959",
@@ -361,12 +361,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&cpi=577967959&workId=57297581&answerId=55679063&enc=7dce2c0eabd6b0fdba4afcab57c6d11e",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "260598171-b7fb842da0",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "大学生心理健康教育（智慧课程）",
       "course_id": "260598171",
       "class_id": "156188851",
       "cpi": "577967959",
@@ -381,12 +381,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&cpi=577967959&workId=56895598&answerId=55654596&enc=f5e0bc36c0fadc446e927ee4519b44fd",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "260598171-4e8c5c943b",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "大学生心理健康教育（智慧课程）",
       "course_id": "260598171",
       "class_id": "156188851",
       "cpi": "577967959",
@@ -401,12 +401,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&cpi=577967959&workId=56430556&answerId=55629455&enc=282576e0b2536fee9d0cb4660bb0fa0b",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "201780805-51f684486f",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "新世纪大学英语综合教程(一)",
       "course_id": "201780805",
       "class_id": "156290484",
       "cpi": "577967959",
@@ -421,12 +421,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&cpi=577967959&workId=57584189&answerId=55154258&enc=517edb116f604d8e3069db5b708efba5",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-7bfb3fd544",
       "kind": "eval",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -441,12 +441,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&cpi=577967959&workId=58370553&answerId=55746672&enc=29e2bc55fc3869c6f491e58813580390",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-a0405ca270",
       "kind": "eval",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -461,12 +461,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&cpi=577967959&workId=58263400&answerId=55727436&enc=d931b513b4e282bdbedaea20fc434f89",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-c975dc3af0",
       "kind": "eval",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -481,12 +481,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&cpi=577967959&workId=58159105&answerId=55719229&enc=7c02747ed84d4b3d1d5e1061a91be0a7",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-dc63b1d597",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -501,12 +501,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&cpi=577967959&workId=58370553&answerId=55746672&enc=29e2bc55fc3869c6f491e58813580390",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-9c897985fa",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -521,12 +521,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&cpi=577967959&workId=58263400&answerId=55727436&enc=d931b513b4e282bdbedaea20fc434f89",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-27b8cf8aa3",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -541,12 +541,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&cpi=577967959&workId=58159105&answerId=55719229&enc=7c02747ed84d4b3d1d5e1061a91be0a7",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-9824d13e16",
       "kind": "eval",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -561,12 +561,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&cpi=577967959&workId=58047713&answerId=55701985&enc=28da79f5d8fda3c1ef259e071705a52b",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-6254809e23",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -581,12 +581,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&cpi=577967959&workId=58047713&answerId=55701985&enc=28da79f5d8fda3c1ef259e071705a52b",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-0c91a31d3e",
       "kind": "eval",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -601,12 +601,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&cpi=577967959&workId=57809144&answerId=55668696&enc=422aed2167de199636f38966225b6ad4",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-981eeb5330",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -621,12 +621,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&cpi=577967959&workId=57809144&answerId=55668696&enc=422aed2167de199636f38966225b6ad4",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-f950363e76",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -641,12 +641,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&cpi=577967959&workId=57705068&answerId=55646229&enc=e383c31ea67c3af5ddb8bde366b24e04",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-e4259aeb56",
       "kind": "eval",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -661,12 +661,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&cpi=577967959&workId=57582676&answerId=55630141&enc=4548766f144818f22924186208eeca5b",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-fcedf41184",
       "kind": "exam",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -681,12 +681,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&cpi=577967959&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "219232606-9eea2c518b",
       "kind": "exam",
-      "course": "在线学习诚信承诺书",
+      "course": "高等数学A",
       "course_id": "219232606",
       "class_id": "153566712",
       "cpi": "577967959",
@@ -701,12 +701,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&cpi=577967959&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "205372276-04e9b87b21",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "军事理论课教学",
       "course_id": "205372276",
       "class_id": "154422672",
       "cpi": "577967959",
@@ -721,12 +721,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=205372276&classId=154422672&cpi=577967959&workId=56132865&answerId=55615001&enc=662c83bccfb6e100ffe426f95a2fdf49",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "205372276-53a0490202",
       "kind": "work",
-      "course": "在线学习诚信承诺书",
+      "course": "军事理论课教学",
       "course_id": "205372276",
       "class_id": "154422672",
       "cpi": "577967959",
@@ -741,12 +741,12 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=205372276&classId=154422672&cpi=577967959&workId=56132395&answerId=55615031&enc=d737a3c5cd1c471228f53b1932b6b6f6",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     },
     {
       "id": "205372276-b727ee1d09",
       "kind": "exam",
-      "course": "在线学习诚信承诺书",
+      "course": "军事理论课教学",
       "course_id": "205372276",
       "class_id": "154422672",
       "cpi": "577967959",
@@ -761,7 +761,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=205372276&clazzid=154422672&cpi=577967959&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-13T13:07:02+08:00"
+      "last_seen": "2026-11-13T13:21:01+08:00"
     }
   ]
 }

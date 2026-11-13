@@ -1,10 +1,10 @@
 {
-  "last_attempt": "2026-11-13T13:07:02+08:00",
-  "last_success": "2026-11-13T13:07:02+08:00",
+  "last_attempt": "2026-11-13T13:21:01+08:00",
+  "last_success": "2026-11-13T13:21:01+08:00",
   "ok": true,
   "courses": 14,
   "courses_ok": 14,
   "courses_failed": 0,
   "tasks": 38,
-  "pending": 4
+  "pending": 7
 }
