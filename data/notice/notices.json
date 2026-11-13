@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-13T13:34:35+08:00",
+  "updated_at": "2026-11-13T13:48:42+08:00",
   "count": 78,
   "sources": [
     "校网通知公告",
@@ -14,8 +14,8 @@
       "url": "https://www.huuc.edu.cn/info/1061/27048.htm",
       "source": "校网通知公告",
       "publish_date": "2026-10-10",
-      "description": "",
-      "deadline": null,
+      "description": "第二十一届河南城建学院大学生职业规划大赛校赛，设成长、就业赛道，分初赛、复赛、总决赛。",
+      "deadline": "2026-10-30",
       "category": "竞赛",
       "reason": "职业规划大赛，可写进简历，有校赛机会",
       "tags": [
@@ -33,8 +33,8 @@
       "url": "https://www.huuc.edu.cn/info/1061/26981.htm",
       "source": "校网通知公告",
       "publish_date": "2026-09-14",
-      "description": "",
-      "deadline": null,
+      "description": "组织我校本科生参加第十八届全国大学生数学竞赛。",
+      "deadline": "2026-09-18",
       "category": "竞赛",
       "reason": "全国性学科竞赛，可提升简历",
       "tags": [
@@ -51,8 +51,8 @@
       "url": "https://jwc.huuc.edu.cn/info/1149/5435.htm",
       "source": "教务处活动通知",
       "publish_date": "2026-05-07",
-      "description": "",
-      "deadline": null,
+      "description": "中国建研院举办人工智能与高质量数据集高价值场景创新大赛，面向单位组队参赛。",
+      "deadline": "2026-05-31",
       "category": "竞赛",
       "reason": "AI与数据集创新大赛，契合AI数据分析",
       "tags": [
