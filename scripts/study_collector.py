@@ -42,14 +42,18 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36")
 AES_KEY = b"u2oh6Vu^HWe4_AES"
 
-PENDING = {"待做", "未做", "待提交", "未提交", "待完成", "进行中", "待互评",
+PENDING = {"待做", "未做", "待提交", "未提交", "未交", "待完成", "进行中", "待互评",
            "待考试", "未开始", "待作答", "待批阅互评"}
 SUBMITTED = {"待批阅", "已提交", "批阅中", "待批改", "批改中"}
 DONE = {"已完成", "已互评", "已批阅", "已结束", "已交", "已评分"}
 
 MIDDLE_RE = re.compile(r"stucoursemiddle\?([^\"'\s>]+)")
 HIDDEN_RE = r'id="{k}"[^>]*value="([a-f0-9]+)"'
-H2_RE = re.compile(r"<h2[^>]*>([^<]{1,80})</h2>")
+# 课程名在列表页每个 li 内的 course-name span 上；middle 页的首个 h2 是全站横幅
+# 「在线学习诚信承诺书」，不能用，只有 <title> 才是课程名。
+COURSE_NAME_RE = re.compile(r'class="course-name[^"]*"[^>]*title="([^"]*)"')
+TITLE_TAG_RE = re.compile(r"<title>(.*?)</title>", re.I | re.S)
+NAME_LOOKAHEAD = 2500
 WORK_ROW_RE = re.compile(r'<li\b[^>]*onclick="goTask\(this\);"[^>]*>', re.I)
 DATA_URL_RE = re.compile(r'data="(https?://[^"]+)"', re.I)
 ARIA_RE = re.compile(r'aria-label="([^"]*)"', re.I)
@@ -157,8 +161,10 @@ class Chaoxing:
             if key in seen:
                 continue
             seen.add(key)
+            nm = COURSE_NAME_RE.search(html[m.end():m.end() + NAME_LOOKAHEAD])
             out.append({"course_id": cid, "class_id": clazz, "cpi": cpi,
-                        "ismooc2": q.get("ismooc2", "1")})
+                        "ismooc2": q.get("ismooc2", "1"),
+                        "name": clean_html_text(nm.group(1)) if nm else ""})
         return out
 
     def mint(self, course: dict) -> dict | None:
@@ -178,8 +184,10 @@ class Chaoxing:
         if not tokens.get("enc") or not tokens.get("workEnc"):
             log(f"课程 {course['course_id']} 未拿到 token（可能已结课或无权限）", level="WARN")
             return None
-        h2 = H2_RE.search(html)
-        course["name"] = clean_html_text(h2.group(1)) if h2 else f"课程{course['course_id']}"
+        if not course.get("name"):
+            tm = TITLE_TAG_RE.search(html)
+            name = clean_html_text(tm.group(1)) if tm else ""
+            course["name"] = name if name and name != "提示" else f"课程{course['course_id']}"
         return tokens
 
     def work_html(self, course: dict, tokens: dict) -> str | None:

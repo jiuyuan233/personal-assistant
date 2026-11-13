@@ -158,6 +158,28 @@ def do_selftest() -> bool:
         check("考试状态 done", erows[0]["state"] == "done", erows[0]["state"])
         check("考试标题", erows[0]["title"] == "第二章测试题", erows[0]["title"])
 
+    check("未交 归为 pending", study_collector.classify("未交") == "pending",
+          study_collector.classify("未交"))
+
+    # 真实样本结构：课程名在 li 内的 course-name span，middle 页首个 h2 是全站横幅
+    list_html = '''<ul class="course-list"><li class="course clearfix" id="c_219232606">
+      <div class="course-cover"><a href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=219232606&clazzid=153566712&cpi=577967959&ismooc2=1"><img src="x.jpg"></a></div>
+      <div class="course-info"><h3 class="inlineBlock"><a class="color1" href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=219232606&clazzid=153566712&cpi=577967959&ismooc2=1">
+      <span class="course-name overHidden2" title="高等数学A">高等数学A</span></a></h3></div></li></ul>'''
+    cx = study_collector.Chaoxing({}, "u", "p")
+    cx.get = lambda *a, **k: list_html
+    cs = cx.list_courses()
+    check("课程列表去重后 1 门", len(cs) == 1, f"实际 {len(cs)}")
+    check("课程名取自列表页 span", bool(cs) and cs[0]["name"] == "高等数学A",
+          cs[0]["name"] if cs else "无")
+
+    cx.get = lambda *a, **k: ('<title>\n  大学生职业生涯与发展规划\n  </title>'
+                              '<h2>在线学习诚信承诺书</h2>'
+                              '<input id="enc" value="aa11"><input id="workEnc" value="bb22">')
+    c2 = {"course_id": "1", "class_id": "2", "cpi": "3", "name": ""}
+    cx.mint(c2)
+    check("middle 页用 title 兜底课程名", c2["name"] == "大学生职业生涯与发展规划", c2["name"])
+
     notice_html = '''<li><a href="../info/1061/27179.htm" target="_blank" title="关于举办第十三期校友创新大讲堂的通知">
       <div class="date"><b>09</b><span>2026-11</span></div><p>关于举办第十三期校友创新大讲堂的通知</p></a></li>
       <li><span>10-28</span><a href="info/1018/5561.htm" target="_blank" title="我校18篇学士学位论文获评河南省优秀">我校18篇...</a></li>
