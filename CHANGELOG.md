@@ -10,7 +10,7 @@
 
 **采集**
 - `study_collector.py`：学习通四步链（AES 登录 → 课程列表 → 逐课铸 token → 作业/互评/考试列表）。
-  实测覆盖 28 门课，作业与考试两个接口都验证通过
+  真实 runner 实测覆盖 **14 门课、失败 0**，作业与考试两个接口都验证通过
 - `diary_collector.py`：Gitee API v5 增量读日记，git blob sha 判变更。
   双通道抽取：Obsidian 复选框（确定性）+ AI 挖名言/潜在计划
 - `notice_collector.py`：4 个公开公告站（校网/教务处/教务处活动/校团委），零登录。
@@ -57,6 +57,27 @@
 - 教学周会停在最后一次手动跑 `schedule` 的那一周 → `finalize` 每次离线重算课表
 - README 里「标记完成请改 `data/diary/plans.json`」在 diary 首次成功前是 404
   → 预置空封装 `{updated_at, count: 0, items: []}`，与 `save_list` 格式一致，`load_list` 读作 `[]`
+
+### 首次真实采集暴露并修掉的问题（2026-11-13）
+
+- **AI 每次调用 403** → 不是 key 失效也不是海外 IP 被封：`/v1/models` 返回 200、31 个模型，
+  但配置里的 `deepseek-v3-2` 不在目录中，真实名字是 **`deepseek-v3.2`**（点号）。
+  免费档只允许目录内模型，所以报 403 而非 404，极具误导性。
+  已改仓库 Variable（PATCH 204）+ workflow 默认值。实测 `deepseek-v3.2` 与 `gpt-4o-mini` 均 200
+- **3 条真待交作业漏出清单** → 真实状态词是 `未交`，而 `PENDING` 只有 `未提交`/`待提交`
+  （`DONE` 里反倒有 `已交`），被判 `unknown`。补词后待完成 4 → **7**，
+  两条带真实截止日（2026-11-19、2026-11-20）进入清单
+- **14 门课名字全是「在线学习诚信承诺书」** → `mint()` 取了 `stucoursemiddle` 落地页的首个 `<h2>`，
+  那是全站横幅。改为从课程列表页 `course-name` span 的 `title` 取（向后 2500 字符窗口），
+  middle 页 `<title>` 兜底。真实 HTML 验证 **14/14 命中**
+- **diary 抽出的 24 条计划全部丢失** → 提交步骤 `CONFLICT (content): Merge conflict in README.md`。
+  两个叠加根因：① `actions/checkout` 默认检出派发时的 `github.sha`，排队期间别的 run 推了新提交，
+  本 run 仍在旧树上渲染；② 每个模式都提交派生产物 README/docs，冲突面被放大。
+  修法：checkout 显式 `ref: ${{ github.ref_name }}`；采集模式只 `git add data` 并
+  `git checkout -- README.md docs`，派生产物提交权独占给 `finalize`/`all`。
+  详见 `docs/技术路径.md` 第 11 节
+- selftest 增加 4 条断言锁住上述解析修复（`未交` 归类、列表页课程名、去重、title 兜底），
+  断言总数 26 → **30**，真实 runner 上全过
 
 ### 已知限制
 
