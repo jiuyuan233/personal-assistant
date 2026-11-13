@@ -26,12 +26,12 @@
 
 1. **生成物禁止手改。** 下列文件全部由脚本产出，改了会被下次运行覆盖：
    - `README.md`
-   - `docs/公告.md`、`docs/潜在计划.md`（从 README 挪出来的两节，模板在 `scripts/*_template.md`）
+   - `docs/公告.md`、`docs/潜在计划.md`、`docs/已剔除任务.md`（从 README 挪出来的独立文档，模板在 `scripts/*_template.md`）
    - `data/study/*`、`data/notice/*`、`data/diary/*`、`data/schedule/*`
    - `docs/data/*`、`docs/week.svg`
 
-   想改这三份文档的**措辞/结构**，改对应的模板（`readme_template.md` /
-   `notice_template.md` / `plans_template.md`），不要改生成物。
+   想改这几份文档的**措辞/结构**，改对应的模板（`readme_template.md` /
+   `notice_template.md` / `plans_template.md` / `excluded_template.md`），不要改生成物。
    新增 `{{占位符}}` 必须同时在 `render_readme.py` 里提供渲染键 ——
    selftest 有一条断言专门守这个，漏了会在页面上留下字面量 `{{X}}`。
 
@@ -77,13 +77,14 @@ scripts/
   study_collector.py  源2
   notice_collector.py 源3
   schedule_parser.py  课表 .ics
-  render_readme.py    README + docs/公告.md + docs/潜在计划.md + docs/data
+  render_readme.py    README + docs/公告.md + docs/潜在计划.md + docs/已剔除任务.md + docs/data
   week_svg.py         本周课表 SVG + 当前时间线 + 几何导出
   daily_push.py       早/中/晚三时段飞书文案（日记事实 + 一言 + AI 人格）
   notify_feishu.js    飞书推送（有文案发纯文本，无文案发运行状态卡片）
   readme_template.md  README 模板（{{占位符}}）
   notice_template.md  docs/公告.md 模板
   plans_template.md   docs/潜在计划.md 模板
+  excluded_template.md docs/已剔除任务.md 模板
   requirements.txt    只有 requests + pycryptodome
 ```
 

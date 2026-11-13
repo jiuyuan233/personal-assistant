@@ -191,6 +191,18 @@ def do_selftest() -> bool:
     check("开始超一周不进清单", dropped["stale"] == 2, str(dropped))
     check("已完成/已批阅不进清单", dropped["not_pending"] == 2, str(dropped))
 
+    # 被剔除的任务要逐项留档：判定与清单共用 drop_reason()，条数必须对得上
+    ex_body, ex_n = rr.render_excluded(sample, now)
+    check("已剔除条数与过滤统计一致", ex_n == sum(dropped.values()), f"{ex_n} vs {dropped}")
+    check("已剔除逐项写明三类原因",
+          all(k in ex_body for k in ("已逾期", "开始过久", "非待完成")), ex_body[:120])
+    check("开始时间退化标注首次发现", "（首次发现）" in ex_body)
+    check("无剔除时给说明不给空表",
+          rr.render_excluded([], now) == ("_本次没有被剔除的任务。_\n", 0))
+    note = rr.render_tasks(sample, now)[1]
+    check("已剔除文档链接挂在清单最下面",
+          note.rstrip().splitlines()[-1].endswith("(docs/已剔除任务.md)"), note)
+
     crows = rr.course_rows([{"course_id": "c1", "name": "高等数学A", "task_count": 14},
                             {"course_id": "c2", "name": "军事理论", "task_count": 1}], kept)
     joined = "\n".join(crows)
@@ -211,10 +223,12 @@ def do_selftest() -> bool:
     tpl = rr.TEMPLATE.read_text(encoding="utf-8")
     check("README 不再内嵌公告节", "## 📢 值得关注的公告" not in tpl)
     check("README 不再内嵌计划节", "## 🎯 潜在计划" not in tpl)
-    check("README 目录区链接到两份独立文档",
-          "docs/公告.md" in tpl and "docs/潜在计划.md" in tpl)
-    check("两份独立文档模板存在",
-          rr.NOTICE_TEMPLATE.exists() and rr.PLANS_TEMPLATE.exists())
+    check("README 目录区链接到三份独立文档",
+          "docs/公告.md" in tpl and "docs/潜在计划.md" in tpl
+          and "docs/已剔除任务.md" in tpl)
+    check("三份独立文档模板存在",
+          rr.NOTICE_TEMPLATE.exists() and rr.PLANS_TEMPLATE.exists()
+          and rr.EXCLUDED_TEMPLATE.exists())
 
     # 抓包永久禁令：脱敏版曾漏出班级 ID，已删文件并抹除历史，不许再放进来
     hars = [p.name for p in rr.REPO_ROOT.rglob("*.har")]
@@ -236,7 +250,7 @@ def do_selftest() -> bool:
     import re as _re
     provided = set(_re.findall(r'"(\{\{[A-Z_]+\}\})"', inspect.getsource(rr)))
     wanted = set()
-    for t in (rr.TEMPLATE, rr.NOTICE_TEMPLATE, rr.PLANS_TEMPLATE):
+    for t in (rr.TEMPLATE, rr.NOTICE_TEMPLATE, rr.PLANS_TEMPLATE, rr.EXCLUDED_TEMPLATE):
         wanted |= set(_re.findall(r"\{\{[A-Z_]+\}\}", t.read_text(encoding="utf-8")))
     check("模板占位符全部有渲染键", not (wanted - provided), str(sorted(wanted - provided)))
 

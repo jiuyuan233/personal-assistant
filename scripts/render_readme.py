@@ -23,8 +23,13 @@ NOTICE_TEMPLATE = REPO_ROOT / "scripts" / "notice_template.md"
 PLANS_TEMPLATE = REPO_ROOT / "scripts" / "plans_template.md"
 NOTICE_DOC = REPO_ROOT / "docs" / "公告.md"
 PLANS_DOC = REPO_ROOT / "docs" / "潜在计划.md"
+# 被清单剔除的任务单独成文，README 任务清单底部只留链接
+EXCLUDED_TEMPLATE = REPO_ROOT / "scripts" / "excluded_template.md"
+EXCLUDED_DOC = REPO_ROOT / "docs" / "已剔除任务.md"
 
 KIND_CN = {"work": "作业", "eval": "互评", "exam": "考试"}
+REASON_CN = {"overdue": "已逾期", "stale": "开始过久", "not_pending": "非待完成"}
+REASON_ORDER = ("overdue", "stale", "not_pending")
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 # 开始时间距今超过这么多天的任务视为陈旧，不再显示（用户做不动了）
 STALE_DAYS = 7
@@ -49,24 +54,33 @@ def task_start(t: dict) -> datetime | None:
     return parse_datetime(t.get("start_time")) or parse_datetime(t.get("first_seen"))
 
 
+def drop_reason(t: dict, now: datetime, cutoff: datetime) -> str | None:
+    """剔除原因键；None = 可做。判定顺序即优先级：非待完成 → 逾期 → 开始过久。
+
+    清单与「已剔除任务」文档共用这一个判定，避免两处口径漂移。
+    """
+    if t.get("state") != "pending":
+        return "not_pending"
+    dt = parse_datetime(t.get("deadline"))
+    if dt and dt < now:
+        return "overdue"
+    st = task_start(t)
+    if st and st < cutoff:
+        return "stale"
+    return None
+
+
 def actionable(tasks: list[dict], now: datetime) -> tuple[list[dict], dict]:
     """只留能做的：待完成、未逾期、开始不超过一周。已完成/已批阅的一律不进清单。"""
     kept: list[dict] = []
     dropped = {"not_pending": 0, "overdue": 0, "stale": 0}
     cutoff = now - timedelta(days=STALE_DAYS)
     for t in tasks:
-        if t.get("state") != "pending":
-            dropped["not_pending"] += 1
-            continue
-        dt = parse_datetime(t.get("deadline"))
-        if dt and dt < now:
-            dropped["overdue"] += 1
-            continue
-        st = task_start(t)
-        if st and st < cutoff:
-            dropped["stale"] += 1
-            continue
-        kept.append(t)
+        reason = drop_reason(t, now, cutoff)
+        if reason:
+            dropped[reason] += 1
+        else:
+            kept.append(t)
     return kept, dropped
 
 
@@ -127,13 +141,59 @@ def render_tasks(tasks: list[dict], now: datetime) -> tuple[str, str, dict]:
             counts["later"] += 1
 
     note = ("> 已剔除：逾期 {} 项 · 开始超过 {} 天 {} 项 · 非待完成 {} 项。"
-            "课程按活跃度（作业发表数量）排序，共 {} 门。\n").format(
+            "课程按活跃度（作业发表数量）排序，共 {} 门。\n"
+            "> 📄 [逐项查看已剔除任务与原因](docs/已剔除任务.md)\n").format(
                 dropped["overdue"], STALE_DAYS, dropped["stale"],
                 dropped["not_pending"], len(courses))
     suffix = f"，其中 **{counts['today']} 项今天截止**" if counts["today"] else ""
     stats = {"pending": len(kept), "overdue": 0, **counts,
              "dropped": dropped, "courses": len(courses), "suffix": suffix}
     return body, note, stats
+
+
+def reason_detail(reason: str, t: dict, now: datetime,
+                  dt: datetime | None, st: datetime | None) -> str:
+    """把剔除原因写成能看懂的一句话，带上具体天数/状态，而不是只给个分类名。"""
+    if reason == "overdue" and dt:
+        return f"**已逾期**：截止 {dt:%Y-%m-%d %H:%M}，已过 {(now - dt).days} 天，做不了了"
+    if reason == "stale" and st:
+        return f"**开始过久**：{st:%m-%d} 开始，距今 {(now - st).days} 天 > {STALE_DAYS} 天"
+    return "**非待完成**：状态「{}」".format(esc(t.get("status") or t.get("state") or "未知"))
+
+
+def render_excluded(tasks: list[dict], now: datetime) -> tuple[str, int]:
+    """被清单剔除的任务 + 逐项原因。判定与 actionable() 共用 drop_reason()。"""
+    cutoff = now - timedelta(days=STALE_DAYS)
+    groups: dict[str, list[dict]] = {k: [] for k in REASON_ORDER}
+    for t in tasks:
+        reason = drop_reason(t, now, cutoff)
+        if reason:
+            groups[reason].append(t)
+
+    total = sum(len(v) for v in groups.values())
+    if not total:
+        return "_本次没有被剔除的任务。_\n", 0
+
+    summary = " · ".join(f"{REASON_CN[k]} {len(groups[k])} 项"
+                         for k in REASON_ORDER if groups[k])
+    lines = [f"共 **{total}** 项：{summary}。", "",
+             "| 课程 | 任务 | 类型 | 截止 | 开始 | 剔除原因 |",
+             "| --- | --- | --- | --- | --- | --- |"]
+    for reason in REASON_ORDER:
+        for t in sort_by_deadline(groups[reason]):
+            dt = parse_datetime(t.get("deadline"))
+            st = task_start(t)
+            when = dt.strftime("%m-%d %H:%M") if dt else "无截止"
+            if dt and not t.get("deadline_exact"):
+                when += " ≈"
+            start = st.strftime("%m-%d %H:%M") if st else "未知"
+            if st and not t.get("start_time"):
+                start += "（首次发现）"
+            lines.append("| {} | {} | {} | {} | {} | {} |".format(
+                esc(t.get("course")), md_link(t.get("title"), t.get("url")),
+                KIND_CN.get(t.get("kind"), t.get("kind") or ""),
+                when, start, reason_detail(reason, t, now, dt, st)))
+    return "\n".join(lines) + "\n", total
 
 
 def render_alert(stats: dict, meta: dict) -> str:
@@ -324,6 +384,12 @@ def run() -> bool:
     ok_p = render_doc(PLANS_TEMPLATE, PLANS_DOC,
                       {"{{PLANS}}": plans, "{{PLAN_LIMIT}}": str(PLAN_LIMIT),
                        "{{WRITEBACK_WINDOW}}": wb_window}, now)
+    # 被剔除的任务逐项留档，README 清单底部那句「已剔除：…」直接链到这里
+    excluded_body, excluded_count = render_excluded(tasks, now)
+    ok_e = render_doc(EXCLUDED_TEMPLATE, EXCLUDED_DOC,
+                      {"{{EXCLUDED}}": excluded_body,
+                       "{{EXCLUDED_COUNT}}": str(excluded_count),
+                       "{{STALE_DAYS}}": str(STALE_DAYS)}, now)
 
     # 网页版数据（docs/ 是 GitHub Pages 目录，前端只能读到这里面的文件）
     # 前端自己按 state 分桶，所以这里必须只喂可做的任务，否则网页会显示出 README 已剔除的逾期项
@@ -344,9 +410,9 @@ def run() -> bool:
     log(f"任务清单：{stats['pending']} 条可做 / {stats['courses']} 门课"
         f"（今天 {stats['today']} / 7天内 {stats['week']} / 更远 {stats['later']}）")
     log(f"已剔除：逾期 {d['overdue']} / 超过{STALE_DAYS}天 {d['stale']} / 非待完成 {d['not_pending']}")
-    log(f"独立文档：公告 {notice_count} 条 / 潜在计划 {plan_count} 项")
+    log(f"独立文档：公告 {notice_count} 条 / 潜在计划 {plan_count} 项 / 已剔除 {excluded_count} 项")
     log("README 已生成")
-    return ok_n and ok_p
+    return ok_n and ok_p and ok_e
 
 
 if __name__ == "__main__":
