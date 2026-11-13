@@ -415,6 +415,123 @@ TICK_SLACK_MIN = 5                                            # 给 cron 延迟�
 **不要手工塞时间戳** —— 把 `pushed` 改成今天会导致当天不再推送。
 只想重置写回就删 `writeback_date` 这一个键。
 
+### 6.8 创建 / 轮换 GitHub Secret（不用开网页）
+
+**为什么需要这一节**：用户明确说过「这些密钥都你给我填，别麻烦我」。
+网页点点点做不到自动化，但 GitHub 有 API。**难点是 Secret 值必须先用仓库公钥加密**，
+明文传过去会被拒（`422`）。加密算法是 **libsodium sealed box**（X25519 + XSalsa20-Poly1305）。
+
+**四步**：
+
+```bash
+# 1) 取仓库公钥（key_id 必须一起回传，否则 GitHub 不知道用哪把私钥解）
+curl -sS -H "Authorization: Bearer $GH_PAT" \
+  https://api.github.com/repos/jiuyuan233/personal-assistant/actions/secrets/public-key
+# → {"key_id":"0123456789abcdef","key":"<base64 的 32 字节 X25519 公钥>"}
+
+# 2) 用 Python + PyNaCl 加密（值只从环境变量读，绝不写进文件）
+python -c "import os,base64,json,nacl.bindings as b; \
+pk=json.load(open('pk.json')); \
+print(base64.b64encode(b.crypto_box_seal(os.environ['SECRET_VALUE'].encode(), \
+base64.b64decode(pk['key']))).decode())"
+
+# 3) PUT 上去（名字大写，值就是上一步的 base64）
+curl -sS -X PUT -H "Authorization: Bearer $GH_PAT" -H "Content-Type: application/json" \
+  -d '{"encrypted_value":"<base64>","key_id":"<key_id>"}' \
+  https://api.github.com/repos/jiuyuan233/personal-assistant/actions/secrets/DIARY_EXCLUDE
+# → 201 = 新建成功，204 = 更新成功。**这两个状态码本身就是加密正确的证明。**
+
+# 4) 复核：列出所有 Secret 的**名字**（API 永远不返回值）
+curl -sS -H "Authorization: Bearer $GH_PAT" \
+  https://api.github.com/repos/jiuyuan233/personal-assistant/actions/secrets
+```
+
+**三个实测坑**：
+
+| 坑 | 现象 | 解法 |
+| --- | --- | --- |
+| `crypto_box_seal` 传了 `PublicKey` 对象 | `TypeError: public key must be bytes` | 传 **`base64.b64decode(pk["key"])` 的原始 bytes** |
+| 装 PyNaCl 1.6.2 | 依赖 `cffi>=2.0.0` 拉不到，安装失败 | **退到 1.5.0**（只需 `cffi>=1.4.1`），另装 cffi + pycparser |
+| wheel 文件名不规范 | pip 报 `from versions: none` | pip **只认规范名** `pynacl-1.5.0-cp36-abi3-win_amd64.whl`，`pynacl.whl` 不行 |
+
+**当前仓库的 6 个 Secret**（名字可以写进仓库，**值永远不行**）：
+
+| 名字 | 用途 | 缺了会怎样 |
+| --- | --- | --- |
+| `CX_USERNAME` / `CX_PASSWORD` | 学习通登录 | study 采集失败，清单不更新 |
+| `GITEE_TOKEN` | 读日记 + **写回** | diary 采集失败；**只读 token 会让写回 403** |
+| `AI_API_KEY` | 抽取 / 点评 / 人格推送 | 抛 `MissingCredential`，推送降级但不崩（§4.5） |
+| `FS_WEBHOOK` | 飞书机器人 | 推送静默跳过 |
+| `DIARY_EXCLUDE` | **私人日记目录黑名单**（逗号分隔路径前缀） | **私人计划会被公开采集** —— 这是隐私开关，不是可选优化 |
+
+**⚠️ `DIARY_EXCLUDE` 的值为什么不能进仓库**：路径名本身就暴露了用户把哪些主题标成私人。
+所以仓库里只出现这个名字，selftest 在运行时读它做反向守卫（见 §5.8）。
+
+### 6.9 `github.com:443` 不通时怎么推送
+
+**实测现象**：`api.github.com` 0.4 秒返回 200，`github.com` 20 秒超时；
+`git fetch` 有时成功、`git push` 有时失败。**这是间歇性的，不是配置错误** ——
+别去改 git config、别设代理、别换成什么临时镜像地址。
+
+**先重试一次普通 push**（网络可能刚好通了）。真不行再走 **Git Data API**，四步全是普通快进：
+
+| 步 | 调用 | 关键点 |
+| --- | --- | --- |
+| 1 | `POST /repos/{o}/{r}/git/blobs` | `{content: <base64>, encoding: "base64"}` |
+| 2 | `POST /repos/{o}/{r}/git/trees` | `{base_tree: <父提交 tree sha>, tree: [...]}`；**删文件用 `sha: null`** |
+| 3 | `POST /repos/{o}/{r}/git/commits` | `{message, tree, parents, author, committer}` |
+| 4 | `PATCH /repos/{o}/{r}/git/refs/heads/main` | `{sha, force: false}` |
+
+**⚠️ 两个会让内容静默变质的坑（都实测踩过）**：
+
+1. **`core.autocrlf=true` 时不能读工作区文件当 blob。**
+   本机工作区是 **CRLF**、仓库对象是 **LF**（同一个文件：blob 里 0 个 `\r`，工作区 478 个）。
+   用 `fs.readFileSync` 上传 → 全仓库行尾被改写。
+   **必须用 `git cat-file blob <commit>:<path>` 取字节。**
+2. **commit message 的尾换行不要削。** `git show --format=%B` 自带一个尾 `\n`，
+   commit 对象里存的也是带 `\n` 的版本。`replace(/\n$/,'')` 会让 sha 对不上。
+
+**怎么发现自己踩坑了**：比对**本地 HEAD sha** 与 **API 返回的 commit sha**。
+不相等 = 内容有差异。**「API 返回 201」不等于「推上去的东西和本地一样」，sha 一致才是。**
+
+### 6.10 抹掉 git 历史里的隐私（**需要用户明确授权，不得自行发起**）
+
+**这是本项目做过两次的高危操作**（第一次抹 HAR，第二次抹学号 + 私人计划）。
+[AGENT.md](../AGENT.md) 铁律 3 禁止 force push，**只有用户点名授权时才是例外**。
+**下一个 AI 不得援引历史先例自行 force push。**
+
+**授权后的标准流程**（2026-11-14 实际执行并验证过）：
+
+1. **仓库外全量备份**：`git bundle create <仓库外路径>/backup.bundle --all`，
+   然后 `git bundle verify` 必须报 **「records a complete history」**。没有这一步不许往下走。
+2. **先量再改**：遍历 `git rev-list --all` 的每个提交的每个 blob，
+   用隐私正则 + 私人目录名扫一遍，**列出受影响路径**。本次量到 **98 提交 / 626 blob / 15 个路径**。
+3. **在镜像上试，不碰主仓库**：`git clone --mirror <主仓库> <临时目录>`，在镜像上重写。
+4. **用 `git-filter-repo`，不是 `reset --hard`**（后者会丢掉全部开发历史）：
+   ```bash
+   python git_filter_repo.py --force --blob-callback <回调文件.py>
+   ```
+   回调是**函数体**（`blob` 在作用域里），改 `blob.data` 即可；也可以传文件路径。
+   本次三条清洗规则：JSON 按 `source_file` 结构化删条目 → 文本按私人原文**整行删除** →
+   私人目录叶子名替换成占位符。
+5. **复扫 + 比对，两个都要过**：
+   - 复扫重写后的历史 → **命中必须为 0**；
+   - `diff <(git ls-tree -r 旧HEAD) <(git ls-tree -r 新HEAD)` → **当前文件必须逐字节不变**；
+   - `diff` 两边的 `git log --format=%s` → **提交信息必须一条不差**。
+6. **推送**：`git push --force <url> refs/heads/main:refs/heads/main`，再用 API 复核 remote head。
+7. **同步本地**：`git fetch <镜像> refs/heads/main` 后 `git update-ref refs/heads/main <新sha>`。
+   **树相同就不必 `reset --hard`**，`update-ref` 不动工作区，更安全。
+
+**⚠️ 清洗正则宁可漏一点，也不能吞掉分隔符。** 本次第一版写成
+`(课程名)[\d,，、()（）\s]+`，其中 `\s` **跨行**、`、` 是正常顿号，结果：
+**把 ICS 里 `SUMMARY` 与 `LOCATION` 之间的换行吃掉了**（1680 行 → 1670 行，课表源文件结构被破坏），
+还吃掉 README 表格空格、文档顿号、代码注释里的逗号。
+改成 **`\d[\d,，()（）]*`（必须以数字开头、不含空白与顿号）** 后，HEAD 树逐字节不变。
+**漏了可以复扫补，吞了是静默损坏 —— 所以第 5 步的「树必须不变」是硬门禁，不是可选项。**
+
+**残留**：GitHub 服务端可能仍缓存旧对象（fork / PR ref / Pages 构建缓存）。
+本仓库无 fork、无 PR，**开 Pages 必须在抹历史之后**，否则旧内容会通过构建缓存再暴露一次。
+
 ---
 
 ## 7. 绝对不能碰的东西
@@ -422,7 +539,7 @@ TICK_SLACK_MIN = 5                                            # 给 cron 延迟�
 | 禁止 | 为什么 |
 | --- | --- |
 | **手改生成物** | README.md / docs/公告.md / docs/潜在计划.md / docs/已剔除任务.md / data/study/* / data/notice/* / data/diary/* / data/schedule/* / **data/runtime.json** / **data/diary/plans_archive.json** / docs/data/* / docs/week.svg —— 改了会被下次运行覆盖。改模板 |
-| **force push** | 提交步骤是 `git pull --rebase` + 普通 push。推不上去就让它失败、飞书报红、人来处理。**别"优化"成 `--force-with-lease`** |
+| **force push** | 提交步骤是 `git pull --rebase` + 普通 push。推不上去就让它失败、飞书报红、人来处理。**别"优化"成 `--force-with-lease`**。**唯一例外**：用户点名授权抹历史（§6.10），已用过两次，**不得援引先例自行发起** |
 | **修改两个参考仓库** | `jiuyuan233/wool-gathering`（结构模板）、`jiuyuan233/Lottery-BiliBiliToolB-Web233`（推送模板）—— 只读参考 |
 | **往 render_readme.py / week_svg.py 塞采集逻辑** | 破坏「finalize 零网络零 token」的结构保证 |
 | **提交任何 `*.har`** | `.gitignore` 拒绝一切 HAR，**没有任何例外**。脱敏版也不行（实测班级 ID 前缀全是明文） |
@@ -521,8 +638,9 @@ Actions 里一定有这个 Secret，所以**线上是 166**。本地不带变量
 用户说「这是我最后一次回答你了」，所以 [不足与风险.md §7](不足与风险.md) 的四项**不再等用户**，
 按「代价最小、可逆、不泄露」自行决定并把理由写进了文档：
 
-- **§7.1 git 历史里的隐私**：用户本轮说「7.x 全部修复」= **一次性授权 force push**。
-  执行前必须先在仓库外做 `git bundle` 备份。**下一个 AI 不得援引本次先例自行 force push。**
+- **§7.1 git 历史里的隐私**：✅ **已于 2026-11-14 00:58 执行完毕**。
+  98 提交 / 626 blob 重写后复扫 **0 命中**，当前文件逐字节未变，remote main = `424e845`。
+  流程与两个坑见 **§6.10**。**这是用户点名授权的一次性例外，下一个 AI 不得自行 force push。**
 - **§7.2 深链参数**：**白名单** `_PUBLIC_KEEP`，去掉 `cpi`/`enc`/`stuenc`/`answerId`。
   `study.public_links` 这个开关保留，但默认值已是安全的那一档。
 - **§7.3 私人计划**：Secret **`DIARY_EXCLUDE` 已创建**，仓库里只出现名字。

@@ -465,7 +465,7 @@ def do_selftest() -> bool:
                      for n in _needles if n in txt]
         check("私人路径不出现在仓库任何文件里", not leak, str(leak[:8]))
     else:
-        log("[selftest] ⏭️ 跳过私人路径守卫（本地未设 DIARY_EXCLUDE，Actions 里会跑）")
+        log("[selftest] ⏭️ 跳过私人路径守卫（本次进程未设 DIARY_EXCLUDE；带 Secret 的那次运行会检查）")
 
     # 用户硬要求：所有说明性文档都必须能在 README 目录里找到。
     # 新增文档忘了挂链接，这条会直接红，不用等人肉发现。
