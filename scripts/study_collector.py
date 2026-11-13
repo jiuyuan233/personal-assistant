@@ -610,7 +610,8 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
                     break
         else:
             log(f"[diag] --- 无 time div 的行（课程 {p['course']}）：")
-            log(f"[diag]     {_shape(_mask_title(re.sub(r'\s+', ' ', p['chunk'])))[:1000]}")
+            flat_chunk = re.sub(r"\s+", " ", p["chunk"])
+            log(f"[diag]     {_shape(_mask_title(flat_chunk))[:1000]}")
     return {"ok": True, "shapes": len(time_shapes), "problems": len(problems)}
 
 
