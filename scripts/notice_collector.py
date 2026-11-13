@@ -48,6 +48,8 @@ DETAIL_MAX = 5
 # 博达 CMS 正文容器，www 与 jwc 两站实测一致
 BODY_CONTAINER = "v_news_content"
 BODY_CHARS = 6000
+# 报名截止语义线索。模型会把「初赛阶段10月1日—10月30日」的结束日当截止日，提示词拦不住
+DEADLINE_CUE_RE = re.compile(r"截止|逾期|不予受理|前报送|之前报送|报名[^。；]{0,12}前|提交[^。；]{0,12}前")
 
 
 # ---------------------------------------------------------------------------
@@ -266,6 +268,17 @@ def body_text(html: str) -> str:
     return safe_text(clean_html_text(html[start:end]), BODY_CHARS)
 
 
+def deadline_supported(text: str, dl: str) -> bool:
+    """截止日必须在正文里找得到，且正文确有报名截止语义，否则视为模型拿别的日期凑数。"""
+    if not DEADLINE_CUE_RE.search(text):
+        return False
+    y, m, d = dl.split("-")
+    mi, di = int(m), int(d)
+    forms = (dl, f"{y}年{mi}月{di}日", f"{mi}月{di}日",
+             f"{y}.{mi}.{di}", f"{mi}.{di}", f"{mi}-{di}")
+    return any(f in text for f in forms)
+
+
 def ai_detail(session: requests.Session, items: list[dict]) -> None:
     """就地给高分公告补 description/deadline。只看标题拿不到截止日，必须读正文。"""
     from ai_client import AIClient
@@ -296,8 +309,11 @@ def ai_detail(session: requests.Session, items: list[dict]) -> None:
             continue
         n["description"] = safe_text(d.get("summary"), 120)
         dl = d.get("deadline")
-        if not n.get("deadline") and isinstance(dl, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", dl):
-            n["deadline"] = dl
+        if isinstance(dl, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", dl):
+            if not deadline_supported(text, dl):
+                log(f"截止日 {dl} 在正文里没有报名截止依据，丢弃：{n['url']}", level="WARN")
+            elif not n.get("deadline"):
+                n["deadline"] = dl
         done += 1
     log(f"正文摘要补全：{done}/{len(items)} 条")
 

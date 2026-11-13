@@ -203,6 +203,12 @@ def do_selftest() -> bool:
     bt = notice_collector.body_text(body_html)
     check("正文取 v_news_content 容器", "职业规划大赛" in bt and "报名截止" in bt, bt[:60])
     check("正文不含导航与页脚", "学院概况" not in bt and "版权所有" not in bt, bt[:60])
+    check("截止日有正文依据才采纳", notice_collector.deadline_supported(bt, "2026-11-30"))
+
+    phase_html = ('<div class="v_news_content"><p>学院初赛阶段：2026年10月1日—10月30日。</p>'
+                  '<p>复赛阶段：2026年11月1日—11月20日。</p></div>')
+    pt = notice_collector.body_text(phase_html)
+    check("阶段结束日不算报名截止", not notice_collector.deadline_supported(pt, "2026-10-30"))
 
     ics = schedule_parser.parse_ics(schedule_parser.ICS_PATH)
     check("课表 VEVENT 解析", len(ics) > 100, f"实际 {len(ics)}")
