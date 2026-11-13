@@ -49,7 +49,8 @@ Actions 里永远被 workflow 的 env 覆盖。换中转站只改 Variable，不
 改为在 system 里硬性要求「只输出合法 JSON」+ 传 `schema_hint`，再靠三级抽取兜底。通用性优先。
 
 **`max_tokens` 的坑**：推理型模型（deepseek-r1 / o 系列）会把思考过程算进 `max_tokens`，
-给 2000 可能全被思考吃掉、`content` 返回空。当前默认 `deepseek-v3-2` 是非推理模型，2000 够用。
+给 2000 可能全被思考吃掉、`content` 返回空。当前默认 `deepseek-v3.2`（**点号**）是非推理模型，
+2000 够用；实测给 1000 时正文摘要会返回空 `content`，表现为「补全 0/3」且无报错。
 **换成推理模型时要把 `max_tokens` 提到 8000+**，否则表现为「AI 返回结构异常」但日志里没有报错。
 
 ## 用户画像（USER_PROFILE）

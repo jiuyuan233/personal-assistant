@@ -145,7 +145,7 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
   解压到仓库外的临时目录充当 `node_modules`。两个坑：GNU tar 会把 `C:/...` 的冒号当远程主机，
   必须加 `--force-local`；脚本要写成真实文件再跑，`node -e` 里 `process.chdir` 不改变模块解析基准。
   明文值走环境变量传入、不落盘不进 git，用完删掉临时目录。
-  已验证成功的模式：`selftest`（**30 项断言**）、`probe`、`finalize`（含 git 写回）、`notice`、`study`、`diary`。
+  已验证成功的模式：`selftest`（**32 项断言**）、`probe`、`finalize`（含 git 写回）、`notice`、`study`、`diary`。
 - **`study` / `diary` 已端到端跑通（2026-11-13）**，Secrets 配好后首次真实采集暴露了四个 bug，均已修：
   - `study`：登录成功、**14 门课全扫描失败 0**、38 条作业、**待完成 7**（修 `未交` 前只有 4）、
     两条真实截止日 2026-11-19 / 2026-11-20 已进 README 清单，飞书推送成功。
@@ -159,12 +159,14 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
   排队中的 `diary` 在旧树上渲染 README，rebase 冲突直接吞掉已抽出的 24 条计划。
   现在 checkout 显式 `ref: ${{ github.ref_name }}`，采集模式 `git add data` 后
   `git checkout -- README.md docs`。**改提交步骤前必读 `docs/技术路径.md` 第 11 节。**
-- **`notice` 已端到端验证（2026-11-13）**：4 个源全成功，新增 78 条，README 渲染出 12 条竞赛公告。
-  但**关键词打分封顶 3 分**（`keyword_score`：boost=3 / gate=2 / block=0），所以没配 `AI_API_KEY` 时
-  「高相关」恒为 0（飞书阈值 ≥4 永不触发），公告表的「截止」「说明」两列恒为 `—`。
-  而且**只有新增公告送 AI**（`AI_MAX_CANDIDATES=30`/次），已入库的存量不会被重打分。
-  → 配好 key 后必须一次性重灌：清空 `data/notice/notices.json`，临时把 `AI_MAX_CANDIDATES`
-  调大到覆盖存量，跑一次 `notice`，再改回 30。详见 CHANGELOG 已知限制第 6 条。
+- **`notice` 已端到端验证（2026-11-13）**：4 个源全成功，存量重灌 **78 条零丢失**、**高相关 3 条**，
+  正文摘要 **3/3** 补全，三个真实截止日（2026-10-30 / 2026-09-18 / 2026-05-31）已进 README。
+  两个必须记住的机制：**关键词打分封顶 3 分**（`keyword_score`：boost=3 / gate=2 / block=0），
+  没配 `AI_API_KEY` 时「高相关」恒为 0；**只有新增公告送 AI**（`AI_MAX_CANDIDATES=30`/次），
+  存量不会被重打分。换 key 或改提示词后要重灌：清空 `data/notice/notices.json`，
+  临时调大 `AI_MAX_CANDIDATES` 覆盖存量，跑一次 `notice`，再改回 30。详见 CHANGELOG 第 6 条。
+- **正文摘要 `max_tokens` 必须 ≥2000。** 给 1000 时 `content` 返回空 → `_extract_json` 得 None
+  → 静默跳过，日志只有「正文摘要补全：0/3」而没有任何报错。三个跳过分支现在都打 WARN。
 - **考试列表解析未经真实待考数据验证。** 目前样本里两场考试都是「已完成」，
   待考行的 `onclick` 函数名和倒计时结构可能与作业不同。第一次遇到待考时要核对。
 - **详情页精确截止时间未经样本验证。** `DETAIL_DT_RE` 是容错猜测，

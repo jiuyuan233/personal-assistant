@@ -88,7 +88,7 @@ git push -u origin main
 | 名称 | 默认值 | 说明 |
 | --- | --- | --- |
 | `AI_BASE_URL` | `https://api.chatanywhere.org/v1` | 换中转站时改这里 |
-| `AI_MODEL` | `deepseek-v3-2` | 换模型时改这里 |
+| `AI_MODEL` | `deepseek-v3.2` | 换模型时改这里，名字必须照抄该站 `/v1/models` 目录（写成 `deepseek-v3-2` 会每次 403） |
 
 不配 Variables 就用 workflow 里写死的默认值。
 

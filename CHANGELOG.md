@@ -92,18 +92,22 @@
 5. ~~`study` / `diary` 尚未端到端跑通~~ **已跑通（2026-11-13）**：
    `study` 登录成功、14 门课失败 0、38 条作业、待完成 7（两条真实截止日 11-19 / 11-20 进清单）；
    `diary` 处理 12 个 md、名言 7 条、计划 39 条；两者飞书均推送成功。
-   已在真实 runner 上验证成功：`selftest`（**30 项断言**）、`probe`、`finalize`（含 git 写回）、
-   `notice`（4 源全成功、新增 78 条）、`study`、`diary`。
-   **唯一仍未验证的是 `schedule` 定时触发**：截至 2026-11-13T05:22Z，workflow `state=active`、
+   已在真实 runner 上验证成功：`selftest`（**32 项断言**）、`probe`、`finalize`（含 git 写回）、
+   `notice`（4 源全成功、78 条存量重灌零丢失、高相关 3、正文摘要 3/3）、`study`、`diary`。
+   **唯一仍未验证的是 `schedule` 定时触发**：截至 2026-11-13T05:40Z，workflow `state=active`、
    Actions `enabled=true`、仓库 public 非归档，但 `event=schedule` 的 run 数为 0，
-   全部运行都是 `workflow_dispatch`。cron 表达式合法，需继续观测首次自动触发
-6. **关键词打分上限只有 3 分**（`keyword_score`：boost=3 / gate=2 / block=0）。没配 `AI_API_KEY` 时
-   「高相关」恒为 0，飞书高相关阈值 ≥4 永不触发，README 公告表的「截止」「说明」两列恒为 `—`。
-   而且只有**新增**公告送 AI（`AI_MAX_CANDIDATES=30`/次），已入库的旧公告不会被重打分。
-   → 配好 key 后要一次性重灌存量：清空 `data/notice/notices.json`，临时把 `AI_MAX_CANDIDATES`
-   调大到覆盖存量条数，跑一次 `notice`，再改回 30
+   全部 16 次运行都是 `workflow_dispatch`。cron 表达式合法，需继续观测首次自动触发
+6. ~~**关键词打分上限只有 3 分**，存量公告不会被重打分~~ **存量已重灌（2026-11-13）**：
+   `keyword_score` 封顶 3 分（boost=3 / gate=2 / block=0），没配 `AI_API_KEY` 时「高相关」恒为 0。
+   配好 key 后已按预案执行：清空 `data/notice/notices.json`、临时把 `AI_MAX_CANDIDATES` 调到 120
+   跑一次 `notice` —— **78 条存量全部找回、零丢失**，51 条送 AI，**高相关 0 → 3**，随后改回 30。
+   打分分布 `{0:33, 1:25, 2:13, 3:4, 4:3}`。日常运行仍只有**新增**公告送 AI（30 条/次）
 7. `bge-m3` 向量模型未接入（v1 不需要语义检索）
-8. 公告正文摘要（`DETAIL_*` 提示词）已写好但未接线，`description` 字段恒为空
+8. ~~公告正文摘要（`DETAIL_*`）未接线，`description` 恒为空~~ **已接线并验证（2026-11-13）**：
+   `ai_detail()` 给 score ≥4 且无摘要的公告抓正文（博达 CMS 容器 `v_news_content`），
+   每轮上限 `DETAIL_MAX=5`，实测 **3/3 补全**，拿到三个真实截止日
+   （2026-10-30 / 2026-09-18 / 2026-05-31）。README 公告表「截止」「说明」两列已是真实值。
+   踩过的坑：`max_tokens=1000` 时 `content` 返回空 → 静默跳过「0/3」且无任何报错，必须 ≥2000
 
 ### 依赖
 
