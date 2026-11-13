@@ -64,9 +64,13 @@ TIME_RE = re.compile(r'<div class="time\s+(\w+)"[^>]*>(.*?)</div>', re.I | re.S)
 EXAM_ONCLICK_RE = re.compile("onclick=\"(\\w+)\\('(\\d+)','(\\d+)'\\)\"")
 DETAIL_DT_RE = re.compile(
     r"(?:截止时间|结束时间|截止|结束)[^0-9]{0,40}(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日]?\s*\d{1,2}:\d{2})")
-# 列表页只有倒计时 div，不给发布/开始时间，只能从详情页取。取不到就退回 first_seen
+# 实测（2026-11-13）：work/task 详情页只有空标签「作答时间:」，值由 JS 填，HTML 里取不到发布时间。
+# 所以作业的「开始时间」只能退回 first_seen（本助手首次发现时间），不是真实发布时间。
 DETAIL_START_RE = re.compile(
     r"(?:开始时间|发布时间|布置时间|起始时间|开始)[^0-9]{0,40}(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日]?(?:\s*\d{1,2}:\d{2})?)")
+# 互评详情页给的是真实窗口，形如「互评时间：11-06 07:01 至 11-10 23:01」，不带年份
+EVAL_WINDOW_RE = re.compile(r"互评时间[：:]\s*([^<]{4,80})")
+MD_HM_RE = re.compile(r"(?:(\d{4})[-/年])?(\d{1,2})[-/月](\d{1,2})日?\s*(\d{1,2}):(\d{2})")
 
 
 # ---------------------------------------------------------------------------
@@ -355,6 +359,30 @@ def detail_time_hints(html: str, limit: int = 5) -> list[str]:
     return out
 
 
+def detail_eval_window(html: str, now: datetime) -> tuple[datetime | None, datetime | None]:
+    """互评页的真实时间窗 → (开始, 截止)。窗口一结束就不能再互评，所以结束时间即截止时间。"""
+    m = EVAL_WINDOW_RE.search(html)
+    if not m:
+        return None, None
+    parts = MD_HM_RE.findall(m.group(1))
+    if len(parts) < 2:
+        return None, None
+
+    def build(p: tuple) -> datetime | None:
+        y, mo, d, h, mi = p
+        year = int(y) if y else now.year
+        try:
+            dt = datetime(year, int(mo), int(d), int(h), int(mi), tzinfo=now.tzinfo)
+        except ValueError:
+            return None
+        # 页面不给年份：算出来在半年以后，说明其实是去年的窗口
+        if not y and dt - now > timedelta(days=180):
+            dt = dt.replace(year=year - 1)
+        return dt
+
+    return build(parts[0]), build(parts[1])
+
+
 # ---------------------------------------------------------------------------
 # 主流程
 # ---------------------------------------------------------------------------
@@ -424,10 +452,17 @@ def run() -> dict:
                 t["deadline_exact"] = True
                 log(f"详情页补全截止时间：{t['title']} → {t['deadline']}")
             st = detail_start(html)
+            ws, we = detail_eval_window(html, now)
+            if ws:
+                st = ws
+            if we and not t.get("deadline_exact"):
+                t["deadline"] = we.isoformat(timespec="seconds")
+                t["deadline_exact"] = True
+                log(f"互评窗口截止：{t['title']} → {t['deadline']}")
             if st:
                 t["start_time"] = st.isoformat(timespec="seconds")
                 got_start += 1
-            if not dt and not st:
+            if not dt and not st and not we:
                 log(f"详情页无时间字段（{len(html)} 字节）：{t['title']} "
                     f"片段={detail_time_hints(html)}")
         log(f"详情页取到开始时间：{got_start}/{len(need)} 条")

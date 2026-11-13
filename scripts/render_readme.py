@@ -197,7 +197,10 @@ def render_quotes(limit: int = 8) -> str:
     out = []
     for q in items:
         date_part = f" — {q['source_date']}" if q.get("source_date") else ""
-        out.append(f"> {esc(q.get('text'))}\n>\n> <sub>{esc(q.get('context'))}{date_part}</sub>\n")
+        block = f"> {esc(q.get('text'))}\n>\n> <sub>{esc(q.get('context'))}{date_part}</sub>\n"
+        if q.get("comment"):
+            block += f">\n> 💬 {esc(q['comment'])}\n"
+        out.append(block)
     return "\n".join(out)
 
 

@@ -142,7 +142,7 @@ def merge_quotes(old_list: list[dict], new_list: list[dict], today: date) -> lis
         if not text:
             continue
         if text in by_text:
-            _carry(by_text[text], new, ("source_file", "source_date", "context"))
+            _carry(by_text[text], new, ("source_file", "source_date", "context", "comment"))
         else:
             new.setdefault("first_seen", today.isoformat())
             by_text[text] = new

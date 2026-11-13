@@ -192,6 +192,13 @@ def do_selftest() -> bool:
     check("无任务写「无」", "**无**" in joined)
     check("活跃度高的课程排前面", joined.index("高等数学A") < joined.index("军事理论"))
 
+    # 实测样本：互评详情页给真实窗口，work 详情页只有空标签「作答时间:」（值由 JS 填）
+    ws, we = study_collector.detail_eval_window("<p>互评时间：11-06 07:01 至 11-10 23:01</p>", now)
+    check("互评窗口开始时间", ws is not None and (ws.month, ws.day, ws.hour) == (11, 6, 7), str(ws))
+    check("互评窗口结束即截止", we is not None and (we.day, we.hour) == (10, 23), str(we))
+    check("窗口已结束的互评会被剔除", we is not None and we < now)
+    check("空标签不产生开始时间", study_collector.detail_start("<p>作答时间:</p>") is None)
+
     # 真实样本结构：课程名在 li 内的 course-name span，middle 页首个 h2 是全站横幅
     list_html = '''<ul class="course-list"><li class="course clearfix" id="c_219232606">
       <div class="course-cover"><a href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=219232606&clazzid=153566712&cpi=577967959&ismooc2=1"><img src="x.jpg"></a></div>
