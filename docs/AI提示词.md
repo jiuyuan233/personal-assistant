@@ -13,8 +13,16 @@
 | 日记复选框 | ❌ | 正则 100% 准确，比 AI 可靠，且不受模型抖动影响 |
 | README 渲染 | ❌ | **每 20 分钟一次，必须零 token** |
 
-`DETAIL_SCHEMA` / `DETAIL_INSTRUCTIONS`（公告正文摘要）**v1 未接线**，是为「高分公告抓正文」预留的。
-`data/notice/notices.json` 的 `description` 字段因此恒为 `""`。
+`DETAIL_SCHEMA` / `DETAIL_INSTRUCTIONS`（公告正文摘要）**已接线**：`notice` 模式对
+`score >= 4` 且尚无摘要的公告抓正文，每次最多 `DETAIL_MAX = 5` 条，抽 `summary` → `description`、
+`deadline` → 报名截止日。正文容器是博达 CMS 的 `v_news_content`（www 与 jwc 两站实测一致）。
+
+**为什么必须抓正文**：只给标题时，提示词里「不要编造」会让模型正确返回 `deadline: null`，
+于是 README 公告表的「截止」列恒为 `—`。截止日几乎都写在正文里，不读正文就拿不到。
+
+**`max_tokens` 不能低于 2000**：首次接线用 1000，结果 3 条全部返回空内容、`0/3` 补全，
+且当时三个跳过分支都是静默 `continue`，日志里连 WARN 都没有，极难定位。现已统一 2000
+并给每个跳过分支补了告警。
 
 ## 配置
 
@@ -22,7 +30,7 @@
 |---|---|---|
 | `AI_API_KEY` | Secret | 无（缺失时 `env(required=True)` 直接 `sys.exit(1)`） |
 | `AI_BASE_URL` | Variable | workflow 里兜底 `https://api.chatanywhere.org/v1` |
-| `AI_MODEL` | Variable | workflow 里兜底 `deepseek-v3-2` |
+| `AI_MODEL` | Variable | workflow 里兜底 `deepseek-v3.2`（**点号**，写成 `deepseek-v3-2` 会每次 403） |
 
 `AIClient` 类内部的默认值（`api.openai.com/v1` + `gpt-4o-mini`）只在**本地不设环境变量**时生效，
 Actions 里永远被 workflow 的 env 覆盖。换中转站只改 Variable，不用改代码。
