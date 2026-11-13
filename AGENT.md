@@ -58,13 +58,15 @@ scripts/
   ai_client.py        OpenAI 兼容客户端（限流+重试+JSON 抽取）
   dedup.py            合并策略：公告旧值优先，作业新值优先
   prompts.py          全部 AI 提示词 + 用户画像
-  diary_collector.py  源1
+  diary_collector.py  源1（含 Gitee 读写 + 名言点评）
+  diary_writeback.py  源1 的写回：潜在计划 → 日记复选框，T+1 写 / T+2 复查
   study_collector.py  源2
   notice_collector.py 源3
   schedule_parser.py  课表 .ics
   render_readme.py    README + docs/data
-  week_svg.py         本周课表 SVG
-  notify_feishu.js    飞书卡片推送
+  week_svg.py         本周课表 SVG + 当前时间线 + 几何导出
+  daily_push.py       早/中/晚三时段飞书文案（日记事实 + 一言 + AI 人格）
+  notify_feishu.js    飞书推送（有文案发纯文本，无文案发运行状态卡片）
   readme_template.md  README 模板（{{占位符}}）
   requirements.txt    只有 requests + pycryptodome
 ```
@@ -82,10 +84,20 @@ python scripts/main.py selftest   # 离线自检，不需要凭据、不需要�
 python scripts/main.py probe      # 探测各站点从当前出口 IP 是否可达
 python scripts/main.py finalize   # 渲染 + 离线重算课表（不联网、不花 token）
 python scripts/main.py study      # 采集学习通 + 渲染
+python scripts/main.py diary      # 采集日记 + 写回 Gitee
+python scripts/main.py notice     # 采集公告
+python scripts/main.py morning    # 早 7 点飞书文案（不提交任何文件）
+python scripts/main.py noon       # 中午问好
+python scripts/main.py night      # 晚间总结
 python scripts/main.py all        # 全部
 ```
 
 Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
+
+**⚠️ 派发必须串行，一次一个。** concurrency group 设的是 `cancel-in-progress: false`，
+但 GitHub 对同一个 group **只保留一个 pending run** —— 一次性派发多个模式，
+后派发的会把先派发的**直接 cancel 掉**（实测两条 CANCELLED）。
+等上一个 run 变 completed 再派下一个。
 
 **改任何解析器后，务必同步更新 `main.py` 里的 `do_selftest()` 断言。**
 自检是唯一能在不消耗凭据、不依赖网络的情况下验证解析逻辑的手段。
@@ -125,9 +137,135 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
 **状态语义：** `待批阅` 通常表示已提交、等老师批阅，但**互评模式下「待批阅」+ 仍在倒计时 = 用户还得去互评**，
 `parse_work_rows()` 会把它升级成 `pending`。改这段前先看清楚。
 
+### 4.1 任务清单的过滤与排序规则（`render_readme.py`）
+
+用户要求：**14 门课全都要出现在 README 里，没作业的写「无」**；按活跃度排序；只显示还能做的。
+
+- `course_rows()`：以**课程列表**为准遍历，不是以作业为准。某门课没有可做任务就输出「无」。
+  少一门课就是 bug，别用「有作业的课」当全集。
+- **活跃度 = 该课作业发表数量**，多的排前面。
+- `STALE_DAYS = 7`：开始时间距今超过一周的任务剔除（用户做不了了）。
+- `actionable()`：逾期剔除、已完成/已提交剔除，只留 `pending`。
+- 剔除数量要写进 `{{FILTER_NOTE}}`，让用户知道少了几条、为什么少。
+- 前端 `docs/data/tasks.json` **只喂 `kept`**（过滤后的），另带 `courses` 供分组视图。
+
+**⚠️ 一周窗口用的是 `first_seen`，不是真实发布时间 —— 这是实测出来的硬限制。**
+`work/task` 详情页 HTML 里只有空标签 `作答时间:`，**值由 JS 注入，静态 HTML 取不到**。
+所以普通作业的 `start_time` 只能退回 `first_seen`（本助手首次发现时间）。
+**只有互评任务能拿到真实开始时间**：`eval-list` 详情页有真实窗口
+`互评时间：11-06 07:01 至 11-10 23:01`（不带年份），由 `detail_eval_window()` 解析，
+窗口结束即截止时间。年份缺失时按「算出来在半年以后就是去年的」回退一年。
+
+排查时间字段失配时用 `detail_time_hints(html)` 把页面里含「时间/截止/开始」的片段 dump 出来，
+**不要靠猜正则**。日志里「详情页无时间字段」那行就带这些片段。
+
+实测（commit `a17f2d8`，run 43379475423）：`互评窗口截止：3.1微分中值定理 → 2026-11-10T23:01:00+08:00`，
+`详情页取到开始时间：1/4 条`，`任务清单：3 条可做 / 14 门课`，`已剔除：逾期 1 / 超过7天 0 / 非待完成 34`。
+那条逾期互评在修之前一直挂在清单里 —— **窗口结束就不能再互评，必须剔除**。
+
 ---
 
-## 5. 已知限制 / 待办
+## 5. 本轮新增的四块功能
+
+### 5.1 三时段飞书推送（`daily_push.py`）
+
+用户要的**不是**运行状态卡片，是有人格的每日陪伴消息。三个时段：
+
+| 模式 | cron（UTC） | 北京时间 | 内容 |
+| --- | --- | --- | --- |
+| `morning` | `2 23 * * *` | 07:02 | 今天该做的事，**来源于日记**，附一言 |
+| `noon` | `2 4 * * *` | 12:02 | 问好 + 鼓励 |
+| `night` | `2 14 * * *` | 22:02 | 一天的总结，数据来源于日记 |
+
+**为什么是分钟 2 而不是 0**：0 分会和 `*/20` 的 finalize 撞在同一时刻，
+两个 run 抢同一个 concurrency group。错开 2 分钟。
+
+**人格只有一份，在 `prompts.py` 的 `PERSONA`。** 傲娇雌小鬼：先损一句，再落到实事上。
+名言点评和三个时段共用它 —— **改人格只改这一处**。
+硬边界写在 PERSONA 里：不许人格羞辱、不许拿外貌/家庭/智力/成绩开刀、不许色情、不许鼓励自伤。
+调侃对象是「拖延这件事」，不是用户这个人。改这段前先想清楚边界还在不在。
+
+**绝对不许带课表。** 用户原话「课表的提醒我不用你」。
+`diary_facts()` 只读 `data/diary/plans.json` 和 `quotes.json`，**不碰任何 schedule 数据**。
+提示词里也写死了这条。加事实来源时别顺手把课表塞进去。
+
+**一言**：`https://v1.hitokoto.cn/`，用户指定的源。取 `hitokoto` + `from`，拼成「text（from）」。
+请求失败只 WARN 并返回空串，**不影响推送**。提示词要求「不许改它的字」。
+
+**事实驱动，不许编造。** `diary_facts(kind, today)` 按 kind 给不同事实集：
+早上给 due_today / overdue / no_due，中午给计数 + 两条优先项，晚上给今天新增 / 今日到期仍未完成 / 逾期 / 今天的名言（带点评）。
+全空时明确输出「日记里今天没有任何可播报的内容」，让 AI 直说没有，而不是硬凑。
+
+**降级路径**：AI 失败或返回空 → `fallback_message()` 出确定性文案（仍含事实和一言）。
+判断用显式 `ai_ok` 布尔，**不要改回 `text.startswith(...)` 那种脆判断**。
+日志会打「文案来源：AI / 降级」，看这行就知道有没有真的用上 AI。
+
+**交付方式**：文案写进 `/tmp/push-message.txt`，workflow 的飞书步骤
+`if [ -s ... ]` 就发纯文本，否则发原来的状态卡片。执行步骤开头有 `rm -f` 清残留。
+**推送模式不提交任何文件**（`steps.mode.outputs.push == 'true'` 时跳过提交步骤）。
+
+### 5.2 潜在计划写回日记（`diary_writeback.py`）
+
+用户要的闭环：**13 号挖到的潜在计划 → 写进 14 号日记（md 复选框）→ 15 号复查，没勾的滚到 15 号**。
+
+- 落点：`{root}/{daily_dir}/{YYYY-MM-DD}.md`，`daily_dir` 在 `data/sources.json` 里配（当前是 `日`）。
+- **只动助手区块**，边界是 `<!-- assistant:plans:start -->` / `<!-- assistant:plans:end -->`。
+  区块外是用户正文，**一个字节都不许碰**。`upsert_block()` 有 markers 就替换区间，没有就追加。
+- 每行带 `<!-- pid:xxx -->`，复查靠 pid 对齐，不靠文本匹配（用户可能改字）。
+- **已勾选的状态必须保住**：合并时 `[x]` 优先，重复写回同一天是幂等的。
+- 复查读**上一次写回的那天**（`writeback.json` 的 `last_date` / `last_path`），
+  勾了的 → 计划 `state=done`，没勾的 → 进 rolling 滚到今天。
+- 选取规则 `pick_plans()`：`state=="open"` 且（`first_seen==昨天` 或 pid 在 rolling 里），
+  按 (due_date, -confidence) 排序，上限 `max_writeback`（默认 20）。
+- **没有内容且文件不存在时不创建空日记。** 别给用户造垃圾文件。
+- 新建文件用用户的三段骨架 `NEW_FILE_TEMPLATE`（今日记录 / 随笔感想 / 明日计划）。
+
+**采集侧必须剥掉助手区块**：`diary_collector.strip_assistant_block()` 在
+`extract_checkboxes()` 和 `ai_extract()` 之前都要调。
+不剥的话助手自己写进去的计划会被当成用户新写的再抽一遍，**无限自我复制**。selftest 有断言守着。
+
+**⚠️ Gitee API v5 的坑：不存在/已删除的文件 GET 返回 HTTP 200 + `{}`，不是 404。**
+所以 `read_file()` 判断存在与否**看 body 里有没有 `sha`**，只看状态码会误判成「文件存在但空」，
+接着不带 sha 去 PUT 就会被拒。写入：新建走 POST，更新走 PUT **且必须带当前 sha**。
+
+写回失败只 WARN，不影响采集结果 —— 日记数据已经落盘了。
+
+### 5.3 课表当前时间线（`week_svg.py` + `docs/js/app.js`）
+
+两层，**精度不同，别混为一谈**：
+
+1. **SVG 里的红线**：`finalize` 每 20 分钟重画一次，所以是 **20 分钟精度**。
+2. **网页上的覆盖线**：`docs/js/app.js` 的 `startNowLine()` 每 30 秒按浏览器时间实时移动，
+   这才是真·实时。几何参数由 `week_svg.py` 导出到 `docs/data/schedule_geo.json`
+   （width/height/pad/gutter/col_w/row_h/body_top/today_col/slots/class_minutes）。
+   **JS 的 `nowLineY()` 必须和 Python 的 `time_y()` 用同一套锚点算法**，改一边就要改另一边。
+
+`time_y()` 的关键设计：**每节课 45 分钟正好占满一行，课间线停在两行交界不拉伸**。
+否则大课间（08:50→10:05 有 75 分钟）会让线看着像还在上课。
+早于第一节课钳到顶，晚于最后一节钳到底。selftest 有 6 条断言守着这个几何。
+
+JS 侧按 `geo.date` 算日期漂移来平移 `today_col`，超出 0..6 就隐藏线。
+时区换算成北京时间用的是 `Date.now() + (8*60 + getTimezoneOffset())*60000`。
+
+**现状：GitHub Pages 还没开（`has_pages=false`），所以浏览器里的实时线尚未在真实页面上验证过。**
+要验证得先开 Pages —— 这是需要用户点头的动作，别自己开。
+
+### 5.4 名言 AI 点评（`prompts.py` + `diary_collector.py`）
+
+`DIARY_SCHEMA` 的 quotes 现在是 `[{"text","context","comment"}]`。
+`comment` 要求：40 字以内、**针对这句话本身**（体现了什么 / 哪里在自我欺骗 / 下一步具体做什么），
+不许空泛夸奖、不许复述原句，没话说给空串。风格走 `PERSONA`。
+
+链路：`ai_extract()` → `safe_text(q.get("comment"), 120)` → `merge_quotes` 的 `_carry` 元组里
+**必须含 `comment`**（否则旧条目永远补不上点评）→ `render_readme.render_quotes()` 输出 `> 💬 ...`
+→ 前端 `renderQuotes` 输出 `<span class="ctx">💬 ...</span>`。
+
+**存量名言不会自动补点评**：`_carry` 只填空字段，而存量是 AI 抽取当时就没有 comment。
+要给存量补，得清 `data/diary/quotes.json` 重抽（会连带重抽计划，注意保住人工 `state` 标记）。
+
+---
+
+## 6. 已知限制 / 待办
 
 - **海外 IP 可达性：已实测通过（2026-11-13）。** Actions 出口 IP `20.118.38.104`（美国 Azure），
   `probe` 模式 10 个目标 **全部可达，不可达 0**：学习通登录/作业/课程/空间、校网公告、教务处、
@@ -145,7 +283,7 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
   解压到仓库外的临时目录充当 `node_modules`。两个坑：GNU tar 会把 `C:/...` 的冒号当远程主机，
   必须加 `--force-local`；脚本要写成真实文件再跑，`node -e` 里 `process.chdir` 不改变模块解析基准。
   明文值走环境变量传入、不落盘不进 git，用完删掉临时目录。
-  已验证成功的模式：`selftest`（**34 项断言、失败 0 项**）、`probe`、`finalize`（含 git 写回）、`notice`、`study`、`diary`。
+  已验证成功的模式：`selftest`（**62 项断言、失败 0 项**，commit `24ccc40`）、`probe`、`finalize`（含 git 写回）、`notice`、`study`、`diary`。
 - **`study` / `diary` 已端到端跑通（2026-11-13）**，Secrets 配好后首次真实采集暴露了四个 bug，均已修：
   - `study`：登录成功、**14 门课全扫描失败 0**、38 条作业、**待完成 7**（修 `未交` 前只有 4）、
     两条真实截止日 2026-11-19 / 2026-11-20 已进 README 清单，飞书推送成功。
@@ -190,12 +328,18 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
 
 ---
 
-## 6. 改东西时的检查清单
+## 7. 改东西时的检查清单
 
 - [ ] 改了日志文案 → 同步改 `notify_feishu.js` 的 `TASK_TEMPLATES` 正则（指标靠正则从日志里抠）
 - [ ] 改了数据字段 → 同步改 `docs/数据结构.md` 和 `docs/js/app.js`
 - [ ] 改了解析器 → 同步改 `main.py` 的 `do_selftest()`，并在 Actions 上跑一次 selftest
-- [ ] 改了提交步骤 → 确认采集模式仍只 `git add data`，派生产物只由 `finalize`/`all` 提交（见第 5 节事故）
+- [ ] 改了提交步骤 → 确认采集模式仍只 `git add data`，派生产物只由 `finalize`/`all` 提交（见第 6 节事故）；推送模式一个文件都不提交
+- [ ] 改了人格/说话风格 → 只改 `prompts.py` 的 `PERSONA`，别在各处复制一份；确认硬边界还在
+- [ ] 改了推送事实来源 → 确认仍然**不含课表**，且只用 `data/diary/*`
+- [ ] 改了日记写回 → 确认 `strip_assistant_block()` 仍在抽取前调用，区块外正文零改动，`[x]` 不被覆盖
+- [ ] 改了课表几何（ROW_H/SLOTS/45分钟）→ Python `time_y()` 和 JS `nowLineY()` 必须同步改，并重跑 selftest
+- [ ] 改了名言字段 → `dedup.merge_quotes` 的 `_carry` 元组、README 渲染、前端 `renderQuotes` 三处都要跟
+- [ ] 派发 Actions → **串行，一次一个**，等上一个 completed 再派下一个（同 group 只留一个 pending）
 - [ ] 换了 AI 中转站或模型 → 先 `GET /v1/models` 核目录，`AI_MODEL` 照抄返回里的名字，别凭记忆写
 - [ ] 遇到 `unknown` 作业状态 → dump 状态原文再补 `PENDING`/`SUBMITTED`/`DONE` 词表，不要猜
 - [ ] 加了新公告源 → 只改 `data/sources.json`，先确认列表页是静态 HTML（不是 JS 渲染）
@@ -204,7 +348,7 @@ Actions 上：`Actions → 个人助手 → Run workflow → 选 mode`。
 
 ---
 
-## 7. 文档索引
+## 8. 文档索引
 
 | 文件 | 内容 |
 | --- | --- |

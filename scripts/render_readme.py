@@ -61,18 +61,28 @@ def actionable(tasks: list[dict], now: datetime) -> tuple[list[dict], dict]:
     return kept, dropped
 
 
+def course_key(d: dict) -> tuple[str, str]:
+    """课程身份 = course_id + class_id。
+
+    同一门课可能挂在两个教学班下（实测英语课 course_id 201780805 有
+    class_id 156400069 / 156290484 两条），只按 course_id 归组会让两个班
+    显示同一批任务。
+    """
+    return (d.get("course_id") or "", d.get("class_id") or "")
+
+
 def course_rows(courses: list[dict], kept: list[dict]) -> list[str]:
     """全部课程都列出来，按活跃度（作业发表数量）降序；没任务的写「无」。"""
-    by_course: dict[str, list[dict]] = {}
+    by_course: dict[tuple[str, str], list[dict]] = {}
     for t in kept:
-        by_course.setdefault(t.get("course_id") or "", []).append(t)
+        by_course.setdefault(course_key(t), []).append(t)
     ordered = sorted(courses, key=lambda c: (-(c.get("task_count") or 0),
                                              -(c.get("pending_count") or 0),
                                              c.get("name") or ""))
     lines = ["| 课程 | 作业数 | 待完成 | 任务（截止近 → 远） |",
              "| --- | --- | --- | --- |"]
     for c in ordered:
-        items = sort_by_deadline(by_course.get(c.get("course_id") or "", []))
+        items = sort_by_deadline(by_course.get(course_key(c), []))
         cells = []
         for t in items:
             dt = parse_datetime(t.get("deadline"))

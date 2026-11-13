@@ -198,6 +198,15 @@ def do_selftest() -> bool:
     check("无任务写「无」", "**无**" in joined)
     check("活跃度高的课程排前面", joined.index("高等数学A") < joined.index("军事理论"))
 
+    # 实测：同一门英语课挂在两个教学班下（course_id 相同、class_id 不同），
+    # 只按 course_id 归组会让两个班显示同一批任务
+    twin = [{"course_id": "e1", "class_id": "k1", "name": "英语一班", "task_count": 0},
+            {"course_id": "e1", "class_id": "k2", "name": "英语二班", "task_count": 3}]
+    trows = rr.course_rows(twin, [mk(course_id="e1", class_id="k2", title="翻译作业")])
+    check("同 course_id 不同班只归到本班",
+          "翻译作业" in trows[2] and "翻译作业" not in trows[3], "\n".join(trows))
+    check("兄弟班显示无", "**无**" in trows[3])
+
     # 实测样本：互评详情页给真实窗口，work 详情页只有空标签「作答时间:」（值由 JS 填）
     ws, we = study_collector.detail_eval_window("<p>互评时间：11-06 07:01 至 11-10 23:01</p>", now)
     check("互评窗口开始时间", ws is not None and (ws.month, ws.day, ws.hour) == (11, 6, 7), str(ws))
