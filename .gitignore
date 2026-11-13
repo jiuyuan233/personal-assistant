@@ -1,0 +1,48 @@
+# 忽略规则
+# 原则：凭证、缓存、日志一律不进仓库；data/ 下的生成物要进仓库（Actions 靠它做增量）
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# 日志（Actions 用 /tmp/task-output.log，本地调试可能落在仓库里）
+*.log
+task-output.log
+/tmp/
+
+# 凭证与本地调试残留 —— 绝对不要提交
+.env
+.env.*
+*.pem
+*.key
+cookies*.json
+cookie*.txt
+*secret*
+*credential*
+config.local.json
+local_settings.py
+
+# 抓包与原始响应（可能含 token / 手机号 / cookie）
+*.har
+*.har.txt
+raw_response*.html
+cxprobe/
+insp/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
