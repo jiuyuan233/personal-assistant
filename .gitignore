@@ -32,15 +32,14 @@ cookie*.txt
 config.local.json
 local_settings.py
 
-# 抓包与原始响应（可能含 token / 手机号 / cookie）
+# 抓包与原始响应（可能含 token / 手机号 / cookie / 班级ID）
+# 一律拒绝，**不开任何例外**。曾经给 assets/*-脱敏.har 开过窄口子，
+# 结果复合参数只遮了一半、班级 ID 明文泄露，已删文件并抹除全部 git 历史。
 *.har
 *.har.txt
 raw_response*.html
 cxprobe/
 insp/
-# 例外：assets/ 下已脱敏并审计过的抓包是接口结构证据，允许进仓库。
-# 原始抓包仍然一律拒绝——想放进来必须先脱敏并改名带「-脱敏」后缀。
-!assets/*-脱敏.har
 
 # 编辑器 / 系统
 .vscode/

@@ -216,6 +216,13 @@ def do_selftest() -> bool:
     check("两份独立文档模板存在",
           rr.NOTICE_TEMPLATE.exists() and rr.PLANS_TEMPLATE.exists())
 
+    # 抓包永久禁令：脱敏版曾漏出班级 ID，已删文件并抹除历史，不许再放进来
+    hars = [p.name for p in rr.REPO_ROOT.rglob("*.har")]
+    check("仓库内无抓包文件", not hars, str(hars))
+    gi = (rr.REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
+    check("gitignore 拒绝 har 且不开例外",
+          "*.har" in gi and "!assets/*-脱敏.har" not in gi)
+
     # 用户硬要求：所有说明性文档都必须能在 README 目录里找到。
     # 新增文档忘了挂链接，这条会直接红，不用等人肉发现。
     docs = sorted((rr.REPO_ROOT / "docs").glob("*.md"))
