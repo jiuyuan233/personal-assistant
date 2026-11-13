@@ -17,10 +17,19 @@ from utils import (DATA_DIR, DOCS_DATA_DIR, REPO_ROOT, load_json,
 TEMPLATE = REPO_ROOT / "scripts" / "readme_template.md"
 README = REPO_ROOT / "README.md"
 
+# 公告与潜在计划从 README 挪进独立文档，README 只留目录链接。
+# 两者都是生成物，由 finalize 独占提交权（采集模式会 git checkout -- docs 还原）。
+NOTICE_TEMPLATE = REPO_ROOT / "scripts" / "notice_template.md"
+PLANS_TEMPLATE = REPO_ROOT / "scripts" / "plans_template.md"
+NOTICE_DOC = REPO_ROOT / "docs" / "公告.md"
+PLANS_DOC = REPO_ROOT / "docs" / "潜在计划.md"
+
 KIND_CN = {"work": "作业", "eval": "互评", "exam": "考试"}
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 # 开始时间距今超过这么多天的任务视为陈旧，不再显示（用户做不动了）
 STALE_DAYS = 7
+NOTICE_LIMIT = 12
+PLAN_LIMIT = 15
 
 
 def esc(s: str) -> str:
@@ -165,14 +174,14 @@ def render_schedule(now: datetime) -> tuple[str, str, str]:
 # ---------------------------------------------------------------------------
 # 公告 / 计划 / 名言
 # ---------------------------------------------------------------------------
-def render_notices(limit: int = 12) -> str:
+def render_notices(limit: int = NOTICE_LIMIT) -> tuple[str, int]:
     items = [n for n in load_list(DATA_DIR / "notice" / "notices.json")
              if (n.get("score") or 0) >= 3]
     items.sort(key=lambda n: n.get("publish_date") or "", reverse=True)
     items.sort(key=lambda n: -(n.get("score") or 0))
     items = items[:limit]
     if not items:
-        return "_暂无高相关公告。_\n"
+        return "_暂无高相关公告。_\n", 0
     lines = ["| 分 | 日期 | 公告 | 来源 | 截止 | 说明 |",
              "| --- | --- | --- | --- | --- | --- |"]
     for n in items:
@@ -180,16 +189,16 @@ def render_notices(limit: int = 12) -> str:
             n.get("score") or 0, n.get("publish_date") or "—",
             md_link(n.get("title"), n.get("url")), esc(n.get("source")),
             n.get("deadline") or "—", esc(n.get("description") or n.get("reason")) or "—"))
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines) + "\n", len(items)
 
 
-def render_plans(limit: int = 15) -> str:
+def render_plans(limit: int = PLAN_LIMIT) -> tuple[str, int]:
     items = [p for p in load_list(DATA_DIR / "diary" / "plans.json")
              if p.get("state") == "open"]
     items.sort(key=lambda p: (-(p.get("confidence") or 0), p.get("due_date") or "9999"))
     items = items[:limit]
     if not items:
-        return "_暂无未完成计划。_\n"
+        return "_暂无未完成计划。_\n", 0
     lines = ["| 计划 | 置信度 | 截止 | 来源 | 标签 |",
              "| --- | --- | --- | --- | --- |"]
     for p in items:
@@ -197,7 +206,7 @@ def render_plans(limit: int = 15) -> str:
             esc(p.get("text")), f"{(p.get('confidence') or 0):.1f}",
             p.get("due_date") or "—", esc(p.get("source_date") or p.get("source_file")),
             esc(" / ".join(p.get("tags") or [])) or "—"))
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines) + "\n", len(items)
 
 
 def render_quotes(limit: int = 8) -> str:
@@ -254,6 +263,22 @@ def render_sources(now: datetime) -> tuple[str, dict]:
 
 
 # ---------------------------------------------------------------------------
+# 独立文档（公告 / 潜在计划）
+# ---------------------------------------------------------------------------
+def render_doc(template, out, repl: dict, now) -> bool:
+    """按模板渲染一份独立文档。缺模板只报错不抛异常，避免拖垮整个 finalize。"""
+    if not template.exists():
+        log(f"模板缺失：{template}", level="ERROR")
+        return False
+    text = template.read_text(encoding="utf-8")
+    full = {"{{UPDATED_AT}}": now.strftime("%Y-%m-%d %H:%M:%S (UTC+8)"), **repl}
+    for k, v in full.items():
+        text = text.replace(k, v)
+    out.write_text(text, encoding="utf-8")
+    return True
+
+
+# ---------------------------------------------------------------------------
 # 主流程
 # ---------------------------------------------------------------------------
 def run() -> bool:
@@ -263,6 +288,8 @@ def run() -> bool:
     week_info, sched_table, week_detail = render_schedule(now)
     sources, meta = render_sources(now)
     alert = render_alert(stats, meta)
+    notices, notice_count = render_notices()
+    plans, plan_count = render_plans()
 
     if not TEMPLATE.exists():
         log(f"模板缺失：{TEMPLATE}", level="ERROR")
@@ -278,14 +305,20 @@ def run() -> bool:
         "{{TASKS}}": body,
         "{{FILTER_NOTE}}": filter_note,
         "{{SCHEDULE_TABLE}}": sched_table,
-        "{{NOTICES}}": render_notices(),
-        "{{PLANS}}": render_plans(),
         "{{QUOTES}}": render_quotes(),
         "{{SOURCE_STATUS}}": sources,
+        "{{NOTICE_COUNT}}": str(notice_count),
+        "{{PLAN_COUNT}}": str(plan_count),
     }
     for k, v in repl.items():
         text = text.replace(k, v)
     README.write_text(text, encoding="utf-8")
+
+    # 公告与潜在计划不再占 README 篇幅，各自渲染成独立文档，README 目录区只留链接
+    ok_n = render_doc(NOTICE_TEMPLATE, NOTICE_DOC,
+                      {"{{NOTICES}}": notices, "{{NOTICE_LIMIT}}": str(NOTICE_LIMIT)}, now)
+    ok_p = render_doc(PLANS_TEMPLATE, PLANS_DOC,
+                      {"{{PLANS}}": plans, "{{PLAN_LIMIT}}": str(PLAN_LIMIT)}, now)
 
     # 网页版数据（docs/ 是 GitHub Pages 目录，前端只能读到这里面的文件）
     # 前端自己按 state 分桶，所以这里必须只喂可做的任务，否则网页会显示出 README 已剔除的逾期项
@@ -306,8 +339,9 @@ def run() -> bool:
     log(f"任务清单：{stats['pending']} 条可做 / {stats['courses']} 门课"
         f"（今天 {stats['today']} / 7天内 {stats['week']} / 更远 {stats['later']}）")
     log(f"已剔除：逾期 {d['overdue']} / 超过{STALE_DAYS}天 {d['stale']} / 非待完成 {d['not_pending']}")
+    log(f"独立文档：公告 {notice_count} 条 / 潜在计划 {plan_count} 项")
     log("README 已生成")
-    return True
+    return ok_n and ok_p
 
 
 if __name__ == "__main__":

@@ -207,6 +207,30 @@ def do_selftest() -> bool:
           "翻译作业" in trows[2] and "翻译作业" not in trows[3], "\n".join(trows))
     check("兄弟班显示无", "**无**" in trows[3])
 
+    # README 瘦身：公告与潜在计划挪进独立文档，目录区只留链接
+    tpl = rr.TEMPLATE.read_text(encoding="utf-8")
+    check("README 不再内嵌公告节", "## 📢 值得关注的公告" not in tpl)
+    check("README 不再内嵌计划节", "## 🎯 潜在计划" not in tpl)
+    check("README 目录区链接到两份独立文档",
+          "docs/公告.md" in tpl and "docs/潜在计划.md" in tpl)
+    check("两份独立文档模板存在",
+          rr.NOTICE_TEMPLATE.exists() and rr.PLANS_TEMPLATE.exists())
+
+    # 占位符漏一个就会在页面上留下字面量 {{X}}，这里做结构性守卫
+    import inspect
+    import re as _re
+    provided = set(_re.findall(r'"(\{\{[A-Z_]+\}\})"', inspect.getsource(rr)))
+    wanted = set()
+    for t in (rr.TEMPLATE, rr.NOTICE_TEMPLATE, rr.PLANS_TEMPLATE):
+        wanted |= set(_re.findall(r"\{\{[A-Z_]+\}\}", t.read_text(encoding="utf-8")))
+    check("模板占位符全部有渲染键", not (wanted - provided), str(sorted(wanted - provided)))
+
+    nret, pret = rr.render_notices(), rr.render_plans()
+    check("公告渲染返回(文本,条数)",
+          isinstance(nret, tuple) and len(nret) == 2 and isinstance(nret[1], int), str(nret)[:80])
+    check("计划渲染返回(文本,条数)",
+          isinstance(pret, tuple) and len(pret) == 2 and isinstance(pret[1], int), str(pret)[:80])
+
     # 实测样本：互评详情页给真实窗口，work 详情页只有空标签「作答时间:」（值由 JS 填）
     ws, we = study_collector.detail_eval_window("<p>互评时间：11-06 07:01 至 11-10 23:01</p>", now)
     check("互评窗口开始时间", ws is not None and (ws.month, ws.day, ws.hour) == (11, 6, 7), str(ws))

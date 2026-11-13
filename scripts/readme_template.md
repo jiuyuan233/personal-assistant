@@ -13,7 +13,7 @@
 README 只放每天要看的动态，其余内容都在独立文档里：
 
 - 🏆 **[学科竞赛日历 2026–2027](docs/竞赛日历.md)** — 269 项校级竞赛目录 + 已核实的报名/比赛时间、大一资格门槛、建环专业长期目标。**手工维护，不会被 Actions 覆盖。**
-- 🌐 [网页版看板](docs/index.html) · 📢 [公告全量数据](data/notice/notices.json) · 🎯 [潜在计划](data/diary/plans.json) · 📔 [名言](data/diary/quotes.json)
+- 🌐 [网页版看板](docs/index.html) · 📢 [值得关注的公告](docs/公告.md)（{{NOTICE_COUNT}} 条） · 🎯 [潜在计划](docs/潜在计划.md)（{{PLAN_COUNT}} 项） · 📔 [名言全量](data/diary/quotes.json)
 - 🔧 [技术路径](docs/技术路径.md) · [工作原理](docs/工作原理.md) · [数据结构](docs/数据结构.md) · [AI 提示词](docs/AI提示词.md) · [常见问题](docs/常见问题.md) · [仓库结构](docs/仓库结构.md)
 - 🤝 [维护交接 AGENT.md](AGENT.md) · [开发文档 DEV_GUIDE.md](DEV_GUIDE.md) · [变更日志 CHANGELOG.md](CHANGELOG.md)
 - 📎 **原始文件（已脱敏）**：[课表 ICS](assets/WakeUp导入课表.ics) · [竞赛目录 PDF](assets/河南城建学院2024年学科竞赛目录.pdf) · [学习通抓包 HAR](assets/抓包-学习通-脱敏.har) · [空间页抓包 HAR](assets/抓包-空间页-脱敏.har) — 脱敏口径见 [原始文件说明](docs/原始文件.md)
@@ -37,23 +37,6 @@ README 只放每天要看的动态，其余内容都在独立文档里：
 ![本周课表](docs/week.svg)
 
 {{SCHEDULE_TABLE}}
-
----
-
-## 📢 值得关注的公告
-
-按相关度排序，只列 3 分以上。完整列表见 [data/notice/notices.json](data/notice/notices.json)。
-
-{{NOTICES}}
-
----
-
-## 🎯 潜在计划
-
-从日记里挖出来的、还没做完的事。复选框待办由程序直接解析，隐含意图由 AI 抽取。
-标记完成请改 [data/diary/plans.json](data/diary/plans.json) 里的 `state` 为 `done`。
-
-{{PLANS}}
 
 ---
 
