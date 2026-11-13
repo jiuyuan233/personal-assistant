@@ -16,6 +16,7 @@ README 只放每天要看的动态，其余内容都在独立文档里：
 - 🌐 [网页版看板](docs/index.html) · 📢 [公告全量数据](data/notice/notices.json) · 🎯 [潜在计划](data/diary/plans.json) · 📔 [名言](data/diary/quotes.json)
 - 🔧 [技术路径](docs/技术路径.md) · [工作原理](docs/工作原理.md) · [数据结构](docs/数据结构.md) · [AI 提示词](docs/AI提示词.md) · [常见问题](docs/常见问题.md) · [仓库结构](docs/仓库结构.md)
 - 🤝 [维护交接 AGENT.md](AGENT.md) · [开发文档 DEV_GUIDE.md](DEV_GUIDE.md) · [变更日志 CHANGELOG.md](CHANGELOG.md)
+- 📎 **原始文件（已脱敏）**：[课表 ICS](assets/WakeUp导入课表.ics) · [竞赛目录 PDF](assets/河南城建学院2024年学科竞赛目录.pdf) · [学习通抓包 HAR](assets/抓包-学习通-脱敏.har) · [空间页抓包 HAR](assets/抓包-空间页-脱敏.har) — 脱敏口径见 [原始文件说明](docs/原始文件.md)
 
 ---
 

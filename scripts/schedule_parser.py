@@ -86,7 +86,11 @@ def parse_ics_dt(s: str) -> datetime | None:
 
 
 def split_location(loc: str) -> tuple[str, str]:
-    """「美荟楼1#328 贾汛」→ (教室, 教师)；「胡肄军」→ ("", 教师)。"""
+    """「美荟楼1#328 教师甲」→ (教室, 教师)；「教师乙」→ ("", 教师)。
+
+    仓库里的 ICS 已脱敏（教师名全部剥离），所以实际调用恒定返回 teacher=""。
+    逻辑保留，换回未脱敏原件即可生效。口径见 docs/原始文件.md。
+    """
     loc = (loc or "").strip()
     if not loc:
         return "", ""

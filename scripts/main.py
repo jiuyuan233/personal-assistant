@@ -132,18 +132,18 @@ def do_selftest() -> bool:
     check("倒计时缺失返回 None", parse_remaining("已结束") is None)
     check("倒计时渲染", "剩余" in fmt_remaining(now.replace(hour=23), now=now))
 
-    work_html = '''<h2>陈蒙26级高等数学A（一）</h2>
-    <li onclick="goTask(this);" data="https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&cpi=577967959&workId=58370553&answerId=55746672&enc=abc123" tabindex="0" aria-label="3-5函数的极值与最值 ; 待批阅" role="link">
+    work_html = '''<h2>教师甲26级高等数学A（一）</h2>
+    <li onclick="goTask(this);" data="https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&cpi=100000001&workId=58370553&answerId=55746672&enc=abc123" tabindex="0" aria-label="3-5函数的极值与最值 ; 待批阅" role="link">
       <div class="right-content"><p class="overHidden2 fl">3-5函数的极值与最值</p>
       <i class="label fl">互评</i><p class="status fl">待批阅</p></div>
       <div class="time notOver" tabindex="0"><img src="x.png" />剩余1小时12分钟</div>
     </li>
-    <li onclick="goTask(this);" data="https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&cpi=577967959&workId=58263400&answerId=55727436&enc=def456" aria-label="3.3泰勒公式 ; 待互评">
+    <li onclick="goTask(this);" data="https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&cpi=100000001&workId=58263400&answerId=55727436&enc=def456" aria-label="3.3泰勒公式 ; 待互评">
       <div class="right-content"><p class="overHidden2 fl">3.3泰勒公式</p>
       <i class="label fl">互评</i><p class="status fl">待互评</p></div>
     </li>'''
     course = {"course_id": "219232606", "class_id": "153566712",
-              "cpi": "577967959", "name": "陈蒙26级高等数学A（一）"}
+              "cpi": "100000001", "name": "教师甲26级高等数学A（一）"}
     rows = study_collector.parse_work_rows(work_html, course, now)
     check("作业行数=2", len(rows) == 2, f"实际 {len(rows)}")
     if len(rows) == 2:
@@ -265,8 +265,8 @@ def do_selftest() -> bool:
 
     # 真实样本结构：课程名在 li 内的 course-name span，middle 页首个 h2 是全站横幅
     list_html = '''<ul class="course-list"><li class="course clearfix" id="c_219232606">
-      <div class="course-cover"><a href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=219232606&clazzid=153566712&cpi=577967959&ismooc2=1"><img src="x.jpg"></a></div>
-      <div class="course-info"><h3 class="inlineBlock"><a class="color1" href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=219232606&clazzid=153566712&cpi=577967959&ismooc2=1">
+      <div class="course-cover"><a href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=219232606&clazzid=153566712&cpi=100000001&ismooc2=1"><img src="x.jpg"></a></div>
+      <div class="course-info"><h3 class="inlineBlock"><a class="color1" href="https://mooc1.huuc.edu.cn/visit/stucoursemiddle?courseid=219232606&clazzid=153566712&cpi=100000001&ismooc2=1">
       <span class="course-name overHidden2" title="高等数学A">高等数学A</span></a></h3></div></li></ul>'''
     cx = study_collector.Chaoxing({}, "u", "p")
     cx.get = lambda *a, **k: list_html

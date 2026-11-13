@@ -38,6 +38,9 @@ local_settings.py
 raw_response*.html
 cxprobe/
 insp/
+# 例外：assets/ 下已脱敏并审计过的抓包是接口结构证据，允许进仓库。
+# 原始抓包仍然一律拒绝——想放进来必须先脱敏并改名带「-脱敏」后缀。
+!assets/*-脱敏.har
 
 # 编辑器 / 系统
 .vscode/
