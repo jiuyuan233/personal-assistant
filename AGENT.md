@@ -297,7 +297,7 @@ JS 侧按 `geo.date` 算日期漂移来平移 `today_col`，超出 0..6 就隐�
   解压到仓库外的临时目录充当 `node_modules`。两个坑：GNU tar 会把 `C:/...` 的冒号当远程主机，
   必须加 `--force-local`；脚本要写成真实文件再跑，`node -e` 里 `process.chdir` 不改变模块解析基准。
   明文值走环境变量传入、不落盘不进 git，用完删掉临时目录。
-  已验证成功的模式：`selftest`（**62 项断言、失败 0 项**，commit `24ccc40`）、`probe`、`finalize`（含 git 写回）、`notice`、`study`、`diary`。
+  已验证成功的模式：`selftest`（**71 项断言、失败 0 项**，commit `656e6be`）、`probe`、`finalize`（含 git 写回）、`notice`、`study`、`diary`、`schedule`、`morning`、`noon`、`night`。
 - **`study` / `diary` 已端到端跑通（2026-11-13）**，Secrets 配好后首次真实采集暴露了四个 bug，均已修：
   - `study`：登录成功、**14 门课全扫描失败 0**、38 条作业、**待完成 7**（修 `未交` 前只有 4）、
     两条真实截止日 2026-11-19 / 2026-11-20 已进 README 清单，飞书推送成功。
