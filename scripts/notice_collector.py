@@ -249,9 +249,21 @@ def ai_score(items: list[dict], kw: dict) -> None:
 # 主流程
 # ---------------------------------------------------------------------------
 def body_text(html: str) -> str:
+    """只取正文容器内部：按 div 嵌套深度找闭合，避免把页脚与「上一篇/下一篇」喂给 AI。"""
     i = html.find(BODY_CONTAINER)
-    chunk = html[i:i + 30000] if i >= 0 else html
-    return safe_text(clean_html_text(chunk), BODY_CHARS)
+    if i < 0:
+        return safe_text(clean_html_text(html), BODY_CHARS)
+    start = html.find(">", i) + 1
+    depth, end = 1, len(html)
+    for m in re.finditer(r"<(/?)div\b", html[start:], re.I):
+        if m.group(1):
+            depth -= 1
+            if depth == 0:
+                end = start + m.start()
+                break
+        else:
+            depth += 1
+    return safe_text(clean_html_text(html[start:end]), BODY_CHARS)
 
 
 def ai_detail(session: requests.Session, items: list[dict]) -> None:
