@@ -20,7 +20,8 @@
 为什么只有一个 cron（审计 §4.1）：原来 8 条 cron 各自映射一个模式，实测出现过
 连续 1 小时 33 分钟一次都没触发。GitHub 对同一 workflow 的 schedule 有节流，
 条数越多越容易被丢；而并发组只保留一个 pending，手动派发会把定时班挤掉。
-现在改成一条 `*/20 * * * *` → tick，频率由 data/runtime.json 里的时间戳决定，
+现在改成一条 `7-59/20 * * * *`（每小时 :07/:27/:47，错开整点高峰）→ tick，
+频率由 data/runtime.json 里的时间戳决定，
 调度逻辑在 Python 里，可离线自检，也能在日志里看到「这轮为什么跑/不跑」。
 
 三个推送模式只读 data/（diary + study + notice），不写数据、不渲染 README。
@@ -750,7 +751,7 @@ def do_selftest() -> bool:
 
     yml = (rr.REPO_ROOT / ".github" / "workflows" / "assistant.yml").read_text(encoding="utf-8")
     check("只有一条 cron（多条会被 GitHub 节流丢掉）",
-          yml.count("- cron:") == 1 and "'*/20 * * * *'" in yml, str(yml.count("- cron:")))
+          yml.count("- cron:") == 1 and "'7-59/20 * * * *'" in yml, str(yml.count("- cron:")))
     check("定时触发映射到 tick", "MODE=tick" in yml)
     check("质量门禁在执行之前",
           yml.index("ruff check scripts") < yml.index("python scripts/main.py \"$MODE\""))

@@ -261,7 +261,7 @@ README 不会开天窗。
 | `noon` | 12:00 | 先损一句再给一句具体鼓励，**不许编造上午发生了什么**，不复述清单 |
 | `night` | 22:00 | 对当天日记做总结：肯定做到的、点出没做的、给明天一个具体动作，不复述清单 |
 
-**时刻不是 cron，是 `main.PUSH_HOURS` 常量**（v1.4.0 起）。全仓库只有一条 `*/20` cron，
+**时刻不是 cron，是 `main.PUSH_HOURS` 常量**（v1.4.0 起）。全仓库只有一条 `7-59/20` cron，
 `do_tick()` 每轮问 `due_pushes()`：当前小时 ≥ 目标小时、且 `runtime.pushed[kind] != 今天` → 发。
 **错过后在 `PUSH_CATCHUP_HOURS = {"morning": 5, "noon": 5, "night": 2}` 小时内仍补发**
 （morning 补到 noon 时段为止，noon 补到 17:00，night 只补到当天 24:00）。

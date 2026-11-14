@@ -253,7 +253,7 @@ selftest 有两条守卫盯着这件事。
 | 标记某个计划已完成 | `data/diary/plans.json` 里对应项的 `state` 改成 `done` |
 | 换课表 | 替换 `assets/WakeUp导入课表.ics`，跑一次 `schedule` |
 | 换 AI 模型 | 仓库 Variables 的 `AI_MODEL` |
-| 改推送频率 | **`scripts/main.py` 的 `PUSH_HOURS` / `PUSH_CATCHUP_HOURS`**（不是 workflow 的 cron —— 只有一条 `*/20` cron，推送时刻由 tick 判断） |
+| 改推送频率 | **`scripts/main.py` 的 `PUSH_HOURS` / `PUSH_CATCHUP_HOURS`**（不是 workflow 的 cron —— 只有一条 `7-59/20` cron，推送时刻由 tick 判断） |
 | 改采集频率 | `scripts/main.py` 的 `TICK_INTERVALS`（study 60 / diary 120 / notice 360 分钟） |
 | 改 README 版式 | `scripts/readme_template.md` |
 | 改名言显示条数 | `scripts/render_readme.py` 的 `QUOTE_LIMIT`（当前 3） |
