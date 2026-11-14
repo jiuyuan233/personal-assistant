@@ -862,10 +862,11 @@ tree sha 与本地 `HEAD^{tree}` 一致（`2651cc6d…`），本地 main 已用 
    Repository access 只勾 `personal-assistant`，Permissions 只给 **Actions: Read and write**。
    **这个 PAT 泄露面只有「能触发这一个仓库的 workflow」**，比 classic PAT 小得多；
 2. 把 PAT 填进 cron-job.org（或同类服务）的请求头，配 3 条任务（北京时间）：
-   `07:05` / `12:05` / `21:55` 各一次，
+   `07:05` / `12:05` / `22:05` 各一次，
    `POST https://api.github.com/repos/jiuyuan233/personal-assistant/actions/workflows/assistant.yml/dispatches`，
    header `Authorization: Bearer <PAT>` + `Accept: application/vnd.github+json`，
-   body `{"ref":"main","inputs":{"mode":"tick"}}`（用 `tick` 而不是 `morning/night` —— tick 自己会判断该发什么，还能顺带采集）；
+   body `{"ref":"main","inputs":{"mode":"tick"}}`（用 `tick` 而不是 `morning/night` —— tick 自己会判断该发什么，还能顺带采集。
+   **三个时刻都必须落在对应补发窗口内**：morning `[07:00,12:00]`、noon `[12:00,17:00]`、night `[22:00,24:00]`，早于窗口开头的那一轮什么都不发）；
 3. 外部触发与 GitHub schedule 并存没有冲突：`pushed[kind]` 按日期记账，一天最多一条，谁先触发谁发。
 4. **验收**：连续两天早/中/晚各收到一条，且 GitHub Actions 列表里能看到对应的 workflow_dispatch run。
 
