@@ -94,6 +94,25 @@ python scripts/main.py selftest
 | `ModuleNotFoundError: No module named 'utils'` | **embeddable 版 Python** 带 `python311._pth`，处于 isolated 模式：既不加脚本目录进 `sys.path`，也**忽略 `PYTHONPATH`** | 用标准安装版 Python；或写个包装器 `sys.path.insert(0, scripts目录)` + `runpy.run_path(...)` |
 | `ZoneInfoNotFoundError: Asia/Shanghai` | 缺 tzdata | `utils.py` 已 fallback 到固定 `UTC+8`（中国 1991 年起无夏令时，等价）。要精确就 `pip install tzdata` |
 
+**这台机器上工具链已经解锁好了，别重新装一遍**（pip 在这台机器上连不上 PyPI，重装很费时间）：
+
+| 东西 | 路径 | 说明 |
+| --- | --- | --- |
+| Python 3.11.9 | `C:/Users/XOS/AppData/Local/Temp/py311/python.exe` | embeddable 版，已装 requests / ruff / PyNaCl |
+| 离线 wheel 缓存 | `C:/Users/XOS/AppData/Local/Temp/wheels/` | `pip install --no-index --find-links` 用；**pip 直连 PyPI 不通，只能靠它** |
+| runpy 包装器 | `C:/Users/XOS/AppData/Local/Temp/pa_run.py` | 绕开 isolated mode，用法 `python.exe -X utf8 pa_run.py <模式>` |
+
+```bash
+# 本地质量门禁（与 runner 完全一致的两条）
+cd <仓库根>
+"C:/Users/XOS/AppData/Local/Temp/py311/python.exe" -m ruff check scripts --select E9,F63,F7,F82,F821,F401
+DIARY_EXCLUDE='<Secret 里的值>' "C:/Users/XOS/AppData/Local/Temp/py311/python.exe" -X utf8 \
+  "C:/Users/XOS/AppData/Local/Temp/pa_run.py" selftest      # 174 条；不设黑名单是 173 条
+```
+
+**这些路径在仓库外，不属于版本控制**；换机器就按上表三个坑重新解锁。
+**临时探测目录（含 cookie / 密码 / 日记原文）每轮结束必须删**，见 AGENT.md 铁律 2。
+
 **本地跑 `finalize` 是安全的**：零网络、零 token，只读 `data/` 和 `assets/`，重写生成物。
 **本地跑 `study`/`diary`/`notice` 会真的联网、真的花 token、`diary` 在凌晨窗口内会真的写用户的 Gitee 仓库** ——
 不想动真实数据就只跑 `selftest` / `finalize` / `probe`。
