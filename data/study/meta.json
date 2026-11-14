@@ -1,6 +1,6 @@
 {
-  "last_attempt": "2026-11-14T23:39:05+08:00",
-  "last_success": "2026-11-14T23:39:05+08:00",
+  "last_attempt": "2026-11-15T04:00:02+08:00",
+  "last_success": "2026-11-15T04:00:02+08:00",
   "ok": true,
   "status": "ok",
   "courses": 14,
@@ -10,6 +10,6 @@
   "pending": 5,
   "unknown_deadline": 0,
   "anomalies": [],
-  "urgent_sig": "",
-  "urgent_count": 0
+  "urgent_sig": "219232606-5f29d3d202",
+  "urgent_count": 1
 }
