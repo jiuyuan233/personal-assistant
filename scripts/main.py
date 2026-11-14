@@ -435,7 +435,10 @@ def do_selftest() -> bool:
         except (UnicodeDecodeError, OSError):
             continue
         for pat in pats:
-            hits += [f"{p.relative_to(rr.REPO_ROOT)}:{m.group(0)[:20]}"
+            # 失败详情会进**公开** Actions 日志，所以只报形状不报值：数字一律掩成 D。
+            # 定位靠文件名 + 形状就够了，把真实学号打出来等于守卫自己在泄露。
+            hits += [f"{p.relative_to(rr.REPO_ROOT)}:"
+                     f"{_re2.sub(r'[0-9]', 'D', m.group(0)[:20])}"
                      for m in pat.finditer(txt)]
     check("全仓库无学号形状残留", not hits, str(hits[:8]))
 
@@ -464,8 +467,10 @@ def do_selftest() -> bool:
                 txt = p.read_text(encoding="utf-8")
             except (UnicodeDecodeError, OSError):
                 continue
-            leak += [f"{p.relative_to(rr.REPO_ROOT)}:{n}"
-                     for n in _needles if n in txt]
+            # 只报「第几个黑名单项命中」，**绝不报命中内容**：失败详情会进公开
+            # Actions 日志，把私人目录名打出来就是守卫自己在泄露（与学号守卫同理）。
+            leak += [f"{p.relative_to(rr.REPO_ROOT)}:私人路径#{i}"
+                     for i, n in enumerate(_needles) if n in txt]
         check("私人路径不出现在仓库任何文件里", not leak, str(leak[:8]))
     else:
         log("[selftest] ⏭️ 跳过私人路径守卫（本次进程未设 DIARY_EXCLUDE；带 Secret 的那次运行会检查）")
@@ -641,6 +646,10 @@ def do_selftest() -> bool:
     check("只有一个并发组", "group: pa-run" in yml and "pa-push" not in yml and "pa-collect" not in yml)
     check("私人黑名单只引用 Secret 名",
           "DIARY_EXCLUDE: ${{ secrets.DIARY_EXCLUDE }}" in yml)
+    # 门禁与执行**两步都要注入**。只有执行步注入时，私人路径守卫在普通 tick 里
+    # 永远走「跳过」分支 —— 实测 backfill 那轮就是这样，等于平时没有守卫。
+    _n_inject = yml.count("DIARY_EXCLUDE: ${{ secrets.DIARY_EXCLUDE }}")
+    check("质量门禁也注入黑名单（守卫每轮都跑）", _n_inject == 2, str(_n_inject))
     wcfg = ((dw.load_json(dw.DATA_DIR / "sources.json") or {}).get("diary") or {}).get("writeback_window")
     check("sources.json 的写回窗口可解析", dw.parse_window(wcfg or dw.DEFAULT_WINDOW) is not None, str(wcfg))
 

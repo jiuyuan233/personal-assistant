@@ -108,6 +108,10 @@ jobs:
       # 免得带着 NameError 跑一整轮登录链，最后静默写出空数据。
       # F821（未定义名字）这一条就能抓住「用了 BJ_TZ 却忘了 import」这类事故。
       - name: 质量门禁
+        env:
+          # 门禁也要注入黑名单，否则「私人路径不出现在仓库任何文件里」这条守卫
+          # 只在派发 selftest 时才跑，普通 tick 永远跳过 —— 等于平时没有守卫。
+          DIARY_EXCLUDE: ${{ secrets.DIARY_EXCLUDE }}
         run: |
           ruff check scripts --select E9,F63,F7,F82,F821,F401
           python scripts/main.py selftest
