@@ -628,6 +628,9 @@ def do_selftest() -> bool:
     check("卡片被拒收时退回纯文本", "pushFallbackText" in js and "退回纯文本重发" in js)
     check("有 image_key 才内嵌真图，否则给按钮",
           "image.image_key" in js and "点开今天的图" in js)
+    # 飞书卡片 schema 的 img 必填属性名是 img_key；写错会被拒卡 11246 退回纯文本（v1.5.5 真机踩过）
+    check("img 元素属性名用飞书 schema 的 img_key",
+          "img_key: image.image_key" in js and "image_key: image.image_key" not in js)
     check("推送卡片标题按早中晚区分", all(k in js for k in ("morning", "noon", "night")))
 
     # 时间线映射：节课内按真实比例走，课间停在两行交界，超出当天范围钳住

@@ -204,9 +204,11 @@ function buildPushPayload(text) {
     const h = PUSH_HEADER[kind] || { emoji: '💌', name: '个人助手', color: 'blue' };
     const elements = [{ tag: 'div', text: { tag: 'lark_md', content: text } }];
     if (image.image_key) {
+        // ⚠️ 飞书卡片 schema 的必填属性名是 img_key（不是上传接口返回的 image_key）。
+        // 属性名写错飞书会拒卡 11246「img element must contain img_key」——v1.5.5 真机实测踩过。
         elements.push({
             tag: 'img',
-            image_key: image.image_key,
+            img_key: image.image_key,
             alt: { tag: 'plain_text', content: '今日二次元图' }
         });
     }

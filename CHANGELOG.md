@@ -18,7 +18,12 @@
   Secrets 现共 8 个。**值只在 Secrets**，聊天里出现过的这组凭证建议日后轮换。
 - `anime_image.upload()` 检测到凭证即自动下载图片、上传换 `image_key`；
   `notify_feishu.js` 有 key 就把图直接嵌进卡片——**不再需要点链接**。
-- 验收标志：下一轮推送日志出现 `[image] 已换取 image_key`，卡片里直接显示图。
+- **真机首验抓到一个真 bug 并已修**：上传接口返回的字段叫 `image_key`，
+  但飞书卡片 schema 的 img 必填**属性名是 `img_key`**——JS 属性名写错导致飞书拒卡 11246
+  （「img element must contain img_key」），兜底机制自动退回纯文本（消息没丢，但图没内嵌成）。
+  已改为 `img_key: image.image_key`，并新增 selftest 断言锁住属性名。
+  **这条验证了「卡片被拒收 → 自动退纯文本」的兜底真的有效**（v1.5.0-B 的第 8 个离线场景首次真实触发）。
+- 验收标志：推送日志 `[image] 已换取 image_key` + **无** 11246 告警，卡片里直接显示图。
 
 ### 2. 潜在计划全部撤出飞书推送（用户要求）
 
