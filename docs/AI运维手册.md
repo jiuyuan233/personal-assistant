@@ -586,12 +586,18 @@ curl -sS -H "Authorization: Bearer $GH_PAT" \
    （v1.4.4 实测踩到；失败发生在第 1 步上传 blob，**ref 还没动**，所以重试是安全快进。）
 
 **✅ 正确的验收口径是 tree sha，不是 commit sha。**
-commit sha 里含 author/committer 时间戳，API 造提交用的是「当下」，本地提交用的是你 commit 的那一刻，
-**两者永远不可能相等** —— 拿 commit sha 对比会得出「推错了」的假结论。
 要断言的是：`POST /git/trees` 返回的 `sha` **== 本地 `git rev-parse HEAD^{tree}`**。
 v1.4.3 实测两者都是 `2651cc6d9e99ef0a8b3a3bfd6f6558071f7c5ae3`，这才叫「推上去的东西和本地一样」。
 （顺带：`POST /git/trees` 前先断言**远端 main == 本地父提交**且**远端 tree == 本地父 tree**，
 不等就停手，**不要 force**。）
+
+> **⚠️ 这里原先写着「commit sha 两者永远不可能相等」，v1.5.1 实测证明是错的，已改。**
+> 推送脚本把本地提交的 `%aI/%cI` 原样传给 API，**时间戳是同一个**，不是「API 用当下」。
+> 所以 commit sha **可以**相等，也确实相等过：v1.5.1 推完对齐后
+> **本地 main == 远端 main == `0ce38bd`**。
+> 真正会让它不等的是**一个字节**：`git log --format=%B` 会在末尾**多加一个 `\n`**，
+> 而 `git commit` 存的对象只有一个尾 `\n`。照 `%B` 原文 POST，对象就多一字节 → sha 不同、tree 相同。
+> **别把「sha 不等」当成「推错了」**，先看 tree；tree 相等就是推对了。
 
 **推完怎么让本地 main 与远端对齐（`git fetch` 也不通时）**：
 用 `git commit-tree <tree> -p <parent> -F <msg>` 在本地重造同一个对象，sha 相同就 `git update-ref`。
@@ -718,7 +724,7 @@ v1.5.0 就是靠这个定位的：加上头之后一次命中（`+0800`/`+0800`�
 | 本地 `ModuleNotFoundError: utils` | embeddable Python 的 isolated 模式 | 见 §2.2 |
 | 本地 `UnicodeEncodeError: gbk` | Windows 控制台编码 | 见 §2.2 |
 | `git push` 20 秒超时，但 `api.github.com` 秒回 200 | `github.com:443` 间歇不通，**不是配置错** | 先重试一次普通 push，再走 §6.9；**别改 git config、别设代理、别换镜像地址** |
-| API 推完，本地 sha 与远端对不上 | 你比的是 **commit sha**（含时间戳，两边永远不等） | 断言 **tree sha** 相等才是验收口径，见 §6.9 |
+| API 推完，本地 sha 与远端对不上 | 多半只差**一个尾 `\n`**：`git log --format=%B` 比 `git commit` 存的对象多一个换行 | 断言 **tree sha** 相等才是验收口径；tree 相等就是推对了，见 §6.9 |
 | 用 API 返回值重建 commit，sha 还是对不上 | ①GET 回来的 `message` **尾换行被削**（对象里保留）②对象里时区是 `+0800`，API 却显示 `Z` | 用 POST 时的原文 + 原始 `<unix> +0800`；对不上就穷举 3 时区 × 3 尾部，见 §6.9 |
 | API 推送脚本读文件报 `OSError: [Errno 22]`，路径里有 `\350\277\220` | **`git diff --name-only` 默认转义非 ASCII 路径**（`core.quotepath=true`） | 取文件列表一律用 **`git -c core.quotepath=false diff --name-only`**；`git ls-files` 同理 |
 | 日志里搜中文关键词一条都搜不到 | `/logs` 302 到 blob 且**不带 charset**，`resp.text` 猜成 latin-1 | **`resp.content.decode('utf-8')`**，且跨主机**丢掉 `Authorization`** |
@@ -792,6 +798,12 @@ tree sha 与本地 `HEAD^{tree}` 一致（`36bf173e…`），本地 main 已用 
 三条隐私守卫两次都真跑，末尾 `[feishu] ✅ 推送成功`。
 **这一版是走 §6.9 的 API 推的**（当时 `github.com:443` 不通），
 tree sha 与本地 `HEAD^{tree}` 一致（`2651cc6d…`），本地 main 已用 `git commit-tree` 对齐到同一 sha。
+
+**v1.5.1（2026-11-14 14:26）**：`github.com:443` 仍不通（`Recv failure: Connection was reset`），
+走 §6.9 API 推送。tree sha 两边都是 `6a9ebdf98b326df5726c24fa9bea67ed21bdeb94`，
+**本地 main == 远端 main == `0ce38bd`**，工作区干净。
+这次穷举命中的组合是 **`+0800` × 尾部 `\n\n`** —— 即 `%B` 比对象多一个换行那条坑（见 §6.9 的更正框）。
+**注意：commit sha 这次是相等的**，旧文档「永远不可能相等」的说法已就地更正。
 
 ### 尚未真实验证 —— 接手后优先补
 
