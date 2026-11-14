@@ -535,11 +535,13 @@ def do_selftest() -> bool:
     import daily_push as dp
 
     facts = dp.diary_facts("morning", now.date())
-    check("早报事实含计划统计", "未完成计划" in facts)
+    # 用户 2026-11-14：「随口写的（潜在计划）不要发到飞书里」→ 事实清单里不许再有计划播报
+    check("飞书事实不含计划播报（用户 2026-11-14 要求）",
+          "未完成计划" not in facts and "今天到期" not in facts and "已逾期" not in facts)
     check("早报不带课表", "课表" not in facts and "上课" not in facts)
     for k in dp.KINDS:
         fb = dp.fallback_message(k, facts, "测试一言（来源）")
-        check(f"{k} 降级文案含事实与一言", len(fb) > 20 and "测试一言" in fb and "未完成计划" in fb)
+        check(f"{k} 降级文案含事实与一言", len(fb) > 20 and "测试一言" in fb)
 
     # 名言只放 3 条、由 AI 的 value 分挑（用户 2026-11-14）。挑选是纯函数，离线可验。
     check("名言 README 上限为 3", rr.QUOTE_LIMIT == 3, str(rr.QUOTE_LIMIT))

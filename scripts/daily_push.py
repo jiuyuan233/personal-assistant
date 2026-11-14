@@ -52,15 +52,6 @@ def hitokoto() -> str:
         return ""
 
 
-def _plan_line(p: dict) -> str:
-    due = p.get("due_date")
-    tags = "/".join(p.get("tags") or [])
-    tail = f"［{due}］" if due else "［无截止］"
-    if tags:
-        tail += f"（{tags}）"
-    return f"- {p.get('text')}{tail}"
-
-
 def _when(t: dict) -> str:
     dt = parse_datetime(t.get("deadline"))
     if not dt:
@@ -106,53 +97,24 @@ def notice_facts() -> tuple[str, list[dict]]:
 
 
 def diary_facts(kind: str, today: date) -> str:
-    """把日记数据整理成确定性事实清单。AI 只准用这里给出的信息，不许编造。"""
-    plans = load_list(DIARY_DIR / "plans.json")
+    """把日记数据整理成确定性事实清单。AI 只准用这里给出的信息，不许编造。
+
+    ⚠️ 2026-11-14 用户要求：「这个随口写的不要发到飞书里，这个我有其他解决方案」——
+    潜在计划（plans.json）不再播报进任何飞书消息。计划数据仍进 README 任务区与
+    docs/潜在计划.md（网页/仓库里自己看），日记写回闭环也不受影响。
+    这里只剩「今天的名言」一类内容。
+    """
     quotes = load_list(DIARY_DIR / "quotes.json")
     iso = today.isoformat()
-
-    opened = [p for p in plans if p.get("state") == "open"]
-    done = [p for p in plans if p.get("state") == "done"]
-    due_today = [p for p in opened if p.get("due_date") == iso]
-    overdue = sorted([p for p in opened if p.get("due_date") and p["due_date"] < iso],
-                     key=lambda p: p["due_date"])
-    new_today = [p for p in plans if p.get("first_seen") == iso]
     quotes_today = [q for q in quotes if q.get("first_seen") == iso]
-    no_due = sorted([p for p in opened if not p.get("due_date")],
-                    key=lambda p: -(p.get("confidence") or 0))
 
-    lines = [f"今天是 {iso} {WEEKDAY_CN[today.weekday()]}。",
-             f"日记里未完成计划 {len(opened)} 条，已完成 {len(done)} 条。"]
-
-    if kind == "morning":
-        lines.append(f"今天到期：{len(due_today)} 条。")
-        lines += [_plan_line(p) for p in due_today[:6]]
-        lines.append(f"已逾期还没做：{len(overdue)} 条。")
-        lines += [_plan_line(p) for p in overdue[:5]]
-        lines.append("没写截止日、但你自己提过想做的（按你自己的确定程度排）：")
-        lines += [_plan_line(p) for p in no_due[:5]]
-    elif kind == "noon":
-        lines.append(f"今天到期：{len(due_today)} 条，已逾期还没做：{len(overdue)} 条。")
-        pick = (due_today or overdue or no_due)[:2]
-        if pick:
-            lines.append("下午最该动的一件事：")
-            lines += [_plan_line(p) for p in pick]
-    else:
-        lines.append(f"今天日记里新冒出来的计划：{len(new_today)} 条。")
-        lines += [_plan_line(p) for p in new_today[:6]]
-        lines.append(f"今天到期：{len(due_today)} 条，其中仍未完成 "
-                     f"{sum(1 for p in due_today if p.get('state') == 'open')} 条。")
-        lines.append(f"已逾期还没做：{len(overdue)} 条。")
-        lines += [_plan_line(p) for p in overdue[:5]]
-        if quotes_today:
-            lines.append("今天从你日记里摘出来的话：")
-            for q in quotes_today[:3]:
-                lines.append(f"- 「{q.get('text')}」")
-                if q.get("comment"):
-                    lines.append(f"  点评：{q['comment']}")
-
-    if not opened and not new_today and not quotes_today:
-        lines.append("日记里今天没有任何可播报的内容。")
+    lines = [f"今天是 {iso} {WEEKDAY_CN[today.weekday()]}。"]
+    if quotes_today:
+        lines.append("今天从你日记里摘出来的话：")
+        for q in quotes_today[:3]:
+            lines.append(f"- 「{q.get('text')}」")
+            if q.get("comment"):
+                lines.append(f"  点评：{q['comment']}")
     return "\n".join(lines)
 
 
