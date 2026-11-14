@@ -91,11 +91,18 @@ def study_facts(now: datetime) -> tuple[str, list[dict]]:
 
 
 def notice_facts() -> tuple[str, list[dict]]:
-    """值得关注的公告：相关度 >= 3，按分降序。与 README 公告节同一门槛。"""
+    """值得关注的公告：相关度 >= 3，按分降序。与 README 公告节同一门槛。
+
+    时效过滤（用户 2026-11-14：「时间都截至了还给我发」）：已过截止或无截止但
+    发布超 90 天的不再推送。唯一判定在 `utils.notice_stale()`，与 README 共用。
+    """
+    from utils import notice_stale
     items = load_list(DATA_DIR / "notice" / "notices.json")
-    hot = sorted([n for n in items if (n.get("score") or 0) >= NOTICE_MIN_SCORE],
-                 key=lambda n: -(n.get("score") or 0))
-    lines = [f"值得关注的公告 {len(hot)} 条（相关度 {NOTICE_MIN_SCORE} 分以上）。"]
+    hot = [n for n in items
+           if (n.get("score") or 0) >= NOTICE_MIN_SCORE
+           and not notice_stale(n, now_bj().date())]
+    hot.sort(key=lambda n: -(n.get("score") or 0))
+    lines = [f"值得关注的公告 {len(hot)} 条（相关度 {NOTICE_MIN_SCORE} 分以上、仍在有效期内）。"]
     for n in hot[:MORNING_NOTICE_LIMIT]:
         due = f"截止 {n['deadline']}" if n.get("deadline") else "无明确截止"
         why = n.get("reason") or n.get("category") or ""

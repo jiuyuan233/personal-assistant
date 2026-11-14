@@ -580,6 +580,25 @@ def do_selftest() -> bool:
     check("urgent6 断言不看 deadline 字段漂移（签名去重在 urgent_alerts，这里按 id 记账）",
           isinstance(led2, dict))
 
+    # 公告时效过滤（用户 2026-11-14：「时间都截至了还给我发，改掉」）
+    from utils import notice_stale as _stale
+    check("公告截止已过 → 过时效",
+          _stale({"deadline": "2026-01-01", "publish_date": "2025-12-01"}, now.date()))
+    check("公告截止未到 → 有效（发布再老也留）",
+          not _stale({"deadline": (now + _td(days=30)).date().isoformat(),
+                      "publish_date": "2025-06-01"}, now.date()))
+    check("无截止且发布超 90 天 → 过时效",
+          _stale({"deadline": None, "publish_date": (now - _td(days=91)).date().isoformat()},
+                 now.date()))
+    check("无截止但发布 89 天 → 有效",
+          not _stale({"deadline": None, "publish_date": (now - _td(days=89)).date().isoformat()},
+                     now.date()))
+    check("deadline 为 'None' 字符串不误判",
+          not _stale({"deadline": "None", "publish_date": (now - _td(days=1)).date().isoformat()},
+                     now.date()))
+    check("README 公告节与飞书早报共用 notice_stale 判定",
+          "notice_stale" in inspect.getsource(rr) and "notice_stale" in inspect.getsource(dp))
+
     # 名言只放 3 条、由 AI 的 value 分挑（用户 2026-11-14）。挑选是纯函数，离线可验。
     check("名言 README 上限为 3", rr.QUOTE_LIMIT == 3, str(rr.QUOTE_LIMIT))
     qs = [{"id": "a", "first_seen": "2026-11-14", "value": 2},

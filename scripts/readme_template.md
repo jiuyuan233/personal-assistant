@@ -47,7 +47,7 @@ README 只放每天要看的动态，**所有说明性文档都挂在下面**：
 
 ## 📢 值得关注的公告
 
-按相关度排序，只列 3 分以上，这里最多显示 {{README_NOTICE_LIMIT}} 条。
+按相关度排序，只列 3 分以上且仍在有效期内（截止已过或发布超 90 天的不再展示），这里最多显示 {{README_NOTICE_LIMIT}} 条。
 **全量 {{NOTICE_COUNT}} 条见 [docs/公告.md](docs/公告.md)** · 原始数据 [notices.json](data/notice/notices.json)。
 
 {{NOTICES}}

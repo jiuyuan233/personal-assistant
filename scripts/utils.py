@@ -296,3 +296,30 @@ def exc_brief(exc: BaseException) -> str:
     where = f"{Path(frames[-1].filename).name}:{frames[-1].lineno}" if frames else "?"
     # 先脱敏再截断：反过来会把长凭据切断，切断后的残段匹配不上脱敏正则。
     return redact(f"{type(exc).__name__} @ {where}: {exc}")[:300]
+
+
+# 无截止日的公告的时效兜底（天）。校园公告（讲座/培训/系列活动的「参加」窗口）
+# 一般 1–3 个月内失效；有明确截止日的以截止日为准，不受这个数影响。
+NOTICE_MAX_AGE_DAYS = 90
+
+
+def notice_stale(n: dict, today) -> bool:
+    """公告过时效判定：True = 不该再出现在「值得关注」里（用户 2026-11-14 要求）。
+
+    规则（README 与飞书早报共用这一个函数，口径不会漂）：
+    1. 有截止日且截止日 < 今天 → 过时效（报名/提交已经结束）；
+    2. 无截止日、发布日期距今 > NOTICE_MAX_AGE_DAYS 天 → 过时效（讲座/培训早就办完了）；
+    3. 有截止日且还没到 → 无论发布多老都算有效（比赛通知可能提前一学期发）。
+    纯函数，selftest 可离线测。日期字段容错：null / "None" 字符串 / 空串都当「没有」。
+    """
+    dl = n.get("deadline")
+    if dl and str(dl).strip().lower() not in ("none", ""):
+        d = parse_datetime(str(dl))
+        if d and d.date() < today:
+            return True
+    pub = n.get("publish_date")
+    if not dl and pub and str(pub).strip().lower() not in ("none", ""):
+        d = parse_datetime(str(pub))
+        if d and (today - d.date()).days > NOTICE_MAX_AGE_DAYS:
+            return True
+    return False

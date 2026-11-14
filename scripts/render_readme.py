@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 from dedup import load_list, sort_by_deadline
 from utils import (DATA_DIR, DOCS_DATA_DIR, REPO_ROOT, load_json,
-                   log, now_bj, parse_datetime, save_json_stable)
+                   log, notice_stale, now_bj, parse_datetime, save_json_stable)
 
 TEMPLATE = REPO_ROOT / "scripts" / "readme_template.md"
 README = REPO_ROOT / "README.md"
@@ -329,15 +329,23 @@ def render_notices(limit: int = NOTICE_LIMIT, link_prefix: str = "../") -> tuple
 
     `link_prefix` 是截断行里 data/ 的相对前缀：产物在 docs/ 下用默认 `"../"`，
     渲染进根目录的 README 必须传 `""`，否则链接逃出仓库根（审计 §5.1 同型坑）。
+
+    时效过滤（用户 2026-11-14：「时间都截至了还给我发」）：已过截止或无截止但发布
+    超 90 天的公告不再「值得关注」。唯一判定在 `utils.notice_stale()`，与飞书早报共用。
     """
-    items = [n for n in load_list(DATA_DIR / "notice" / "notices.json")
-             if (n.get("score") or 0) >= 3]
+    today = now_bj().date()
+    all_items = [n for n in load_list(DATA_DIR / "notice" / "notices.json")
+                 if (n.get("score") or 0) >= 3]
+    items = [n for n in all_items if not notice_stale(n, today)]
+    stale_n = len(all_items) - len(items)
     items.sort(key=lambda n: n.get("publish_date") or "", reverse=True)
     items.sort(key=lambda n: -(n.get("score") or 0))
     total = len(items)
     items = items[:limit]
     if not items:
-        return "_暂无高相关公告。_\n", 0
+        note = (f"（另有 {stale_n} 条高相关公告已过时效，"
+                f"数据见 [notices.json]({link_prefix}data/notice/notices.json)）") if stale_n else ""
+        return f"_暂无有效期内的高相关公告。_{note}\n", 0
     lines = ["| 分 | 日期 | 公告 | 来源 | 截止 | 说明 |",
              "| --- | --- | --- | --- | --- | --- |"]
     for n in items:
@@ -349,6 +357,10 @@ def render_notices(limit: int = NOTICE_LIMIT, link_prefix: str = "../") -> tuple
         lines.append("")
         lines.append(f"_另有 **{total - len(items)}** 条相关公告未显示（共 {total} 条），"
                      f"完整数据见 [notices.json]({link_prefix}data/notice/notices.json)。_")
+    if stale_n:
+        lines.append("")
+        lines.append(f"_已过时效 {stale_n} 条未列出（截止已过或发布超 90 天），"
+                     f"数据仍在 [notices.json]({link_prefix}data/notice/notices.json)。_")
     return "\n".join(lines) + "\n", total
 
 
