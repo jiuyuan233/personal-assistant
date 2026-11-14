@@ -14,8 +14,8 @@
   python scripts/main.py probe      # 海外 IP 连通性 + 解析冒烟
   python scripts/main.py selftest   # 解析器自检（离线，不需要凭据）
   python scripts/main.py morning    # 早 7 点飞书：作业 + 公告 + 一言 + 二次元图 + 中文问好
-  python scripts/main.py noon       # 中午飞书：问好 + 鼓励 + 下午最该动的一件事
-  python scripts/main.py night      # 晚上飞书：当天日记总结（不带课表）
+  python scripts/main.py noon       # 中午飞书：问好 + 鼓励 + 一言 + 二次元图
+  python scripts/main.py night      # 晚上飞书：日记总结 + 一言 + 二次元图（不带课表）
 
 为什么只有一个 cron（审计 §4.1）：原来 8 条 cron 各自映射一个模式，实测出现过
 连续 1 小时 33 分钟一次都没触发。GitHub 对同一 workflow 的 schedule 有节流，

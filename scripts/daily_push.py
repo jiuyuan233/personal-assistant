@@ -205,14 +205,15 @@ def run(kind: str) -> dict:
     facts = diary_facts(kind, today)
     hit = hitokoto()
 
-    # 只有早上带图。中午/晚上再发图就是噪音，用户要的是「早上一点二次元」。
+    # 三时段都带图（用户 2026-11-14 推翻了「只有早上带图」的旧约定：
+    # 「发送格式全部都按照早上的格式发，图片改成早中晚都发」）。
+    # 取图失败只 WARN 不阻断推送；JS 侧有图 JSON 就发卡片，格式自动与早报一致。
     image = None
-    if kind == "morning":
-        try:
-            import anime_image
-            image = anime_image.run()
-        except Exception as e:
-            log(f"取图异常：{type(e).__name__}，本次不带图", level="WARN")
+    try:
+        import anime_image
+        image = anime_image.run()
+    except Exception as e:
+        log(f"取图异常：{type(e).__name__}，本次不带图", level="WARN")
 
     prose = ""
     ai_ok = False
