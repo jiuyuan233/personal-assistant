@@ -17,7 +17,8 @@ from utils import (DATA_DIR, DOCS_DATA_DIR, REPO_ROOT, load_json,
 TEMPLATE = REPO_ROOT / "scripts" / "readme_template.md"
 README = REPO_ROOT / "README.md"
 
-# 公告与潜在计划从 README 挪进独立文档，README 只留目录链接。
+# 公告与潜在计划**同时**出现在 README（精简版）和独立文档（全量版）。
+# 用户先要求移出 README 瘦身，后又要求加回来 —— 两处都留，README 用更小的上限。
 # 两者都是生成物，由 finalize 独占提交权（采集模式会 git checkout -- docs 还原）。
 NOTICE_TEMPLATE = REPO_ROOT / "scripts" / "notice_template.md"
 PLANS_TEMPLATE = REPO_ROOT / "scripts" / "plans_template.md"
@@ -33,6 +34,10 @@ REASON_ORDER = ("overdue", "not_pending")
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 NOTICE_LIMIT = 12
 PLAN_LIMIT = 15
+# README 里的精简版上限：用户既要「加回主 README」又要过「别太长」，所以只放前几条，
+# 截断行链到全量数据，节标题下再链到独立文档。改这两个数不影响 docs/ 下的全量版。
+README_NOTICE_LIMIT = 5
+README_PLAN_LIMIT = 8
 
 
 def esc(s: str) -> str:
@@ -313,11 +318,14 @@ def render_schedule(now: datetime) -> tuple[str, str, str]:
 # ---------------------------------------------------------------------------
 # 公告 / 计划 / 名言
 # ---------------------------------------------------------------------------
-def render_notices(limit: int = NOTICE_LIMIT) -> tuple[str, int]:
+def render_notices(limit: int = NOTICE_LIMIT, link_prefix: str = "../") -> tuple[str, int]:
     """返回 (正文, **符合条件的总条数**)。
 
     审计 §3.4：原来只返回被截断后的条数，用户看不到「还有 N 条没显示」，
     会以为公告就这么多。现在总数照实给，截断处在正文里写明。
+
+    `link_prefix` 是截断行里 data/ 的相对前缀：产物在 docs/ 下用默认 `"../"`，
+    渲染进根目录的 README 必须传 `""`，否则链接逃出仓库根（审计 §5.1 同型坑）。
     """
     items = [n for n in load_list(DATA_DIR / "notice" / "notices.json")
              if (n.get("score") or 0) >= 3]
@@ -337,12 +345,13 @@ def render_notices(limit: int = NOTICE_LIMIT) -> tuple[str, int]:
     if total > len(items):
         lines.append("")
         lines.append(f"_另有 **{total - len(items)}** 条相关公告未显示（共 {total} 条），"
-                     f"完整数据见 [notices.json](../data/notice/notices.json)。_")
+                     f"完整数据见 [notices.json]({link_prefix}data/notice/notices.json)。_")
     return "\n".join(lines) + "\n", total
 
 
-def render_plans(limit: int = PLAN_LIMIT) -> tuple[str, int]:
-    """返回 (正文, **未完成计划总数**)。截断处写明还有多少条，见 §3.4。"""
+def render_plans(limit: int = PLAN_LIMIT, link_prefix: str = "../") -> tuple[str, int]:
+    """返回 (正文, **未完成计划总数**)。截断处写明还有多少条，见 §3.4。
+    `link_prefix` 同 render_notices：README 在仓库根，必须传 `""`。"""
     items = [p for p in load_list(DATA_DIR / "diary" / "plans.json")
              if p.get("state") == "open"]
     items.sort(key=lambda p: (-(p.get("confidence") or 0), p.get("due_date") or "9999"))
@@ -360,7 +369,7 @@ def render_plans(limit: int = PLAN_LIMIT) -> tuple[str, int]:
     if total > len(items):
         lines.append("")
         lines.append(f"_另有 **{total - len(items)}** 条未完成计划未显示（共 {total} 条），"
-                     f"完整数据见 [plans.json](../data/diary/plans.json)。_")
+                     f"完整数据见 [plans.json]({link_prefix}data/diary/plans.json)。_")
     return "\n".join(lines) + "\n", total
 
 
@@ -449,6 +458,9 @@ def run() -> bool:
     alert = render_alert(stats, meta, now)
     notices, notice_count = render_notices()
     plans, plan_count = render_plans()
+    # README 内嵌的是精简版，且链接基准是仓库根（不是 docs/），所以单独渲染一次
+    readme_notices, _ = render_notices(README_NOTICE_LIMIT, link_prefix="")
+    readme_plans, _ = render_plans(README_PLAN_LIMIT, link_prefix="")
 
     if not TEMPLATE.exists():
         log(f"模板缺失：{TEMPLATE}", level="ERROR")
@@ -468,12 +480,16 @@ def run() -> bool:
         "{{SOURCE_STATUS}}": sources,
         "{{NOTICE_COUNT}}": str(notice_count),
         "{{PLAN_COUNT}}": str(plan_count),
+        "{{NOTICES}}": readme_notices,
+        "{{PLANS}}": readme_plans,
+        "{{README_NOTICE_LIMIT}}": str(README_NOTICE_LIMIT),
+        "{{README_PLAN_LIMIT}}": str(README_PLAN_LIMIT),
     }
     for k, v in repl.items():
         text = text.replace(k, v)
     README.write_text(text, encoding="utf-8")
 
-    # 公告与潜在计划不再占 README 篇幅，各自渲染成独立文档，README 目录区只留链接
+    # 独立文档仍是全量版（README 内嵌的是精简版），两边都要生成，缺模板让 finalize 报红
     ok_n = render_doc(NOTICE_TEMPLATE, NOTICE_DOC,
                       {"{{NOTICES}}": notices, "{{NOTICE_LIMIT}}": str(NOTICE_LIMIT)}, now)
     # 写回窗口以 sources.json 为准，默认值只在 diary_writeback 里定义一份，避免两处漂移

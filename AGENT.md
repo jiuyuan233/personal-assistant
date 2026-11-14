@@ -37,7 +37,7 @@ cron 只有一条 `*/20 * * * *` → 模式 `tick`，每轮由 `due_collectors()
 
 1. **生成物禁止手改。** 下列文件全部由脚本产出，改了会被下次运行覆盖：
    - `README.md`
-   - `docs/公告.md`、`docs/潜在计划.md`、`docs/已剔除任务.md`（从 README 挪出来的独立文档，模板在 `scripts/*_template.md`）
+   - `docs/公告.md`、`docs/潜在计划.md`（**全量版**；README 里另有精简版，两边都是生成物，模板在 `scripts/*_template.md`）、`docs/已剔除任务.md`
    - `data/study/*`、`data/notice/*`、`data/diary/*`、`data/schedule/*`
    - **`data/runtime.json`**（tick 的调度状态：`last_ok` / `last_try` / `pushed` / `errors`）
    - **`data/diary/plans_archive.json`**（归档的已完成/已取消计划）

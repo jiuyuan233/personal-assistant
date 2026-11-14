@@ -371,10 +371,26 @@ def do_selftest() -> bool:
           "翻译作业" in trows[2] and "翻译作业" not in trows[3], "\n".join(trows))
     check("兄弟班显示无", "**无**" in trows[3])
 
-    # README 瘦身：公告与潜在计划挪进独立文档，目录区只留链接
+    # 用户先要求把公告/计划移出 README 瘦身，后又要求加回来。现在**两边都有**：
+    # README 内嵌精简版（上限更小、链接基准是仓库根），docs/ 下仍是全量版。
+    # 这两条守卫的方向随用户要求翻转过一次，别照抄旧结论。
     tpl = rr.TEMPLATE.read_text(encoding="utf-8")
-    check("README 不再内嵌公告节", "## 📢 值得关注的公告" not in tpl)
-    check("README 不再内嵌计划节", "## 🎯 潜在计划" not in tpl)
+    check("README 内嵌公告节", "## 📢 值得关注的公告" in tpl)
+    check("README 内嵌计划节", "## 🎯 潜在计划" in tpl)
+    check("README 精简版上限小于全量版",
+          rr.README_NOTICE_LIMIT < rr.NOTICE_LIMIT and rr.README_PLAN_LIMIT < rr.PLAN_LIMIT,
+          f"{rr.README_NOTICE_LIMIT}/{rr.NOTICE_LIMIT} {rr.README_PLAN_LIMIT}/{rr.PLAN_LIMIT}")
+    # README 在仓库根，截断行不能带 ../（那是 docs/ 下产物的基准）。审计 §5.1 同型坑。
+    _rn, _ = rr.render_notices(rr.README_NOTICE_LIMIT, link_prefix="")
+    _rp, _ = rr.render_plans(rr.README_PLAN_LIMIT, link_prefix="")
+    check("README 版公告截断行不带 ../", "../data/" not in _rn)
+    check("README 版计划截断行不带 ../", "../data/" not in _rp)
+    # 默认值必须是 docs/ 基准。查签名而不是查渲染结果 —— 后者依赖「数据至少 2 条」，
+    # 数据一变守卫就假红，selftest 必须离线确定性。
+    import inspect as _insp
+    check("两个渲染器默认 link_prefix 仍是 ../",
+          _insp.signature(rr.render_notices).parameters["link_prefix"].default == "../"
+          and _insp.signature(rr.render_plans).parameters["link_prefix"].default == "../")
     check("README 目录区链接到三份独立文档",
           "docs/公告.md" in tpl and "docs/潜在计划.md" in tpl
           and "docs/已剔除任务.md" in tpl)

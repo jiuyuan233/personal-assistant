@@ -107,7 +107,7 @@ python scripts/main.py selftest
 cd <仓库根>
 "C:/Users/XOS/AppData/Local/Temp/py311/python.exe" -m ruff check scripts --select E9,F63,F7,F82,F821,F401
 DIARY_EXCLUDE='<Secret 里的值>' "C:/Users/XOS/AppData/Local/Temp/py311/python.exe" -X utf8 \
-  "C:/Users/XOS/AppData/Local/Temp/pa_run.py" selftest      # 174 条；不设黑名单是 173 条
+  "C:/Users/XOS/AppData/Local/Temp/pa_run.py" selftest      # 178 条；不设黑名单是 177 条
 ```
 
 **这些路径在仓库外，不属于版本控制**；换机器就按上表三个坑重新解锁。
@@ -193,7 +193,7 @@ git push origin main       # ★ 绝不 --force
 | `backfill` | 给存量名言补 AI 点评（每批 8 条） | ✅ | ✅ | 只 `data` | `名言点评回填：补上 N 条，仍空 M 条` |
 | `probe` | 13 个目标连通性 + 解析冒烟 | ✅ | ❌ | **不提交** | `可达：N`、`解析冒烟：{...}` |
 | `studydiag` | dump 学习通页面形状（**数字全打码**） | ✅ | ❌ | **不提交** | 输出里数字应是 `D`、标题应是 `TITLE` |
-| `selftest` | 离线断言（带 `DIARY_EXCLUDE` **174** 条 / 不带 173 条） | ❌ | ❌ | **不提交** | `失败 0 项` |
+| `selftest` | 离线断言（带 `DIARY_EXCLUDE` **178** 条 / 不带 177 条） | ❌ | ❌ | **不提交** | `失败 0 项` |
 | `morning` | 早 7 点飞书文案 | ✅ | ✅ | **不提交** | `文案来源：AI`（或 `降级`） |
 | `noon` | 中午问好 | ✅ | ✅ | **不提交** | 同上 |
 | `night` | 晚间总结 | ✅ | ✅ | **不提交** | 同上 |
@@ -359,6 +359,11 @@ morning/noon 的 300 分钟 > 280 分钟所以兜得住。**不要为了让 nigh
 | 截止日不幻觉 | `selftest` | ✅ 截止日有正文依据才采纳 / 阶段结束日不算报名截止 |
 | 竞赛日历可溯源 | 打开 [竞赛日历.md](竞赛日历.md) | 每项标注来源链接，能点到官网 |
 | 269 项按开始时间排序 | 同上 | 附录逐项标注开始时间 |
+| **README 内嵌两节还在** | 打开 [README](../README.md) | 有 `## 📢 值得关注的公告`（≤5 条）与 `## 🎯 潜在计划`（≤8 条），节标题下链到全量文档 |
+| **两处的截断链接都点得开** | `selftest` | ✅ README 版不带 `../`、两个渲染器默认 `link_prefix` 仍是 `../`。**README 在仓库根、docs/ 产物在子目录，基准不同** |
+
+> **这两节被用户改过两次方向**：先移出 README 瘦身（`c02aad9`），后要求「重新加回主readme」（v1.4.4）。
+> **当前是加回状态**，`main.py` 的守卫断言「内嵌」。要再改方向，必须**守卫 + 模板 + 文档三处一起改**。
 
 **⚠️ 不要相信 AI 给的截止日**，`deadline_supported()` 是唯一防线。
 实测收紧提示词后重抽**仍返回同一个错值**，所以硬约束必须在代码里。
@@ -692,20 +697,24 @@ v1.4.3 实测两者都是 `2651cc6d9e99ef0a8b3a3bfd6f6558071f7c5ae3`，这才叫
 ```bash
 ruff check scripts --select E9,F63,F7,F82,F821,F401   # All checks passed
 # ⚠️ 必须带上 DIARY_EXCLUDE，否则私人路径守卫会跳过，等于没验
-DIARY_EXCLUDE='<Secret 里的值>' python scripts/main.py selftest   # 174 项断言，失败 0 项
+DIARY_EXCLUDE='<Secret 里的值>' python scripts/main.py selftest   # 178 项断言，失败 0 项
 python scripts/main.py finalize                      # 成功，README + SVG + docs/data 全部生成
 ```
 
-**断言条数随环境变**：带 `DIARY_EXCLUDE` 是 **174**，不带是 **173**（那条守卫打 ⏭️ 跳过后不计入）。
-**质量门禁与执行两步都注入了这个 Secret，所以线上每轮都是 174。**
+**断言条数随环境变**：带 `DIARY_EXCLUDE` 是 **178**，不带是 **177**（那条守卫打 ⏭️ 跳过后不计入）。
+**质量门禁与执行两步都注入了这个 Secret，所以线上每轮都是 178。**
 本地不带变量跑绿了，不代表隐私守卫过了。
-条数演进：107 → 166 → 173 → **174**（+5 推送补发窗口、+2 链接守卫、+1 门禁注入黑名单）。
+条数演进：107 → 166 → 173 → 174 → **178**
+（+5 推送补发窗口、+2 链接守卫、+1 门禁注入黑名单、**+4 README 两节加回**）。
+**下面凡引用具体 run 的「174 条」都是那次运行的历史事实，不要跟着改成 178。**
 **改完断言必须真跑一遍**：本轮有一次新守卫用了 `re.compile`，而 `do_selftest()` 里只有
 函数内的 `import re as _re` —— **`ruff --select F821` 没报**，跑起来才 `NameError`。静态门禁不是兜底。
 
 `finalize` 本地实测输出（2026-11-14 09:48）：课表 186 条上课记录、24 个课程条目、第 10 周、本周 17 节课；
 任务清单 **3 条可做 / 14 门课（今天 0 / 7天内 3 / 更远 0 / 截止未知 0）**；已剔除逾期 2 / 非待完成 33；
 独立文档 公告 8 / 潜在计划 35（黑名单清洗前 58）/ 已剔除 35。
+**README 内嵌精简版：公告 5 条（另有 3 条未显示）/ 计划 8 条（另有 27 条未显示）**，
+截断行链到 `data/notice/notices.json`、`data/diary/plans.json`（**根目录基准，不带 `../`**）。
 **「截止未知」从 1 变 0**：详情页时间窗补齐后那一档清空了，这正是用户报的 bug 被修掉的可见结果。
 
 ### 已在 Actions 上真实跑通过（历史证据，需复核）
