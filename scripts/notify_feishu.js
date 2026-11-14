@@ -188,6 +188,7 @@ const PUSH_HEADER = {
     morning: { emoji: '🌅', name: '早安', color: 'orange' },
     noon:    { emoji: '☀️', name: '午安', color: 'blue' },
     night:   { emoji: '🌙', name: '晚安', color: 'indigo' },
+    urgent:  { emoji: '⏰', name: '紧急截止提醒', color: 'red' },
 };
 
 function imageNote() {

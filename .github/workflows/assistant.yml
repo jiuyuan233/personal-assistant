@@ -145,8 +145,8 @@ jobs:
         run: |
           set -o pipefail
           : > /tmp/task-output.log
-          # 两个文件都必须先删：上一轮的残留会让这一轮误发旧文案/旧图。
-          rm -f /tmp/push-message.txt /tmp/push-image.json
+          # 三个文件都必须先删：上一轮的残留会让这一轮误发旧文案/旧图/旧紧急提醒。
+          rm -f /tmp/push-message.txt /tmp/push-image.json /tmp/push-urgent.txt
           python scripts/main.py "$MODE" 2>&1 | tee -a /tmp/task-output.log
 
       - name: 提交数据
@@ -198,8 +198,18 @@ jobs:
           # anime_image.py 把图的信息写进 push-image.json。两个都在 → 发带图/带按钮的卡片；
           # 只有文案 → 纯文本；卡片被飞书拒收 → 脚本自己退回纯文本重发。
           # 文件不存在（采集模式，或推送模式在写文案前就崩了）就走状态卡片，失败照样报红。
+          sent_any=0
           if [ -s /tmp/push-message.txt ]; then
             node scripts/notify_feishu.js "$(cat /tmp/push-message.txt)"
-          else
+            sent_any=1
+          fi
+          if [ -s /tmp/push-urgent.txt ]; then
+            # 6 小时紧急截止提醒（用户 2026-11-14）：独立于三时段与降噪闸门，
+            # 即使常规成功也必达，与三时段同轮时两条都发（elif 会吞掉紧急提醒且
+            # 记账已写导致永久丢失，所以是两个独立 if）。纯文本（链接可点）。
+            NOTIFY_KIND=urgent node scripts/notify_feishu.js "$(cat /tmp/push-urgent.txt)"
+            sent_any=1
+          fi
+          if [ "$sent_any" = 0 ]; then
             node scripts/notify_feishu.js
           fi

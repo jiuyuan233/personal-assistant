@@ -30,7 +30,17 @@ DIARY_DIR = DATA_DIR / "diary"
 # workflow 的飞书步骤读这个文件；存在就发推送，不存在就走运行状态卡片（且只报重要信息）。
 # PUSH_MESSAGE_PATH 只为本地 Windows 调试留的口子，线上不设，默认仍是 /tmp。
 MESSAGE_PATH = Path(os.environ.get("PUSH_MESSAGE_PATH", "/tmp/push-message.txt"))
+# 6 小时紧急截止提醒（用户 2026-11-14：「距离截止时间还剩6小时的可以跳出这个
+# 每天3条的规则，直接通知我」）——独立于三时段，每条作业只提醒一次，记账在 runtime.urgent6。
+URGENT_MESSAGE_PATH = Path(os.environ.get("PUSH_URGENT_PATH", "/tmp/push-urgent.txt"))
+URGENT_HOURS = 6
 HITOKOTO_URL = "https://v1.hitokoto.cn/"
+# 免费数据源（v1.5.7 新增，用户勾选）：金山词霸每日一句、open-meteo 天气（无需 key）。
+ICIBA_URL = "https://open.iciba.com/dsapi/"
+# 坐标 = 平顶山（河南城建学院所在城市，城市级精度足够天气参考）。
+WEATHER_URL = ("https://api.open-meteo.com/v1/forecast?latitude=33.77&longitude=113.19"
+               "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+               "&timezone=Asia/Shanghai&forecast_days=2")
 KINDS = ("morning", "noon", "night")
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 MORNING_TASK_LIMIT = 6
@@ -96,6 +106,107 @@ def notice_facts() -> tuple[str, list[dict]]:
     return "\n".join(lines), hot
 
 
+def daily_english() -> str:
+    """金山词霸每日一句（免费无 key）。失败返回空串，不影响推送。
+
+    每天全网就一条，重复请求返回同一条，所以不需要缓存也不会在同一天内重复打扰。
+    """
+    try:
+        j = requests.get(ICIBA_URL, timeout=15).json()
+        en = safe_text(j.get("content"), 200).strip()
+        zh = safe_text(j.get("note"), 200).strip()
+        if not en:
+            return ""
+        return f"{en}\n{zh}" if zh else en
+    except Exception as e:
+        log(f"每日英语获取失败：{type(e).__name__}", level="WARN")
+        return ""
+
+
+def weather_tomorrow(now: datetime) -> str:
+    """open-meteo 明日天气（免费无 key）。失败返回空串，不影响推送。
+
+    forecast_days=2 时 daily 数组是 [今天, 明天]，取第 2 个。
+    """
+    try:
+        j = requests.get(WEATHER_URL, timeout=15).json()
+        daily = j.get("daily") or {}
+        tmax = (daily.get("temperature_2m_max") or [None, None])[1]
+        tmin = (daily.get("temperature_2m_min") or [None, None])[1]
+        rain = (daily.get("precipitation_probability_max") or [None, None])[1]
+        if tmax is None or tmin is None:
+            return ""
+        out = f"明天 {round(tmin)}~{round(tmax)}°C"
+        if rain is not None:
+            out += f"，降水概率 {rain}%"
+            if isinstance(rain, (int, float)) and rain >= 60:
+                out += "（记得带伞）"
+        return out
+    except Exception as e:
+        log(f"明日天气获取失败：{type(e).__name__}", level="WARN")
+        return ""
+
+
+def quote_recall(today: date) -> str:
+    """历史名言轮换（午安专用）：排除今天的，按天轮换取一条带 AI 点评。
+
+    确定性：同一天同数据永远同一条（day-of-year 取模），重跑不漂移。
+    晚安只报「今天新写的」，早报不报名言——三处互不重复（用户 2026-11-14）。
+    """
+    quotes = load_list(DIARY_DIR / "quotes.json")
+    iso = today.isoformat()
+    pool = [q for q in quotes if q.get("first_seen") != iso and q.get("text")]
+    if not pool:
+        return ""
+    pool.sort(key=lambda q: (q.get("first_seen") or "", q.get("id") or ""))
+    q = pool[(today.timetuple().tm_yday) % len(pool)]
+    out = f"「{q.get('text')}」"
+    if q.get("comment"):
+        out += f"\n  点评：{q['comment']}"
+    if q.get("first_seen"):
+        out += f"\n  ——你 {q['first_seen']} 写下的"
+    return out
+
+
+def urgent6_pick(now: datetime, ledger: dict, tasks: list | None = None) -> tuple[str, dict]:
+    """6 小时紧急截止提醒（用户 2026-11-14 授权的独立通道）。
+
+    - 只挑「待完成且未逾期、剩余 < URGENT_HOURS」的作业（复用 README 同口径 actionable）；
+    - 记账 ledger = {task_id: 提醒日期}，**每条作业只提醒一次**，不被三时段的
+      「每天一次」规则限制，也不占用它们的清单名额；
+    - 返回 (通知文案, 新记账)。没有要提醒的就返回 ("", 原记账)。
+    tasks 可注入（selftest 离线测），缺省读 data/study/tasks.json。
+    """
+    if tasks is None:
+        tasks = load_list(DATA_DIR / "study" / "tasks.json")
+    import render_readme as rr
+    kept, _ = rr.actionable(tasks, now)
+    kept = sort_by_deadline(kept)
+    iso = now.date().isoformat()
+    hits = []
+    for t in kept:
+        if t.get("id") in ledger:
+            continue
+        dl = parse_datetime(t.get("deadline"))
+        if not dl:
+            continue
+        remain_h = (dl - now).total_seconds() / 3600
+        if 0 < remain_h <= URGENT_HOURS:
+            hits.append((t, remain_h))
+    if not hits:
+        return "", ledger
+    hits.sort(key=lambda x: x[1])
+    new_ledger = dict(ledger)
+    lines = [f"⏰ 紧急：{len(hits)} 条作业 {URGENT_HOURS} 小时内截止，还没交："]
+    for t, remain_h in hits:
+        m = max(1, int(remain_h * 60))
+        lines.append(f"- {t.get('course')} · {t.get('title')} · "
+                     f"剩约 {m // 60} 小时 {m % 60} 分钟")
+        if t.get("url"):
+            lines.append(f"  ↳ {t['url']}")
+    return "\n".join(lines), {**new_ledger, **{t.get("id"): iso for t, _ in hits}}
+
+
 def diary_facts(kind: str, today: date) -> str:
     """把日记数据整理成确定性事实清单。AI 只准用这里给出的信息，不许编造。
 
@@ -126,10 +237,11 @@ def _task_line(t: dict) -> list[str]:
     return out
 
 
-def _actionable_sorted(now: datetime) -> list[dict]:
+def _actionable_sorted(now: datetime, tasks: list | None = None) -> list[dict]:
     """能做的作业（待完成且未逾期），按截止近→远。与 README 任务清单同口径。"""
     import render_readme as rr
-    tasks = load_list(DATA_DIR / "study" / "tasks.json")
+    if tasks is None:
+        tasks = load_list(DATA_DIR / "study" / "tasks.json")
     kept, _ = rr.actionable(tasks, now)
     return sort_by_deadline(kept)
 
@@ -137,10 +249,11 @@ def _actionable_sorted(now: datetime) -> list[dict]:
 def info_block(kind: str, now: datetime, hit: str) -> str:
     """确定性清单，拼在 AI prose 后面。**不经过 AI**，保证用户点名的内容一条不漏。
 
-    午/晚的清单在 v1.5.6 加厚（用户 2026-11-14：「中午和晚上的信息太少了」）：
-    午 = 今日新发作业 + 7 天内截止（≤3）+ 今日新公告（≤2）；
-    晚 = 48h 内截止未交（≤3）+ 本周作业盘点 + 明日截止预告（≤2）。
-    数据全部来自仓库现成 JSON，零新增数据源；仍然不碰课表（铁律）。
+    分工（用户 2026-11-14：「作业部分可以重复」+ 三时段增值）：
+    早 = 作业总览 + 公告总览（公告只在早报）；
+    午 = 今日新发作业 + 7 天内截止 + 每日英语 + 名言回顾；
+    晚 = 48h 截止未交 + 本周盘点 + 明日预告 + 明早天气 + 当天日记名言（在 diary_facts）。
+    另有独立的 6h 紧急提醒通道（urgent6_pick），不受三时段「每天一次」限制。
     """
     parts: list[str] = []
     today_iso = now.date().isoformat()
@@ -171,18 +284,12 @@ def info_block(kind: str, now: datetime, hit: str) -> str:
             if len(week) > 3:
                 lines.append(f"（还有 {len(week) - 3} 条，全量在 README）")
             parts.append("\n".join(lines))
-        notices = load_list(DATA_DIR / "notice" / "notices.json")
-        hot_new = [n for n in notices
-                   if n.get("first_seen") == today_iso
-                   and (n.get("score") or 0) >= NOTICE_MIN_SCORE]
-        if hot_new:
-            hot_new.sort(key=lambda n: -(n.get("score") or 0))
-            lines = ["📢 今天新出的值得关注公告："]
-            for n in hot_new[:2]:
-                lines.append(f"- {n.get('title')}")
-                if n.get("url"):
-                    lines.append(f"  ↳ {n['url']}")
-            parts.append("\n".join(lines))
+        en = daily_english()
+        if en:
+            parts.append("🇬🇧 今日英语一句\n" + en)
+        recall = quote_recall(now.date())
+        if recall:
+            parts.append("📖 名言回顾（你日记里的话）\n" + recall)
     else:
         kept = _actionable_sorted(now)
         soon = [t for t in kept
@@ -211,6 +318,9 @@ def info_block(kind: str, now: datetime, hit: str) -> str:
             for t in due_tmr[:2]:
                 lines.append(f"- {t.get('course')} · {t.get('title')}")
             parts.append("\n".join(lines))
+        w = weather_tomorrow(now)
+        if w:
+            parts.append(f"🌤 明早天气：{w}")
     if hit:
         parts.append(f"💬 今日一言：{hit}")
     return "\n\n".join(parts)

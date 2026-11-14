@@ -142,6 +142,21 @@ def do_tick() -> bool:
         if ok:
             rt["pushed"][kind] = now.date().isoformat()
 
+    # 6 小时紧急截止提醒（用户 2026-11-14）：独立于三时段「每天一次」的通道，
+    # 每条作业只提醒一次（runtime.urgent6 记账 task_id → 日期）。写 /tmp/push-urgent.txt，
+    # workflow 的飞书步骤看到该文件就发，常规成功静默轮也不例外。
+    try:
+        import daily_push as dp
+        msg, new_ledger = dp.urgent6_pick(now, rt.get("urgent6") or {})
+        if msg:
+            dp.URGENT_MESSAGE_PATH.write_text(msg, encoding="utf-8")
+            rt["urgent6"] = new_ledger
+            results["urgent6"] = True
+            log(f"[urgent6] {msg.splitlines()[0]}")
+    except Exception as e:
+        log(f"[tick] 紧急提醒检查异常：{exc_brief(e)}", level="ERROR")
+        results["urgent6"] = False
+
     try:
         results["finalize"] = do_finalize()
     except Exception as e:
@@ -216,6 +231,10 @@ def do_probe() -> bool:
         # 图床 i.pixiv.re 与作品页 www.pixiv.net 分开测：前者要能下载，后者只要用户点得开。
         ("二次元图 API", "https://nekos.best/api/v2/neko?amount=1"),
         ("Pixiv 图床", "https://i.pixiv.re/"),
+        # v1.5.7 新数据源：午安每日英语（金山词霸）、晚安明日天气（open-meteo，均免费无 key）
+        ("每日英语", "https://open.iciba.com/dsapi/"),
+        ("明日天气", "https://api.open-meteo.com/v1/forecast?latitude=33.77&longitude=113.19"
+                     "&daily=temperature_2m_max&timezone=Asia/Shanghai&forecast_days=1"),
     ]
     ua = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
           "(KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36")
@@ -543,6 +562,24 @@ def do_selftest() -> bool:
         fb = dp.fallback_message(k, facts, "测试一言（来源）")
         check(f"{k} 降级文案含事实与一言", len(fb) > 20 and "测试一言" in fb)
 
+    # 6h 紧急截止提醒（用户 2026-11-14）：纯函数，离线可测。注入合成任务。
+    u_now = now_bj()
+    from datetime import timedelta as _td
+    def _mk_u(tid: str, hours: float, state: str = "pending") -> dict:
+        return {"id": tid, "course": "测试课", "title": f"作业{tid}", "state": state,
+                "deadline": (u_now + _td(hours=hours)).isoformat(timespec="seconds"),
+                "url": f"https://example.com/{tid}", "first_seen": u_now.date().isoformat()}
+    msg, led = dp.urgent6_pick(u_now, {}, [
+        _mk_u("u1", 3), _mk_u("u2", 9), _mk_u("u3", 3, state="done"), _mk_u("u4", -1)])
+    check("紧急提醒只挑 6h 内待完成（3h 选中 / 9h、已完成、逾期不选）",
+          "作业u1" in msg and "作业u2" not in msg and "作业u3" not in msg and "作业u4" not in msg)
+    msg2, led2 = dp.urgent6_pick(u_now, led, [
+        _mk_u("u1", 3), _mk_u("u5", 1)])
+    check("已提醒过的作业不再提醒（每条只提醒一次）",
+          "作业u1" not in msg2 and "作业u5" in msg2 and "u1" in led2 and "u5" in led2)
+    check("urgent6 断言不看 deadline 字段漂移（签名去重在 urgent_alerts，这里按 id 记账）",
+          isinstance(led2, dict))
+
     # 名言只放 3 条、由 AI 的 value 分挑（用户 2026-11-14）。挑选是纯函数，离线可验。
     check("名言 README 上限为 3", rr.QUOTE_LIMIT == 3, str(rr.QUOTE_LIMIT))
     qs = [{"id": "a", "first_seen": "2026-11-14", "value": 2},
@@ -775,7 +812,10 @@ def do_selftest() -> bool:
     check("推送时段传给飞书脚本（决定卡片标题）",
           "NOTIFY_KIND: ${{ steps.mode.outputs.mode }}" in yml)
     check("每轮清掉上一轮的文案与图片残留",
-          "rm -f /tmp/push-message.txt /tmp/push-image.json" in yml)
+          "rm -f /tmp/push-message.txt /tmp/push-image.json /tmp/push-urgent.txt" in yml)
+    # 紧急提醒与三时段同轮时两条都必须发出（elif 会吞掉 urgent 且记账已写=永久丢失）
+    check("紧急提醒走独立 if 分支（elif 会吞掉它）",
+          "if [ -s /tmp/push-urgent.txt ]" in yml and "elif [ -s /tmp/push-urgent.txt ]" not in yml)
     wcfg = ((dw.load_json(dw.DATA_DIR / "sources.json") or {}).get("diary") or {}).get("writeback_window")
     check("sources.json 的写回窗口可解析", dw.parse_window(wcfg or dw.DEFAULT_WINDOW) is not None, str(wcfg))
 
