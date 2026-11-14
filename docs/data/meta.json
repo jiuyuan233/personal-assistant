@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-11-14T23:40:08+08:00",
+  "updated_at": "2026-11-15T00:17:40+08:00",
   "week": "第 10 周 / 共 18 周",
   "stats": {
     "pending": 3,
     "overdue": 0,
-    "today": 0,
-    "week": 3,
+    "today": 1,
+    "week": 2,
     "later": 0,
     "unknown": 0,
     "dropped": {
@@ -13,7 +13,7 @@
       "overdue": 2
     },
     "courses": 14,
-    "suffix": ""
+    "suffix": "，其中 **1 项今天截止**"
   },
   "sources": {
     "study": {

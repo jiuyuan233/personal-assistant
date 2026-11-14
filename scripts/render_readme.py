@@ -552,6 +552,13 @@ def run() -> bool:
                "plans": DATA_DIR / "diary" / "plans.json",
                "quotes": DATA_DIR / "diary" / "quotes.json"}[name]
         payload = load_json(src) or {"items": []}
+        if name == "notices":
+            # 看板公告区必须与 README/飞书早报同口径（用户 2026-11-14 要求时效过滤）。
+            # 前端零计算是本仓库原则（app.js 头注释），所以过滤在导出层做，
+            # 唯一判定仍是 utils.notice_stale()，三处共用不会漂。
+            fresh_items = [n for n in payload.get("items") or []
+                           if not notice_stale(n, now.date())]
+            payload = {**payload, "items": fresh_items}
         if name in ("plans", "quotes"):
             # 网页版不需要知道这条计划出自私有仓库的哪个文件（审计 §2.2）
             payload = {**payload, "items": [{k: v for k, v in it.items() if k != "source_file"}

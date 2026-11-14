@@ -598,6 +598,9 @@ def do_selftest() -> bool:
                      now.date()))
     check("README 公告节与飞书早报共用 notice_stale 判定",
           "notice_stale" in inspect.getsource(rr) and "notice_stale" in inspect.getsource(dp))
+    # 看板（docs/data/notices.json）也必须同口径：导出层过滤，前端零计算（app.js 头注释的约定）
+    check("看板公告导出也过时效过滤（与 README 同口径）",
+          "notice_stale" in inspect.getsource(rr.run))
 
     # 名言只放 3 条、由 AI 的 value 分挑（用户 2026-11-14）。挑选是纯函数，离线可验。
     check("名言 README 上限为 3", rr.QUOTE_LIMIT == 3, str(rr.QUOTE_LIMIT))
