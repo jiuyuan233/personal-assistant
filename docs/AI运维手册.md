@@ -92,27 +92,53 @@ python scripts/main.py selftest
 | 症状 | 根因 | 解法 |
 | --- | --- | --- |
 | `UnicodeEncodeError: 'gbk' codec can't encode '✅'` | 控制台默认 GBK | `utils.py` 已在 import 时把 stdout/stderr 重设成 UTF-8。若仍报错，用 `python -X utf8` |
-| `ModuleNotFoundError: No module named 'utils'` | **embeddable 版 Python** 带 `python311._pth`，处于 isolated 模式：既不加脚本目录进 `sys.path`，也**忽略 `PYTHONPATH`** | 用标准安装版 Python；或写个包装器 `sys.path.insert(0, scripts目录)` + `runpy.run_path(...)` |
+| `ModuleNotFoundError: No module named 'utils'` | **embeddable 版 Python** 带 `python311._pth`，处于 isolated 模式：既不加脚本目录进 `sys.path`，也**忽略 `PYTHONPATH`** | 现行方案：把 `C:\\...\\personal-assistant\\scripts` 一行**追加进 `python311._pth`**（已做，重建 Python 时记得还原该文件）；旧方案的 runpy 包装器仍在 `Temp/pa_run.py` 可用 |
 | `ZoneInfoNotFoundError: Asia/Shanghai` | 缺 tzdata | `utils.py` 已 fallback 到固定 `UTC+8`（中国 1991 年起无夏令时，等价）。要精确就 `pip install tzdata` |
 
-**这台机器上工具链已经解锁好了，别重新装一遍**（pip 在这台机器上连不上 PyPI，重装很费时间）：
+**这台机器上工具链已经解锁好了，别重新装一遍**（pip 在这台机器上直连 PyPI 不通）：
 
 | 东西 | 路径 | 说明 |
 | --- | --- | --- |
 | Python 3.11.9 | `C:/Users/XOS/AppData/Local/Temp/py311/python.exe` | embeddable 版，已装 requests / ruff / PyNaCl |
-| 离线 wheel 缓存 | `C:/Users/XOS/AppData/Local/Temp/wheels/` | `pip install --no-index --find-links` 用；**pip 直连 PyPI 不通，只能靠它** |
-| runpy 包装器 | `C:/Users/XOS/AppData/Local/Temp/pa_run.py` | 绕开 isolated mode，用法 `python.exe -X utf8 pa_run.py <模式>` |
+| GitHub 访问 | 本地代理 `http://127.0.0.1:7897` | git 要 `-c http.proxy=...`，curl 要 `-x`；**直连 github.com 不通** |
+| 本机 git 身份 | 仓库级已配 `jiuyuan233@users.noreply.github.com` | 新 clone 要重配，否则 commit 报 auto-detect 失败 |
+
+⚠️ **Temp 里的 Python 会被系统清理（2026-11-14 实际发生过）**：某天突然
+`No such file or directory`，检查发现 `python.exe` 和全部 DLL 没了、`Lib/Scripts` 幸存。
+**重建法（10 分钟）**：
+1. 下载 embeddable zip（走代理）：
+   `curl -x http://127.0.0.1:7897 -L -o py311.zip https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip`
+2. **先备份** `python311._pth`（里面加了 personal-assistant/scripts 那行），解压 zip 覆盖到 py311/，
+   **还原 _pth**（解压包自带的会盖掉你的修改）；
+3. `Lib/site-packages` 通常幸存；若 import 失败（缺 nacl/requests/ruff）就重装：
+   embeddable 版没有 pip，先下载 [get-pip.py](https://bootstrap.pypa.io/get-pip.py) 装上再装包；
+4. 验证：`python.exe --version` + `python.exe -c "import nacl, requests"` + `python.exe -m ruff --version`。
 
 ```bash
 # 本地质量门禁（与 runner 完全一致的两条）
 cd <仓库根>
 "C:/Users/XOS/AppData/Local/Temp/py311/python.exe" -m ruff check scripts --select E9,F63,F7,F82,F821,F401
-DIARY_EXCLUDE='<Secret 里的值>' "C:/Users/XOS/AppData/Local/Temp/py311/python.exe" -X utf8 \
-  "C:/Users/XOS/AppData/Local/Temp/pa_run.py" selftest      # 213 条；不设黑名单是 212 条
+DIARY_EXCLUDE='<Secret 里的值>' "C:/Users/XOS/AppData/Local/Temp/py311/python.exe" scripts/main.py selftest
+# v1.5.8 起 222 条断言（不设 DIARY_EXCLUDE 是 221 条）；认「失败 0 项」，数字随版本增长
 ```
 
 **这些路径在仓库外，不属于版本控制**；换机器就按上表三个坑重新解锁。
 **临时探测目录（含 cookie / 密码 / 日记原文）每轮结束必须删**，见 AGENT.md 铁律 2。
+
+### 2.3 两个运维现场动作（2026-11-14 实测踩过）
+
+**① 全模式串行测试（用户说「把 action 全跑一遍」时）**：写一个临时 Python 脚本（放仓库外），
+按「selftest → studydiag → probe → finalize → schedule → backfill → diary → study → notice →
+tick → all → morning → noon → night」顺序**逐个 dispatch + 轮询到 completed 再派下一个**
+——并发组 `pa-run` 只留一个 pending，**循环里必须用 run id 递增判断新 run**（dispatch 响应
+204 不带 run id，且要按 `event == "workflow_dispatch"` 过滤，别把 schedule 轮算进来）。
+**GitHub token 走环境变量传给脚本，用完删脚本**。三时段推送会真的发给用户，连发 3 条属预期。
+
+**② 推送时与定时轮的渲染撞车（rebase 冲突）**：本地跑过 `finalize` 再 push 时，
+若远端恰好有 tick 落了新的渲染提交，README/docs 会 UU 冲突。**都是生成物**：
+`git checkout --theirs <冲突文件> && git add && git rebase --continue` 接受远端数据，
+然后**用本地新代码重跑 `finalize` 再提交一次**——新代码的渲染结果就是最终正确版本。
+**绝对不要手改冲突标记**。
 
 **本地跑 `finalize` 是安全的**：零网络、零 token，只读 `data/` 和 `assets/`，重写生成物。
 **本地跑 `study`/`diary`/`notice` 会真的联网、真的花 token、`diary` 在凌晨窗口内会真的写用户的 Gitee 仓库** ——
@@ -547,8 +573,9 @@ curl -sS -H "Authorization: Bearer $GH_PAT" \
 | `FS_APP_ID`（可选） | 飞书企业自建应用 App ID | 图片改走「点开今天的图」按钮，**其余功能不受影响** |
 | `FS_APP_SECRET`（可选） | 同一应用的 App Secret | 同上；与 `FS_APP_ID` 成对，缺一个就退回按钮路径 |
 
-⚠️ **两个可选 Secret 截至 v1.5.0 尚未配置**，所以「内嵌真图」这条路径的联网部分没有真实验证过。
-取法四步见 [AI回复与自更新手册](AI回复与自更新手册.md) §6。
+✅ **两个可选 Secret 已于 2026-11-14 配置**，「内嵌真图」路径已真机打通
+（日志 `[image] 已换取 image_key`；首验还抓到并修复了 `img_key` 属性名 bug）。
+轮换方法见 [AI回复与自更新手册](AI回复与自更新手册.md) §6.2。
 
 **⚠️ `DIARY_EXCLUDE` 的值为什么不能进仓库**：路径名本身就暴露了用户把哪些主题标成私人。
 所以仓库里只出现这个名字，selftest 在运行时读它做反向守卫（见 §5.8）。
@@ -807,17 +834,19 @@ tree sha 与本地 `HEAD^{tree}` 一致（`2651cc6d…`），本地 main 已用 
 
 ### 尚未真实验证 —— 接手后优先补
 
+下表在 2026-11-14 清过一次账：**飞书内嵌真图、降噪闸门、名言价值分 runner 端到端、
+probe 15/17 目标可达**都已在真实 runner 上验证（证据见 CHANGELOG v1.5.2–v1.5.7），
+不再列为待验。剩下的：
+
 | 项 | 为什么还没验 | 怎么补 |
 | --- | --- | --- |
 | **写回的 POST 新建 / sha 冲突重试** | 11-14 00:08 那次只走了 **PUT 更新**分支 | 按 §5.3，等它们自然触发时**去 Gitee 网页亲眼看** |
 | **待考考试行解析 + exam 深链能否打开** | 样本里两场考试都是「已完成」 | 第一次遇到待考时核对 `onclick` 函数名和倒计时结构，并点一次深链 |
 | **详情页年份推算** | 学期交界/暑假前后可能错一年 | 12 月底和 1 月初人工核对一次 |
 | **Pages 的像素级外观** | 数值全对，但 Qoder 内置浏览器 `viewport=0×0`，`take_screenshot` 报 `NATIVE_BROWSER_VIEWPORT_UNAVAILABLE` | 用真浏览器截一张图，确认红线没有遮住课程名 |
-| **飞书内嵌真图（`upload()` 的联网部分）** | `FS_APP_ID`/`FS_APP_SECRET` 只能由用户创建自建应用后填入，**截至 v1.5.0 未配置**。离线部分已验（无凭证不上传、两种卡片结构、7 个 JS 场景） | 用户补两个 Secret → 派发 `morning` → 日志出现 `[image] 已换取 image_key（N 字符）`，飞书里看到内嵌图 |
-| **降噪闸门在真实 runner 上的表现** | 离线用拦截 `https.request` 验过 7 个场景（含「常规成功 → exit 0 且 0 条消息」），**但没在真实 webhook 上跑过一次成功的 tick** | 派发一次 `tick`，确认飞书**没收到**任何消息、日志有 `常规成功且无紧急任务…静默` |
 | **`[urgent]` 24h 窗口 + 跨轮去重** | `urgent_alerts()` 是纯函数、5 条离线断言守着；**真实数据里还没出现过 24h 内截止的作业** | 等一条真实临期作业，确认第一次发橙卡、第二次打 `[urgent-same]` 且不发卡 |
-| **名言价值分的 runner 端到端** | 本地 `pick_quotes()` 排序已验；**`backfill` 的打分分支尚未在 runner 上跑过** | 派发 `backfill` → 看 `名言价值打分：补上 N 条` → 派发 `finalize` → README 恰好 3 条且带 `· AI 价值 N/10` |
-| **新增 5 个 probe 目标的海外可达性** | 2026-11-13 那次实测只有 10 个目标；科研处/研究生处/一言/nekos.best/i.pixiv.re 是后加的 | 派发 `probe`，重点看这 5 行 |
+| **`urgent6` 6h 紧急提醒的真实触发** | v1.5.7 新增；逻辑 5 条离线断言守着，但**真实数据里还没有作业进入过 6h 窗口**（高数 11-15 23:59 截止，理论窗口在 11-15 18:00 后） | 等真实触发或临时派发 `tick`，确认收到红色 ⏰ 纯文本且**只提醒一次**（`runtime.urgent6` 记账） |
+| **iciba / open-meteo 在 Actions 出口的长稳** | v1.5.7 起纳入 probe，11-14 那轮 **17/17 全通**；但只观测了一天 | 后续 probe 轮里留意这两行；挂了走降级（无英语/无天气，消息照发） |
 
 **已验过的别再列进这张表**：
 - 日记写回的 PUT 分支已于 **2026-11-14 00:08:14** 真实验证

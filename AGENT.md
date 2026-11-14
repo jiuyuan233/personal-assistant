@@ -472,18 +472,18 @@ Actions 上手动派发 `backfill`；本地 `python scripts/main.py backfill`。
   （`{'work': 2, 'exam': 1, 'pending': 2, 'eval_window': True, 'work_window': True, 'deadline': True}`）。
   **不需要 self-hosted runner，也不需要国内定时任务兜底。**
   学校日后若封海外 IP，重跑 `probe` 即可确认，退路见 DEV_GUIDE 4.3。
-- **Secrets 已配置（2026-11-13）**：`FS_WEBHOOK`、`AI_API_KEY`、`GITEE_TOKEN`、
-  `CX_USERNAME`、`CX_PASSWORD`、`DIARY_EXCLUDE`，Variables `AI_BASE_URL`、`AI_MODEL`。
-  **另有 2 个可选 Secret 尚未配置**：`FS_APP_ID` / `FS_APP_SECRET`（飞书企业自建应用，
-  只有配了才能在消息里内嵌图片；不配就走「点开今天的图」按钮，功能不缺）。
-  取法见 [docs/AI回复与自更新手册.md](docs/AI回复与自更新手册.md) §6。
+- **Secrets 已配置**：`FS_WEBHOOK`、`AI_API_KEY`、`GITEE_TOKEN`、`CX_USERNAME`、
+  `CX_PASSWORD`、`DIARY_EXCLUDE`（2026-11-13）+ `FS_APP_ID` / `FS_APP_SECRET`
+  （2026-11-14，飞书自建应用，内嵌真图链路已真机打通），Variables `AI_BASE_URL`、`AI_MODEL`。
+  加密上传与轮换方法见 [docs/AI回复与自更新手册.md](docs/AI回复与自更新手册.md) §6。
   **能用 API 写，不必走网页**（轮换凭据时照这个做）：
   GET `/actions/secrets/public-key` 取 base64 公钥与 `key_id` → 用 libsodium `crypto_box_seal`
-  加密 → PUT `/actions/secrets/{name}`，body 为 `{encrypted_value, key_id}`。
-  **GitHub 返回 204 本身就是加密正确的证明**（解不开会 422）。
+  加密 → PUT `/actions/secrets/{name}`，body 为 `{encrypted_value, key_id}`（PUT 201/204 都算成功）。
   本机 PATH 里没有 node/npm/gh，但有两个可用运行时：
   `C:/Program Files/Adobe/Adobe Creative Cloud Experience/libs/node.exe`（Node v24，自带 fetch）、
   `C:/Users/XOS/AppData/Local/Temp/py311/python.exe`（3.11.9 embeddable，本地跑 selftest/ruff 用）。
+  ⚠️ **这个 Temp 里的 Python 会被系统清理**（2026-11-14 实际发生过：exe 和 DLL 没了、
+  Lib/Scripts 幸存）。重建法见 [docs/AI运维手册.md](docs/AI运维手册.md)「本机工具链」。
   加密库从 npm 官方 registry 取 `libsodium-wrappers`，**它依赖 `libsodium`，要一并下载**；
   解压到仓库外的临时目录充当 `node_modules`。两个坑：GNU tar 会把 `C:/...` 的冒号当远程主机，
   必须加 `--force-local`；脚本要写成真实文件再跑，`node -e` 里 `process.chdir` 不改变模块解析基准。
@@ -580,7 +580,8 @@ Actions 上手动派发 `backfill`；本地 `python scripts/main.py backfill`。
 
 | 文件 | 内容 |
 | --- | --- |
-| **[docs/AI运维手册.md](docs/AI运维手册.md)** | **接手第一份**：可执行的改动流程、验证方法、派发方式、逐功能验收清单、踩坑速查 |
+| **[docs/AI角色与分工.md](docs/AI角色与分工.md)** | **先读这个**：开发 AI 与日常 AI 是两个 AI——各自是什么、能做什么、入口文档、日常 AI 的完整行为设定（用户 2026-11-14 点名要求写清） |
+| **[docs/AI运维手册.md](docs/AI运维手册.md)** | 开发 AI 的操作手册：可执行的改动流程、验证方法、派发方式、逐功能验收清单、踩坑速查 |
 | [DEV_GUIDE.md](DEV_GUIDE.md) | 从零部署：建仓、配 Secrets、首次运行 |
 | [docs/技术路径.md](docs/技术路径.md) | 每个技术选型的理由、被否决的方案、实测证据 |
 | [docs/工作原理.md](docs/工作原理.md) | 一次运行的完整数据流 |

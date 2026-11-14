@@ -113,7 +113,8 @@ git push -u origin main
 | `FS_APP_SECRET` | 同一应用的 App Secret | 与 `FS_APP_ID` 成对使用，缺一个就退回按钮路径。应用必须和 webhook 机器人**在同一个租户**，且开通「上传图片」权限 |
 
 取法四步见 [docs/AI回复与自更新手册.md](docs/AI回复与自更新手册.md) §6。
-⚠️ **截至 v1.5.0 这两个 Secret 尚未配置**，内嵌图路径的联网部分因此没有真实验证过。
+✅ **这两个 Secret 已于 2026-11-14 配置**，内嵌图路径已真机验证（日志 `[image] 已换取 image_key`）。
+凭证失效时自动退回按钮路径，消息不会断。
 
 **`DIARY_EXCLUDE` 的两段作用**（`diary_collector.excluded_prefixes()` / `is_excluded()` / `drop_excluded()`）：
 
