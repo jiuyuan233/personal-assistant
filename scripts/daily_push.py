@@ -18,7 +18,7 @@
 from __future__ import annotations
 
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -118,27 +118,99 @@ def diary_facts(kind: str, today: date) -> str:
     return "\n".join(lines)
 
 
+def _task_line(t: dict) -> list[str]:
+    """一条作业两行：条目 + 可点链接（与 study_facts 的排版一致）。"""
+    out = [f"- {t.get('course')} · {t.get('title')} · 截止 {_when(t)}"]
+    if t.get("url"):
+        out.append(f"  ↳ {t['url']}")
+    return out
+
+
+def _actionable_sorted(now: datetime) -> list[dict]:
+    """能做的作业（待完成且未逾期），按截止近→远。与 README 任务清单同口径。"""
+    import render_readme as rr
+    tasks = load_list(DATA_DIR / "study" / "tasks.json")
+    kept, _ = rr.actionable(tasks, now)
+    return sort_by_deadline(kept)
+
+
 def info_block(kind: str, now: datetime, hit: str) -> str:
-    """确定性清单，拼在 AI prose 后面。**不经过 AI**，保证用户点名的内容一条不漏。"""
+    """确定性清单，拼在 AI prose 后面。**不经过 AI**，保证用户点名的内容一条不漏。
+
+    午/晚的清单在 v1.5.6 加厚（用户 2026-11-14：「中午和晚上的信息太少了」）：
+    午 = 今日新发作业 + 7 天内截止（≤3）+ 今日新公告（≤2）；
+    晚 = 48h 内截止未交（≤3）+ 本周作业盘点 + 明日截止预告（≤2）。
+    数据全部来自仓库现成 JSON，零新增数据源；仍然不碰课表（铁律）。
+    """
     parts: list[str] = []
+    today_iso = now.date().isoformat()
     if kind == "morning":
         sf, _ = study_facts(now)
         parts.append("📚 待完成作业\n" + sf)
         nf, _ = notice_facts()
         parts.append("📢 值得关注的公告\n" + nf)
     elif kind == "noon":
-        _, kept = study_facts(now)
-        if kept:
-            t = kept[0]
-            parts.append(f"下午最该动的一件事：{t.get('course')} · {t.get('title')}"
-                         f"（截止 {_when(t)}）")
-    else:
+        kept = _actionable_sorted(now)
         tasks = load_list(DATA_DIR / "study" / "tasks.json")
-        iso = now.date().isoformat()
-        due_open = [t for t in tasks
-                    if t.get("state") == "pending"
-                    and (parse_datetime(t.get("deadline")) or now).date().isoformat() == iso]
-        parts.append(f"今天到期的作业里还有 {len(due_open)} 条没做完。")
+        fresh = [t for t in tasks
+                 if t.get("first_seen") == today_iso and t.get("state") == "pending"]
+        if fresh:
+            lines = [f"🆕 今天新发的作业 {len(fresh)} 条："]
+            for t in fresh[:3]:
+                lines += _task_line(t)
+            if len(fresh) > 3:
+                lines.append(f"（还有 {len(fresh) - 3} 条，全量在 README）")
+            parts.append("\n".join(lines))
+        week = [t for t in kept
+                if t.get("deadline")
+                and (parse_datetime(t["deadline"]) or now) <= now + timedelta(days=7)]
+        if week:
+            lines = [f"⏳ 7 天内截止 {len(week)} 条："]
+            for t in week[:3]:
+                lines += _task_line(t)
+            if len(week) > 3:
+                lines.append(f"（还有 {len(week) - 3} 条，全量在 README）")
+            parts.append("\n".join(lines))
+        notices = load_list(DATA_DIR / "notice" / "notices.json")
+        hot_new = [n for n in notices
+                   if n.get("first_seen") == today_iso
+                   and (n.get("score") or 0) >= NOTICE_MIN_SCORE]
+        if hot_new:
+            hot_new.sort(key=lambda n: -(n.get("score") or 0))
+            lines = ["📢 今天新出的值得关注公告："]
+            for n in hot_new[:2]:
+                lines.append(f"- {n.get('title')}")
+                if n.get("url"):
+                    lines.append(f"  ↳ {n['url']}")
+            parts.append("\n".join(lines))
+    else:
+        kept = _actionable_sorted(now)
+        soon = [t for t in kept
+                if t.get("deadline")
+                and (parse_datetime(t["deadline"]) or now) <= now + timedelta(hours=48)]
+        if soon:
+            lines = [f"🔥 48 小时内截止还没交的 {len(soon)} 条："]
+            for t in soon[:3]:
+                lines += _task_line(t)
+            if len(soon) > 3:
+                lines.append(f"（还有 {len(soon) - 3} 条，全量在 README）")
+            parts.append("\n".join(lines))
+        tasks = load_list(DATA_DIR / "study" / "tasks.json")
+        monday_iso = (now.date() - timedelta(days=now.date().weekday())).isoformat()
+        this_week = [t for t in tasks if (t.get("first_seen") or "") >= monday_iso]
+        done_w = [t for t in this_week if t.get("state") != "pending"]
+        open_w = [t for t in this_week if t.get("state") == "pending"]
+        parts.append(f"📊 本周新发作业 {len(this_week)} 条：已交/处理 {len(done_w)} 条，"
+                     f"还压着 {len(open_w)} 条。")
+        tomorrow_iso = (now.date() + timedelta(days=1)).isoformat()
+        due_tmr = [t for t in kept
+                   if t.get("deadline")
+                   and (parse_datetime(t["deadline"]) or now).date().isoformat() == tomorrow_iso]
+        if due_tmr:
+            lines = [f"📅 明天截止 {len(due_tmr)} 条："]
+            for t in due_tmr[:2]:
+                lines.append(f"- {t.get('course')} · {t.get('title')}")
+            parts.append("\n".join(lines))
     if hit:
         parts.append(f"💬 今日一言：{hit}")
     return "\n\n".join(parts)
