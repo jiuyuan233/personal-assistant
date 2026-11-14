@@ -10,12 +10,12 @@
   python scripts/main.py notice     # 校园公告 → 渲染
   python scripts/main.py schedule   # 课表 → 渲染
   python scripts/main.py all        # 全部采集 → 渲染
-  python scripts/main.py backfill   # 给老名言补 AI 点评（一次性，联网）
+  python scripts/main.py backfill   # 给老名言补 AI 点评 + 价值打分（一次性，联网）
   python scripts/main.py probe      # 海外 IP 连通性 + 解析冒烟
   python scripts/main.py selftest   # 解析器自检（离线，不需要凭据）
-  python scripts/main.py morning    # 早 7 点飞书：今日任务（来源日记，不带课表）+ 一言
-  python scripts/main.py noon       # 中午飞书：问好 + 鼓励
-  python scripts/main.py night      # 晚上飞书：当日总结（来源日记）
+  python scripts/main.py morning    # 早 7 点飞书：作业 + 公告 + 一言 + 二次元图 + 中文问好
+  python scripts/main.py noon       # 中午飞书：问好 + 鼓励 + 下午最该动的一件事
+  python scripts/main.py night      # 晚上飞书：当天日记总结（不带课表）
 
 为什么只有一个 cron（审计 §4.1）：原来 8 条 cron 各自映射一个模式，实测出现过
 连续 1 小时 33 分钟一次都没触发。GitHub 对同一 workflow 的 schedule 有节流，
@@ -23,8 +23,11 @@
 现在改成一条 `*/20 * * * *` → tick，频率由 data/runtime.json 里的时间戳决定，
 调度逻辑在 Python 里，可离线自检，也能在日志里看到「这轮为什么跑/不跑」。
 
-三个推送模式只读 data/diary，不写数据、不渲染 README，文案落到 /tmp/push-message.txt，
-由 workflow 的飞书步骤读出来发纯文本。AI 或一言失败会降级推送，不会静默不发。
+三个推送模式只读 data/（diary + study + notice），不写数据、不渲染 README。
+文案落到 /tmp/push-message.txt，图的信息落到 /tmp/push-image.json，由 workflow 的
+飞书步骤读出来发卡片（无图/卡片被拒收时退回纯文本）。AI 或一言或图失败都降级推送，
+不会静默不发。**常规采集成功不再发状态卡片**（用户 2026-11-14：信息太多了），
+降噪闸门在 scripts/notify_feishu.js：只有失败/取消或 [urgent] 才发状态卡。
 """
 from __future__ import annotations
 
@@ -208,6 +211,10 @@ def do_probe() -> bool:
         ("AI 中转", "https://api.chatanywhere.org/v1/models"),
         ("飞书", "https://open.feishu.cn/"),
         ("一言", "https://v1.hitokoto.cn/"),
+        # 早报二次元图：nekos.best 是选定的 SFW 源（选型实测见 anime_image.py 文档串）。
+        # 图床 i.pixiv.re 与作品页 www.pixiv.net 分开测：前者要能下载，后者只要用户点得开。
+        ("二次元图 API", "https://nekos.best/api/v2/neko?amount=1"),
+        ("Pixiv 图床", "https://i.pixiv.re/"),
     ]
     ua = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
           "(KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36")
@@ -533,6 +540,84 @@ def do_selftest() -> bool:
         fb = dp.fallback_message(k, facts, "测试一言（来源）")
         check(f"{k} 降级文案含事实与一言", len(fb) > 20 and "测试一言" in fb and "未完成计划" in fb)
 
+    # 名言只放 3 条、由 AI 的 value 分挑（用户 2026-11-14）。挑选是纯函数，离线可验。
+    check("名言 README 上限为 3", rr.QUOTE_LIMIT == 3, str(rr.QUOTE_LIMIT))
+    qs = [{"id": "a", "first_seen": "2026-11-14", "value": 2},
+          {"id": "b", "first_seen": "2026-11-01", "value": 9},
+          {"id": "c", "first_seen": "2026-11-10", "value": 6},
+          {"id": "d", "first_seen": "2026-11-13"},
+          {"id": "e", "first_seen": "2026-11-12", "value": 9}]
+    got = [q["id"] for q in rr.pick_quotes(qs)]
+    check("名言按 AI 价值降序取前 3（同分新的在前）", got == ["e", "b", "c"], str(got))
+    check("没打分的名言排最后", rr.pick_quotes(qs, 5)[-1]["id"] == "d")
+    check("名言不足 3 条时不开天窗", len(rr.pick_quotes(qs[:2])) == 2)
+    check("一条名言都没有时返回空列表", rr.pick_quotes([]) == [])
+
+    # 早报清单：用户点名的作业 + 公告 + 一言必须在，且清单不经过 AI（prose/清单分离）。
+    blk = dp.info_block("morning", now, "测试一言（来源）")
+    check("早报清单含待完成作业", "待完成作业" in blk)
+    check("早报清单含值得关注的公告", "值得关注的公告" in blk)
+    check("早报清单含一言", "今日一言" in blk and "测试一言" in blk)
+    check("三个时段的清单都不带课表",
+          all("课表" not in dp.info_block(k, now, "") and "上课" not in dp.info_block(k, now, "")
+              for k in dp.KINDS))
+    merged_fb = dp.fallback_message("morning", facts, "") + "\n\n" + blk
+    check("降级路径里一言只出现一次", merged_fb.count("今日一言") == 1,
+          str(merged_fb.count("今日一言")))
+    from dedup import load_list as _ll, sort_by_deadline as _sbd
+    push_kept = dp.study_facts(now)[1]
+    readme_kept, _ = rr.actionable(_ll(rr.DATA_DIR / "study" / "tasks.json"), now)
+    check("早报作业与 README 任务清单同一口径",
+          [t["id"] for t in push_kept] == [t["id"] for t in _sbd(readme_kept)])
+
+    # 紧急告警降噪：只认 24h 内截止，同一批不重复发卡。
+    soon_sample = [{"id": "t1", "course": "高等数学A", "title": "作业",
+                    "deadline": now.isoformat(timespec="seconds")},
+                   {"id": "t2", "course": "大学英语", "title": "测验",
+                    "deadline": now.isoformat(timespec="seconds")}]
+    sig1, lines1 = study_collector.urgent_alerts(soon_sample, None)
+    check("新出现的紧急任务会告警",
+          len(lines1) == 2 and all(x.startswith("[urgent]") for x in lines1), str(lines1)[:80])
+    sig2, lines2 = study_collector.urgent_alerts(soon_sample, sig1)
+    check("同一批紧急任务不重复告警",
+          sig2 == sig1 and not any(x.startswith("[urgent]") for x in lines2), str(lines2)[:80])
+    drifted = [dict(t, deadline=(now + timedelta(minutes=7)).isoformat(timespec="seconds"))
+               for t in soon_sample]
+    check("倒计时漂移不会让签名变化（否则每小时重复发卡）",
+          study_collector.urgent_alerts(drifted, sig1)[0] == sig1)
+    check("没有紧急任务就不告警", study_collector.urgent_alerts([], sig1) == ("", []))
+    check("紧急告警最多 5 条", len(study_collector.urgent_alerts(soon_sample * 4, None)[1]) == 5)
+
+    # 二次元图：选图与「无凭证不上传」都是离线可验的；取图/上传要联网，不在自检里跑。
+    import os as _os
+
+    import anime_image as aimg
+    check("图源判定认 Pixiv", aimg.is_pixiv({"source_url": "https://www.pixiv.net/artworks/1"}))
+    check("非 Pixiv 图源如实标注", not aimg.is_pixiv({"source_url": "https://example.com/a"}))
+    cand = [{"url": "https://cdn/1.png", "source_url": "https://example.com/a"},
+            {"url": "https://cdn/2.png", "source_url": "https://www.pixiv.net/artworks/2"}]
+    check("优先挑 Pixiv 图源的候选", aimg.pick(cand)["url"].endswith("2.png"))
+    check("没有 Pixiv 候选时退回任意一张", aimg.pick(cand[:1])["url"].endswith("1.png"))
+    check("空候选不抛异常", aimg.pick([]) is None and aimg.pick([{}]) is None)
+    _saved_env = {k: _os.environ.pop(k, None) for k in ("FS_APP_ID", "FS_APP_SECRET")}
+    try:
+        check("没配飞书应用凭证时不上传（走链接模式）",
+              aimg.upload("https://cdn/1.png") == "")
+    finally:
+        for k, v in _saved_env.items():
+            if v is not None:
+                _os.environ[k] = v
+
+    # 飞书降噪与图片双路径写在 JS 里，Python 侧只能做源码守卫（node 不在门禁里跑）。
+    js = (rr.REPO_ROOT / "scripts" / "notify_feishu.js").read_text(encoding="utf-8")
+    check("常规成功静默闸门存在",
+          "常规成功且无紧急任务" in js and "status === 'success' && urgent.length === 0" in js)
+    check("逾期不再作为发卡理由", "detectOverdue" not in js)
+    check("卡片被拒收时退回纯文本", "pushFallbackText" in js and "退回纯文本重发" in js)
+    check("有 image_key 才内嵌真图，否则给按钮",
+          "image.image_key" in js and "点开今天的图" in js)
+    check("推送卡片标题按早中晚区分", all(k in js for k in ("morning", "noon", "night")))
+
     # 时间线映射：节课内按真实比例走，课间停在两行交界，超出当天范围钳住
     import week_svg as ws
 
@@ -668,6 +753,14 @@ def do_selftest() -> bool:
     # 永远走「跳过」分支 —— 实测 backfill 那轮就是这样，等于平时没有守卫。
     _n_inject = yml.count("DIARY_EXCLUDE: ${{ secrets.DIARY_EXCLUDE }}")
     check("质量门禁也注入黑名单（守卫每轮都跑）", _n_inject == 2, str(_n_inject))
+    # 图片双路径：凭证只引用 Secret 名；没配也能推送（upload 返回空 → 按钮链接）。
+    check("飞书应用凭证只引用 Secret 名",
+          "FS_APP_ID: ${{ secrets.FS_APP_ID }}" in yml
+          and "FS_APP_SECRET: ${{ secrets.FS_APP_SECRET }}" in yml)
+    check("推送时段传给飞书脚本（决定卡片标题）",
+          "NOTIFY_KIND: ${{ steps.mode.outputs.mode }}" in yml)
+    check("每轮清掉上一轮的文案与图片残留",
+          "rm -f /tmp/push-message.txt /tmp/push-image.json" in yml)
     wcfg = ((dw.load_json(dw.DATA_DIR / "sources.json") or {}).get("diary") or {}).get("writeback_window")
     check("sources.json 的写回窗口可解析", dw.parse_window(wcfg or dw.DEFAULT_WINDOW) is not None, str(wcfg))
 
@@ -931,7 +1024,7 @@ def do_selftest() -> bool:
     # §5.2 文档是交接材料：引用了不存在的函数，下一个 AI 会去找、找不到、然后自己造一个
     mods = ("render_readme", "study_collector", "diary_collector", "diary_writeback",
             "notice_collector", "schedule_parser", "week_svg", "dedup", "utils",
-            "main", "daily_push", "ai_client", "prompts")
+            "main", "daily_push", "ai_client", "prompts", "anime_image")
     # 排除文件扩展名：`prompts.py` 是文件名不是函数引用，早先的写法会把 .py 当函数名
     exts = ("py", "md", "json", "js", "yml", "yaml", "ics", "svg", "txt", "html", "css")
     ref_re = _re.compile(r"`(" + "|".join(mods) + r")\.([A-Za-z_][A-Za-z0-9_]*)`")
@@ -972,7 +1065,8 @@ def do_selftest() -> bool:
                 "变更文件", "名言合并", "计划合并", "公告合并", "文案来源", "解析冒烟",
                 "课表解析", "本周课表 SVG 已生成", "README 已生成", "任务清单",
                 "凌晨写回窗口", "不在凌晨窗口", "写回：", "低置信度丢弃", "计划归档",
-                "清理黑名单生效前入库的私人条目", "课表源文件污染修复")
+                "清理黑名单生效前入库的私人条目", "课表源文件污染修复",
+                "名言价值打分", "[urgent-same]", "[image] 选中", "[push]")
     missing = [s for s in promised if s not in src_all]
     check("运维手册承诺的日志关键字都真实存在", not missing, str(missing))
 

@@ -1,27 +1,41 @@
-"""飞书三时段推送：早 7 点今日任务、中午问好鼓励、晚上当日总结。
+"""飞书三时段推送：早 7 点作业+公告+一言+二次元图、中午问好鼓励、晚上日记总结。
 
-数据只来自日记（plans.json / quotes.json），**不带课表** —— 用户明确说课表提醒不用管。
-文案由 AI 按 prompts.PERSONA（傲娇雌小鬼）生成，一言取自 https://v1.hitokoto.cn/。
+用户的要求（2026-11-14 第二次细化）：
+- 只传达重要信息，常规早中晚 3 条；**正常运行不汇报**（降噪在 notify_feishu.js 做）。
+- 早上：待完成的作业 + 值得关注的公告 + 一言（https://v1.hitokoto.cn/）+ 二次元图 + 中文问好。
+- 晚上：对当天日记做总结。中午：问好 + 鼓励。
+- **不带课表**（「不用给我发要上什么课」）。
+- 内容不限于他点名的，但必须包含他点名的。
 
-关键约束：AI 失败或一言失败都必须降级推送，不能静默不发。
-用户要的是每天固定有人跟他说话，宁可文案糙一点，也不能断。
+结构上把「人话」和「清单」分开，这是本轮最重要的设计决定：
+  AI 只写人设 prose（问好/调侃/鼓励/总结），**清单由程序确定性拼在 prose 后面**。
+整条消息交给 AI 复述事实时它会漏条目、改日期；用户要的是「作业和公告一条不漏」，
+所以清单不经过 AI。AI 挂了也有降级 prose，清单照样在，消息不会断。
+
+数据口径复用 render_readme.actionable / dedup.sort_by_deadline，
+和 README 任务清单同一套判定，避免「飞书说能做、README 说已逾期」这种两处漂移。
 """
 from __future__ import annotations
 
-from datetime import date
+import os
+from datetime import date, datetime
 from pathlib import Path
 
 import requests
 
-from dedup import load_list
-from utils import DATA_DIR, log, now_bj, safe_text
+from dedup import load_list, sort_by_deadline
+from utils import DATA_DIR, log, now_bj, parse_datetime, safe_text
 
 DIARY_DIR = DATA_DIR / "diary"
-# workflow 的飞书步骤读这个文件；存在就发纯文本，不存在就走原来的运行状态卡片
-MESSAGE_PATH = Path("/tmp/push-message.txt")
+# workflow 的飞书步骤读这个文件；存在就发推送，不存在就走运行状态卡片（且只报重要信息）。
+# PUSH_MESSAGE_PATH 只为本地 Windows 调试留的口子，线上不设，默认仍是 /tmp。
+MESSAGE_PATH = Path(os.environ.get("PUSH_MESSAGE_PATH", "/tmp/push-message.txt"))
 HITOKOTO_URL = "https://v1.hitokoto.cn/"
 KINDS = ("morning", "noon", "night")
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+MORNING_TASK_LIMIT = 6
+MORNING_NOTICE_LIMIT = 3
+NOTICE_MIN_SCORE = 3
 
 
 def hitokoto() -> str:
@@ -45,6 +59,50 @@ def _plan_line(p: dict) -> str:
     if tags:
         tail += f"（{tags}）"
     return f"- {p.get('text')}{tail}"
+
+
+def _when(t: dict) -> str:
+    dt = parse_datetime(t.get("deadline"))
+    if not dt:
+        return "⚠️截止未知"
+    s = dt.strftime("%m-%d %H:%M")
+    return s if t.get("deadline_exact") else s + "≈"
+
+
+def study_facts(now: datetime) -> tuple[str, list[dict]]:
+    """待完成作业。与 README 任务清单共用 actionable()，口径不会漂。
+
+    链接紧跟在每条作业下面（不是集中堆在末尾）：飞书里一眼能对上是哪条作业的入口。
+    """
+    import render_readme as rr
+
+    tasks = load_list(DATA_DIR / "study" / "tasks.json")
+    kept, _ = rr.actionable(tasks, now)
+    kept = sort_by_deadline(kept)
+    lines = [f"待完成作业 {len(kept)} 条（只算能做的：待完成且未逾期）。"]
+    for t in kept[:MORNING_TASK_LIMIT]:
+        lines.append(f"- {t.get('course')} · {t.get('title')} · 截止 {_when(t)}")
+        if t.get("url"):
+            lines.append(f"  ↳ {t['url']}")
+    if len(kept) > MORNING_TASK_LIMIT:
+        lines.append(f"（还有 {len(kept) - MORNING_TASK_LIMIT} 条，全量在 README 任务清单）")
+    return "\n".join(lines), kept
+
+
+def notice_facts() -> tuple[str, list[dict]]:
+    """值得关注的公告：相关度 >= 3，按分降序。与 README 公告节同一门槛。"""
+    items = load_list(DATA_DIR / "notice" / "notices.json")
+    hot = sorted([n for n in items if (n.get("score") or 0) >= NOTICE_MIN_SCORE],
+                 key=lambda n: -(n.get("score") or 0))
+    lines = [f"值得关注的公告 {len(hot)} 条（相关度 {NOTICE_MIN_SCORE} 分以上）。"]
+    for n in hot[:MORNING_NOTICE_LIMIT]:
+        due = f"截止 {n['deadline']}" if n.get("deadline") else "无明确截止"
+        why = n.get("reason") or n.get("category") or ""
+        lines.append(f"- {n.get('title')} · {n.get('source')} · {due}"
+                     + (f" · {why}" if why else ""))
+        if n.get("url"):
+            lines.append(f"  ↳ {n['url']}")
+    return "\n".join(lines), hot
 
 
 def diary_facts(kind: str, today: date) -> str:
@@ -98,6 +156,32 @@ def diary_facts(kind: str, today: date) -> str:
     return "\n".join(lines)
 
 
+def info_block(kind: str, now: datetime, hit: str) -> str:
+    """确定性清单，拼在 AI prose 后面。**不经过 AI**，保证用户点名的内容一条不漏。"""
+    parts: list[str] = []
+    if kind == "morning":
+        sf, _ = study_facts(now)
+        parts.append("📚 待完成作业\n" + sf)
+        nf, _ = notice_facts()
+        parts.append("📢 值得关注的公告\n" + nf)
+    elif kind == "noon":
+        _, kept = study_facts(now)
+        if kept:
+            t = kept[0]
+            parts.append(f"下午最该动的一件事：{t.get('course')} · {t.get('title')}"
+                         f"（截止 {_when(t)}）")
+    else:
+        tasks = load_list(DATA_DIR / "study" / "tasks.json")
+        iso = now.date().isoformat()
+        due_open = [t for t in tasks
+                    if t.get("state") == "pending"
+                    and (parse_datetime(t.get("deadline")) or now).date().isoformat() == iso]
+        parts.append(f"今天到期的作业里还有 {len(due_open)} 条没做完。")
+    if hit:
+        parts.append(f"💬 今日一言：{hit}")
+    return "\n\n".join(parts)
+
+
 def fallback_message(kind: str, facts: str, hit: str) -> str:
     """AI 挂了也要发。语气保持人设，但内容全部来自确定性事实。"""
     head = {
@@ -116,31 +200,45 @@ def run(kind: str) -> dict:
         log(f"未知推送时段：{kind}", level="ERROR")
         return {"ok": False}
 
-    today = now_bj().date()
+    now = now_bj()
+    today = now.date()
     facts = diary_facts(kind, today)
     hit = hitokoto()
 
-    text = ""
+    # 只有早上带图。中午/晚上再发图就是噪音，用户要的是「早上一点二次元」。
+    image = None
+    if kind == "morning":
+        try:
+            import anime_image
+            image = anime_image.run()
+        except Exception as e:
+            log(f"取图异常：{type(e).__name__}，本次不带图", level="WARN")
+
+    prose = ""
     ai_ok = False
     try:
         from ai_client import AIClient
         from prompts import push_messages
         client = AIClient(timeout=90)
-        text = safe_text(client.chat_text(push_messages(kind, facts, hit),
-                                          temperature=0.8, max_tokens=2000), 1500).strip()
-        ai_ok = bool(text)
+        prose = safe_text(client.chat_text(push_messages(kind, facts, hit),
+                                           temperature=0.8, max_tokens=2000), 600).strip()
+        ai_ok = bool(prose)
     except Exception as e:
         log(f"推送文案 AI 生成失败：{type(e).__name__}", level="WARN")
 
     if not ai_ok:
-        text = fallback_message(kind, facts, hit)
+        # 一言不在这里给：info_block() 末尾已经拼了「💬 今日一言」，
+        # 再传一次会让降级消息里出现两条一模一样的话。
+        prose = fallback_message(kind, facts, "")
         log("AI 无输出，改用确定性降级文案", level="WARN")
 
+    block = info_block(kind, now, hit)
+    text = prose + ("\n\n" + block if block else "")
     MESSAGE_PATH.write_text(text, encoding="utf-8")
     log(f"[push] {kind} 文案 {len(text)} 字，一言{'有' if hit else '无'}，"
-        f"文案来源：{'AI' if ai_ok else '降级'}")
+        f"图{'有' if image else '无'}，文案来源：{'AI' if ai_ok else '降级'}")
     return {"ok": True, "kind": kind, "chars": len(text),
-            "hitokoto": bool(hit), "ai": ai_ok}
+            "hitokoto": bool(hit), "ai": ai_ok, "image": bool(image)}
 
 
 if __name__ == "__main__":

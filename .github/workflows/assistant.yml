@@ -5,8 +5,12 @@ name: 个人助手
 #   条数越多越容易被丢；并发组又只保留一个 pending，手动派发会把定时班挤掉。
 #   现在频率由 scripts/main.py 的 do_tick() 按 data/runtime.json 里的时间戳决定：
 #     study 每 60 分钟 · diary 每 120 分钟 · notice 每 360 分钟 · finalize 每轮
-#     飞书 07:00 / 12:00 / 22:00（北京时间），错过后 3 小时内补发，每天各一次
+#     飞书 07:00 / 12:00 / 22:00（北京时间），每天各一次；补发窗口 morning/noon 5h、night 2h
 #   凌晨写回窗口内当天还没写回时，tick 会强制加跑一次 diary。
+#
+# ★ 降噪（用户 2026-11-14）：常规成功不再发状态卡片。飞书步骤只在
+#   「失败/取消」或「日志里有 [urgent]（24h 内截止且集合有变化）」时才发状态卡；
+#   三时段推送照发，那是用户明确要的。判定在 scripts/notify_feishu.js 里。
 #
 # ⚠️ 额度：Actions 按「每个 job 向上取整到分钟」计费。20 分钟一次 = 72 轮/天 ≈ 2160 分钟/月，
 #    已经超过私有仓库的 2000 分钟免费额度。所以本默认配置要求 **public 仓库或 self-hosted runner**。
@@ -127,11 +131,16 @@ jobs:
           CX_PASSWORD: ${{ secrets.CX_PASSWORD }}
           # 私人日记路径黑名单。值只存在于 Secret，仓库里只出现这个名字（审计 §2.2/§7.3）。
           DIARY_EXCLUDE: ${{ secrets.DIARY_EXCLUDE }}
+          # 飞书自建应用凭证：只为把二次元图上传成 image_key 内嵌进卡片。
+          # 没配也能推送 —— anime_image.upload() 直接返回空，卡片退化成「点开看图」按钮。
+          FS_APP_ID: ${{ secrets.FS_APP_ID }}
+          FS_APP_SECRET: ${{ secrets.FS_APP_SECRET }}
           MODE: ${{ steps.mode.outputs.mode }}
         run: |
           set -o pipefail
           : > /tmp/task-output.log
-          rm -f /tmp/push-message.txt
+          # 两个文件都必须先删：上一轮的残留会让这一轮误发旧文案/旧图。
+          rm -f /tmp/push-message.txt /tmp/push-image.json
           python scripts/main.py "$MODE" 2>&1 | tee -a /tmp/task-output.log
 
       - name: 提交数据
@@ -169,6 +178,8 @@ jobs:
           FS_WEBHOOK: ${{ secrets.FS_WEBHOOK }}
           NOTIFY_TITLE: 个人助手
           NOTIFY_TASK: ${{ steps.mode.outputs.mode }}
+          # 三时段推送的卡片标题靠它区分早/中/晚；采集模式为空，走状态卡片分支。
+          NOTIFY_KIND: ${{ steps.mode.outputs.mode }}
           # 必须是 job.status，不是 steps.execute.outcome：
           # git push 在「提交数据」那一步，推送失败时 execute.outcome 仍是 success，
           # 用户会收到一张绿卡而数据根本没上去（审计 §1.3）。
@@ -177,8 +188,10 @@ jobs:
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
           export NOTIFY_OUTPUT="$(tail -200 /tmp/task-output.log 2>/dev/null)"
-          # 三时段推送：daily_push.py 把文案写进这个文件，发纯文本。
-          # 文件不存在（采集模式，或推送模式在写文案前就崩了）就走原来的状态卡片，失败照样报红。
+          # 三时段推送：daily_push.py 把「AI 人话 + 确定性清单」写进 push-message.txt，
+          # anime_image.py 把图的信息写进 push-image.json。两个都在 → 发带图/带按钮的卡片；
+          # 只有文案 → 纯文本；卡片被飞书拒收 → 脚本自己退回纯文本重发。
+          # 文件不存在（采集模式，或推送模式在写文案前就崩了）就走状态卡片，失败照样报红。
           if [ -s /tmp/push-message.txt ]; then
             node scripts/notify_feishu.js "$(cat /tmp/push-message.txt)"
           else

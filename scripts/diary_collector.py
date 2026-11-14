@@ -421,6 +421,13 @@ def run() -> dict:
         log(f"写回复查：完成 {len(done)} 条、取消勾选复原 {len(undone)} 条、"
             f"本次写入 {len(picked)} 条")
 
+    # 新入库的名言当场打分，README 的「AI 挑 3 条」不用等 backfill。
+    # 失败只告警：采集结果已经落盘，打分缺了下一轮或 backfill 还能补。
+    try:
+        score_quotes()
+    except Exception as e:
+        log(f"名言价值打分异常：{safe_text(e, 160)}", level="WARN")
+
     return {"ok": True, "files": len(entries), "changed": len(changed),
             "processed": processed, "quotes": len(quotes),
             "plans": len(plans), "open_plans": len(open_plans),
@@ -443,7 +450,8 @@ def backfill_comments(batch: int = 8) -> dict:
     todo = [q for q in quotes if not (q.get("comment") or "").strip()]
     if not todo:
         log(f"名言点评回填：{len(quotes)} 条全部已有评论，无需回填")
-        return {"ok": True, "filled": 0, "pending": 0}
+        sv = score_quotes()
+        return {"ok": True, "filled": 0, "pending": 0, "scored": sv.get("scored", 0)}
     try:
         client = AIClient(timeout=90)
     except (SystemExit, RuntimeError) as e:
@@ -472,7 +480,65 @@ def backfill_comments(batch: int = 8) -> dict:
         save_list(QUOTES_PATH, quotes, repo=(load_json(DATA_DIR / "sources.json") or {})
                   .get("diary", {}).get("repo", ""))
     log(f"名言点评回填：补上 {filled} 条，仍空 {len(todo) - filled} 条（共 {len(quotes)} 条）")
-    return {"ok": filled > 0, "filled": filled, "pending": len(todo) - filled}
+    sv = score_quotes()
+    return {"ok": filled > 0 or sv.get("scored", 0) > 0, "filled": filled,
+            "pending": len(todo) - filled, "scored": sv.get("scored", 0)}
+
+
+def score_quotes(batch: int = 10) -> dict:
+    """给 value 缺失的名言打 AI 价值分（0-10）。README 只展示分最高的 3 条。
+
+    用户要求「名言就显示3条，让 AI 挑选出有价值的放上去」。挑选 = 打分 + 排序：
+    打分在这里联网做（diary / backfill 模式），结果存进 quotes.json 的 value 字段；
+    finalize 零网络零 token，只按 value 取前 3（AGENT.md 铁律 5）。
+
+    与 backfill_comments 同型的坑：增量采集不重跑老文件，老名言的 value 也要能补，
+    所以 backfill 模式会连带调这里。打分失败不抛异常 —— 缺 value 的名言渲染时按 0 分排，
+    README 不会开天窗。
+    """
+    from ai_client import AIClient
+    from prompts import QUOTE_VALUE_SCHEMA, quote_value_messages
+
+    quotes = load_list(QUOTES_PATH)
+    todo = [q for q in quotes if q.get("value") is None]
+    if not todo:
+        log(f"名言价值打分：{len(quotes)} 条全部已有分数，无需打分")
+        return {"ok": True, "scored": 0, "pending": 0}
+    try:
+        client = AIClient(timeout=90)
+    except (SystemExit, RuntimeError) as e:
+        log(f"名言价值打分：AI 不可用（{type(e).__name__}）", level="ERROR")
+        return {"ok": False, "scored": 0, "pending": len(todo)}
+
+    scored = 0
+    for i in range(0, len(todo), batch):
+        chunk = todo[i:i + batch]
+        try:
+            data = client.chat_json(quote_value_messages(chunk),
+                                    schema_hint=QUOTE_VALUE_SCHEMA,
+                                    temperature=0.3, max_tokens=2000)
+        except Exception as e:
+            log(f"名言价值打分失败（第 {i // batch + 1} 批）：{safe_text(e, 160)}", level="ERROR")
+            continue
+        values = (data or {}).get("values") if isinstance(data, dict) else None
+        if not isinstance(values, list):
+            log(f"名言价值打分：第 {i // batch + 1} 批返回结构异常", level="WARN")
+            continue
+        for q, v in zip(chunk, values):
+            if not isinstance(v, dict):
+                continue
+            try:
+                n = int(v.get("value"))
+            except (TypeError, ValueError):
+                continue
+            q["value"] = max(0, min(10, n))
+            q["value_why"] = safe_text(v.get("why"), 40).strip()
+            scored += 1
+    if scored:
+        save_list(QUOTES_PATH, quotes, repo=(load_json(DATA_DIR / "sources.json") or {})
+                  .get("diary", {}).get("repo", ""))
+    log(f"名言价值打分：补上 {scored} 条，仍缺 {len(todo) - scored} 条（共 {len(quotes)} 条）")
+    return {"ok": scored > 0, "scored": scored, "pending": len(todo) - scored}
 
 
 if __name__ == "__main__":

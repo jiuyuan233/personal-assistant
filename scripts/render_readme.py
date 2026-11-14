@@ -38,6 +38,9 @@ PLAN_LIMIT = 15
 # 截断行链到全量数据，节标题下再链到独立文档。改这两个数不影响 docs/ 下的全量版。
 README_NOTICE_LIMIT = 5
 README_PLAN_LIMIT = 8
+# 名言只放 AI 挑出的最有价值的 3 条（用户 2026-11-14：「名言就显示3条就可以了」）。
+# 全量仍在 data/diary/quotes.json，README 节标题下挂链接。
+QUOTE_LIMIT = 3
 
 
 def esc(s: str) -> str:
@@ -373,14 +376,29 @@ def render_plans(limit: int = PLAN_LIMIT, link_prefix: str = "../") -> tuple[str
     return "\n".join(lines) + "\n", total
 
 
-def render_quotes(limit: int = 8) -> str:
-    items = load_list(DATA_DIR / "diary" / "quotes.json")[:limit]
+def pick_quotes(items: list[dict], limit: int = QUOTE_LIMIT) -> list[dict]:
+    """挑出要上 README 的名言。纯函数，selftest 直接喂样本验证排序。
+
+    两趟稳定排序：先按摘录日期新→旧，再按 AI value 降序 —— 同分时新的在前。
+    缺 value 的按 0 分排：打分失败不会让 README 开天窗，只是排到最后。
+    """
+    items = sorted(items, key=lambda q: q.get("first_seen") or "", reverse=True)
+    return sorted(items, key=lambda q: -(q.get("value") or 0))[:limit]
+
+
+def render_quotes(limit: int = QUOTE_LIMIT) -> str:
+    """只放 AI 挑出的最有价值的几条（用户：「名言就显示3条就可以了」）。
+
+    排序键是 diary/backfill 阶段 AI 打的 value 分；finalize 零网络零 token（铁律 5）。
+    """
+    items = pick_quotes(load_list(DATA_DIR / "diary" / "quotes.json"), limit)
     if not items:
         return "_暂无摘录。_\n"
     out = []
     for q in items:
         date_part = f" — {q['source_date']}" if q.get("source_date") else ""
-        block = f"> {esc(q.get('text'))}\n>\n> <sub>{esc(q.get('context'))}{date_part}</sub>\n"
+        val_part = f" · AI 价值 {q['value']}/10" if q.get("value") is not None else ""
+        block = f"> {esc(q.get('text'))}\n>\n> <sub>{esc(q.get('context'))}{date_part}{val_part}</sub>\n"
         if q.get("comment"):
             block += f">\n> 💬 {esc(q['comment'])}\n"
         out.append(block)
@@ -477,6 +495,8 @@ def run() -> bool:
         "{{FILTER_NOTE}}": filter_note,
         "{{SCHEDULE_TABLE}}": sched_table,
         "{{QUOTES}}": render_quotes(),
+        "{{QUOTE_COUNT}}": str(len(load_list(DATA_DIR / "diary" / "quotes.json"))),
+        "{{QUOTE_LIMIT}}": str(QUOTE_LIMIT),
         "{{SOURCE_STATUS}}": sources,
         "{{NOTICE_COUNT}}": str(notice_count),
         "{{PLAN_COUNT}}": str(plan_count),

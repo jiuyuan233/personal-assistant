@@ -440,6 +440,25 @@ def _save_meta(now: datetime, **kw) -> dict:
     return meta
 
 
+def urgent_alerts(soon: list[dict], prev_sig: str | None) -> tuple[str, list[str]]:
+    """算出本轮紧急告警：返回 (签名, 要打的日志行)。纯函数，selftest 直接喂数据。
+
+    [urgent] 是飞书发状态卡的唯一「重要」触发器，所以规则必须又准又省：
+    - 只认 24h 内截止（调用方已筛好）。逾期任务做不了、且长期常驻（实测 2 条），
+      拿它当紧急会让每小时一轮的 study 永远发卡 —— 正是用户抱怨的噪音。
+    - 同一批任务不重复告警：签名存 meta.json 跨轮比对。
+      签名**只用任务 ID，不含 deadline**：deadline_exact=False 的截止时间是
+      「抓取时刻 + 列表页倒计时」每轮重算的，带进去签名每小时都变，去重就废了。
+    """
+    sig = ",".join(sorted(t["id"] for t in soon))
+    if not soon:
+        return sig, []
+    if sig == prev_sig:
+        return sig, [f"[urgent-same] 24h 内截止的 {len(soon)} 条与上轮相同，不重复告警"]
+    return sig, [f"[urgent] {t['course']} · {t['title']} · "
+                 f"{fmt_remaining(parse_datetime(t['deadline']))}" for t in soon[:5]]
+
+
 def run() -> dict:
     cfg = (load_json(DATA_DIR / "sources.json") or {}).get("study") or {}
     username, password = env("CX_USERNAME"), env("CX_PASSWORD")
@@ -571,13 +590,16 @@ def run() -> dict:
     pending = [t for t in merged if t["state"] == "pending"]
     far = now + timedelta(days=3650)
     overdue = [t for t in pending if (parse_datetime(t["deadline"]) or far) < now]
-    soon = [t for t in pending
-            if timedelta(0) <= (parse_datetime(t["deadline"]) or far) - now <= timedelta(hours=24)]
+    soon = sort_by_deadline([t for t in pending
+                             if timedelta(0) <= (parse_datetime(t["deadline"]) or far) - now
+                             <= timedelta(hours=24)])
     log(f"待完成：{len(pending)}")
     log(f"24小时内截止：{len(soon)}")
     log(f"已逾期：{len(overdue)}")
-    for t in sort_by_deadline(overdue + soon)[:5]:
-        log(f"[urgent] {t['course']} · {t['title']} · {fmt_remaining(parse_datetime(t['deadline']))}")
+    # 降噪规则见 urgent_alerts()：只认 24h 内截止，且同一批不重复告警。
+    sig, urgent_lines = urgent_alerts(soon, (load_json(META_PATH) or {}).get("urgent_sig"))
+    for line in urgent_lines:
+        log(line)
 
     # §1.1 ok 不再无条件为 True：有失败课程 / 可疑清空 / 课程数偏离 / 截止未知 → partial
     ok = not failed and not anomalies
@@ -585,7 +607,8 @@ def run() -> dict:
                last_success=now.isoformat(timespec="seconds"),
                courses=len(courses), courses_ok=ok_courses, courses_failed=failed,
                tasks=len(merged), pending=len(pending),
-               unknown_deadline=len(still_unknown), anomalies=anomalies[:12])
+               unknown_deadline=len(still_unknown), anomalies=anomalies[:12],
+               urgent_sig=sig, urgent_count=len(soon))
     return {"ok": ok, "status": "ok" if ok else "partial",
             "courses": len(courses), "courses_ok": ok_courses,
             "tasks": len(merged), "pending": len(pending),
