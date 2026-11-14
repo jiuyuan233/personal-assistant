@@ -552,11 +552,32 @@ curl -sS -H "Authorization: Bearer $GH_PAT" \
    本机工作区是 **CRLF**、仓库对象是 **LF**（同一个文件：blob 里 0 个 `\r`，工作区 478 个）。
    用 `fs.readFileSync` 上传 → 全仓库行尾被改写。
    **必须用 `git cat-file blob <commit>:<path>` 取字节。**
-2. **commit message 的尾换行不要削。** `git show --format=%B` 自带一个尾 `\n`，
-   commit 对象里存的也是带 `\n` 的版本。`replace(/\n$/,'')` 会让 sha 对不上。
+2. **commit message 的尾换行：写进去的保留，读出来的被削。**
+   实测（v1.4.3，`1b768a8`）：POST 上去的 message 是 802 字节、结尾 `\n\n`；
+   `GET /git/commits/{sha}` 返回的 `message` 只有 **800 字节、尾换行被 GitHub 削掉了**，
+   但**仓库对象里存的仍是 802 字节那份**。所以「照 API 返回值重建 commit」必然 sha 不符。
 
-**怎么发现自己踩坑了**：比对**本地 HEAD sha** 与 **API 返回的 commit sha**。
-不相等 = 内容有差异。**「API 返回 201」不等于「推上去的东西和本地一样」，sha 一致才是。**
+**✅ 正确的验收口径是 tree sha，不是 commit sha。**
+commit sha 里含 author/committer 时间戳，API 造提交用的是「当下」，本地提交用的是你 commit 的那一刻，
+**两者永远不可能相等** —— 拿 commit sha 对比会得出「推错了」的假结论。
+要断言的是：`POST /git/trees` 返回的 `sha` **== 本地 `git rev-parse HEAD^{tree}`**。
+v1.4.3 实测两者都是 `2651cc6d9e99ef0a8b3a3bfd6f6558071f7c5ae3`，这才叫「推上去的东西和本地一样」。
+（顺带：`POST /git/trees` 前先断言**远端 main == 本地父提交**且**远端 tree == 本地父 tree**，
+不等就停手，**不要 force**。）
+
+**推完怎么让本地 main 与远端对齐（`git fetch` 也不通时）**：
+用 `git commit-tree <tree> -p <parent> -F <msg>` 在本地重造同一个对象，sha 相同就 `git update-ref`。
+三个必须对齐的输入，**都是实测踩出来的**：
+
+| 输入 | 坑 | 正确做法 |
+| --- | --- | --- |
+| 时间戳 | API 返回 `2026-11-14T02:32:27Z`，但**对象里存的是 `1794623547 +0800`** | 用 `GIT_AUTHOR_DATE="1794623547 +0800"` 原始格式；填 `+0000` 会 sha 不符 |
+| message | 见上面第 2 条，API 读出来被削了尾换行 | 用**你 POST 时的原文**（含尾 `\n\n`），不要用 GET 回来的 |
+| tree / parent | —— | 直接用 API 返回值，与本地 `rev-parse` 核对一致 |
+
+对不上就**穷举 9 种组合**（3 个时区偏移 `+0000/-0000/+0800` × 3 种尾部 `''/\n/\n\n`）算 sha1，
+一次就能定位是哪个字段差异 —— 比反复猜快得多。v1.4.3 就是这么对齐的，
+**最终本地 main == 远端 main == `1b768a8`，工作区干净，没有分叉、没有 force push。**
 
 ### 6.10 抹掉 git 历史里的隐私（**需要用户明确授权，不得自行发起**）
 
@@ -650,6 +671,12 @@ curl -sS -H "Authorization: Bearer $GH_PAT" \
 | AI 返回空 content | `max_tokens` 太小 | ≥2000 |
 | 本地 `ModuleNotFoundError: utils` | embeddable Python 的 isolated 模式 | 见 §2.2 |
 | 本地 `UnicodeEncodeError: gbk` | Windows 控制台编码 | 见 §2.2 |
+| `git push` 20 秒超时，但 `api.github.com` 秒回 200 | `github.com:443` 间歇不通，**不是配置错** | 先重试一次普通 push，再走 §6.9；**别改 git config、别设代理、别换镜像地址** |
+| API 推完，本地 sha 与远端对不上 | 你比的是 **commit sha**（含时间戳，两边永远不等） | 断言 **tree sha** 相等才是验收口径，见 §6.9 |
+| 用 API 返回值重建 commit，sha 还是对不上 | ①GET 回来的 `message` **尾换行被削**（对象里保留）②对象里时区是 `+0800`，API 却显示 `Z` | 用 POST 时的原文 + 原始 `<unix> +0800`；对不上就穷举 3 时区 × 3 尾部，见 §6.9 |
+| 日志里搜中文关键词一条都搜不到 | `/logs` 302 到 blob 且**不带 charset**，`resp.text` 猜成 latin-1 | **`resp.content.decode('utf-8')`**，且跨主机**丢掉 `Authorization`** |
+| 改了一个数字，文档别处还是旧值 | 凭记忆列举改动点 | **全文 grep 那个数字**，逐处判断是「过时」还是「历史快照」；历史快照加删除线标注而不是删掉 |
+| `ruff` 全绿但运行到某行 `NameError` | **F821 抓不全未定义名**（函数内 `import re as _re`，模块级没有 `re`） | 加完断言**必须真跑一遍 selftest**，静态门禁不是兜底 |
 
 **完整故障排查见 [常见问题.md](常见问题.md)（A–I 九大类）。**
 
@@ -686,6 +713,14 @@ python scripts/main.py finalize                      # 成功，README + SVG + d
 `selftest`、`probe`、`finalize`（含 git 写回）、`notice`、`study`、`diary`、`schedule`、
 `morning`、`noon`、`night`。海外 IP 可达性实测通过（Actions 出口在美国 Azure，
 学习通/校网/飞书全 200，Gitee 与 AI 中转 401 = 可达只是未带凭据）。
+
+**最近一次交接复核**：v1.4.3 `1b768a8` → run
+[`43547019765`](https://github.com/jiuyuan233/personal-assistant/actions/runs/43547019765)
+（job `132300612077`，`completed / success`，2026-11-14 10:34）。
+按日志逐行数：**门禁 + 执行两次 selftest 各 174 条 ✅、失败 0 项**，
+三条隐私守卫两次都真跑，末尾 `[feishu] ✅ 推送成功`。
+**这一版是走 §6.9 的 API 推的**（当时 `github.com:443` 不通），
+tree sha 与本地 `HEAD^{tree}` 一致（`2651cc6d…`），本地 main 已用 `git commit-tree` 对齐到同一 sha。
 
 ### 尚未真实验证 —— 接手后优先补
 
