@@ -13,7 +13,7 @@
 ## 🔗 相关
 
 - [公告全量数据](../data/notice/notices.json) —— 含 3 分以下被本页过滤掉的条目
-- [网页版看板](index.html) —— 同一份数据的可交互视图
+- [网页版看板](https://jiuyuan233.github.io/personal-assistant/) —— 同一份数据的可交互视图（GitHub Pages，已上线）
 - [技术路径 §4 源3：校园公告](技术路径.md) —— 为什么放弃 CAS 登录改抓公开页
 - [常见问题 D 组](常见问题.md) —— 抓不到公告 / 相关度全是 0 怎么排查
 

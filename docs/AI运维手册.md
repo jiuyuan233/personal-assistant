@@ -265,11 +265,24 @@ git push origin main       # ★ 绝不 --force
 | 周数每天前进 | 派发 `finalize`，看 README | `当前第 N 周`，N 随日期增加 |
 | 课程名没被污染 | `selftest` | ✅ 时钟前缀污染全部修好 / 修复后没有空课程名 |
 | SVG 里的线是**浅灰** | 打开 `docs/week.svg` 搜颜色 | 不含 `#FA5252`；selftest ✅ SVG 源码不再烘焙红色时间线 |
-| 网页红线实时移动 | **浏览器打开 `docs/index.html`**，等 30 秒 | 红线移动；selftest ✅ 网页端仍有实时时间线 |
+| 网页红线实时移动 | 浏览器打开 **`https://jiuyuan233.github.io/personal-assistant/`**，等 30 秒 | 红线移动；selftest ✅ 网页端仍有实时时间线 |
 | 几何两边一致 | 改 `ROW_H`/`SLOTS` 后 | Python `time_y()` 和 JS `nowLineY()` 必须同步改 |
 
 **⚠️ 在 README 里看 SVG 是看不到实时线的** —— GitHub 把它当静态图片渲染，不执行 JS。
 实时线只在网页看板里存在。**别跟用户说「README 里的线会动」。**
+
+**验红线时的两个坑（本轮都踩过，各浪费一次查询）**：
+1. **红线是 DOM 覆盖层，不是 SVG 元素** —— `docs/index.html` 里的 `<div class="now-line" id="nowline">`。
+   去 SVG 里搜 `stroke`/`#FA5252` 会得到空结果，然后误判「线没画出来」。
+2. **红色在 `border-top` 上，不在 `background` 上** —— 读 `getComputedStyle(el).background`
+   得到 `rgba(0,0,0,0)`，看着像透明的。要读 `borderTopColor`（实测 `rgb(250, 82, 82)`），
+   圆点读 `::before` 的 background，时刻标签读 `span` 的 background。
+
+**已验到的数值证据（2026-11-14 09:2x）**：`top 27.4783% / left 72.6733% / width 13.0693%`，
+按 SVG 自然尺寸 1010×690 反算 = y 189.6 / x 734，与 `nowLineY(573, geo)` 完全一致；
+9 个采样点单调递增（7 个不同 y 值），跨周 `col>6` 时正确 `hidden`。
+**没验到的是像素外观**：Qoder 内置浏览器 `viewport=0×0`，截图工具报
+`NATIVE_BROWSER_VIEWPORT_UNAVAILABLE`。**别把「数值对」写成「看着对」。**
 
 **教师列恒为空是预期行为**：`assets/WakeUp导入课表.ics` 已脱敏剥离教师名。
 **不要去"修"它**，换回未脱敏原件即生效。
@@ -294,7 +307,14 @@ git push origin main       # ★ 绝不 --force
 | 不编造 | 对照 `data/diary/plans.json` | 消息里的任务都能找到出处 |
 | AI 挂了会降级 | 临时清空 `AI_API_KEY` 跑一次 | 日志 `文案来源：降级`，仍收到含事实和一言的消息 |
 | 一天最多一条 | 看 `data/runtime.json` 的 `pushed` | 值是 `YYYY-MM-DD`，同一天重复 tick 不再发 |
+| **错过整点仍补发** | 看 `PUSH_CATCHUP_HOURS` + selftest | morning/noon 各 5 小时、night 2 小时；11 条断言守着边界 |
 | 失败报红 | 看采集失败时的卡片 | 红色 ❌（用的是 `job.status`，不是 `steps.execute.outcome`） |
+
+**补发窗口为什么按时段给而不是全局一个数**：实测 GitHub 两次 schedule 触发最大间隔 **280 分钟**，
+全局 3 小时（180 分钟）会让整个时段落在间隔里被静默丢掉。
+morning 5h 正好补到 noon 时段、noon 5h 到 17:00 仍是下午、night 2h 不吵醒用户。
+**`target` 取「今天的整点」，所以 night 实际只覆盖 22:00–24:00，跨零点不补** —— 这是有意的，
+凌晨给用户发昨晚的总结比不发更糟。改这几个数前先读 §9 的投递率实测。
 
 ### 5.7 公告与竞赛
 
@@ -363,7 +383,7 @@ git push origin main       # ★ 绝不 --force
 # scripts/main.py
 TICK_INTERVALS = {"study": 60, "diary": 120, "notice": 360}   # 分钟
 PUSH_HOURS = {"morning": 7, "noon": 12, "night": 22}          # 北京时间
-PUSH_CATCHUP_HOURS = 3                                        # 错过后补发窗口
+PUSH_CATCHUP_HOURS = {"morning": 5, "noon": 5, "night": 2}    # 错过后补发窗口（小时，按时段）
 TICK_SLACK_MIN = 5                                            # 给 cron 延迟留的余量
 ```
 
@@ -601,16 +621,20 @@ curl -sS -H "Authorization: Bearer $GH_PAT" \
 ```bash
 ruff check scripts --select E9,F63,F7,F82,F821,F401   # All checks passed
 # ⚠️ 必须带上 DIARY_EXCLUDE，否则私人路径守卫会跳过，等于没验
-DIARY_EXCLUDE='<Secret 里的值>' python scripts/main.py selftest   # 166 项断言，失败 0 项
+DIARY_EXCLUDE='<Secret 里的值>' python scripts/main.py selftest   # 173 项断言，失败 0 项
 python scripts/main.py finalize                      # 成功，README + SVG + docs/data 全部生成
 ```
 
-**断言条数随环境变**：带 `DIARY_EXCLUDE` 是 **166**，不带是 **165**（那条守卫打 ⏭️ 跳过后不计入）。
-Actions 里一定有这个 Secret，所以**线上是 166**。本地不带变量跑绿了，不代表隐私守卫过了。
+**断言条数随环境变**：带 `DIARY_EXCLUDE` 是 **173**，不带是 **172**（那条守卫打 ⏭️ 跳过后不计入）。
+Actions 里一定有这个 Secret，所以**线上是 173**。本地不带变量跑绿了，不代表隐私守卫过了。
+条数演进：107 → 166 → **173**（本轮 +5 条推送补发窗口断言、+2 条链接守卫）。
+**改完断言必须真跑一遍**：本轮有一次新守卫用了 `re.compile`，而 `do_selftest()` 里只有
+函数内的 `import re as _re` —— **`ruff --select F821` 没报**，跑起来才 `NameError`。静态门禁不是兜底。
 
-`finalize` 本地实测输出：课表 186 条上课记录、24 个课程条目、第 10 周、本周 17 节课；
-任务清单 4 条可做 / 14 门课（今天 0 / 7天内 3 / 更远 0 / **截止未知 1**）；已剔除逾期 1 / 非待完成 33；
-独立文档 公告 7 / 潜在计划 35（黑名单清洗前 58）/ 已剔除 34。
+`finalize` 本地实测输出（2026-11-14 09:48）：课表 186 条上课记录、24 个课程条目、第 10 周、本周 17 节课；
+任务清单 **3 条可做 / 14 门课（今天 0 / 7天内 3 / 更远 0 / 截止未知 0）**；已剔除逾期 2 / 非待完成 33；
+独立文档 公告 8 / 潜在计划 35（黑名单清洗前 58）/ 已剔除 35。
+**「截止未知」从 1 变 0**：详情页时间窗补齐后那一档清空了，这正是用户报的 bug 被修掉的可见结果。
 
 ### 已在 Actions 上真实跑通过（历史证据，需复核）
 
@@ -623,15 +647,45 @@ Actions 里一定有这个 Secret，所以**线上是 166**。本地不带变量
 | 项 | 为什么还没验 | 怎么补 |
 | --- | --- | --- |
 | **写回的 POST 新建 / sha 冲突重试** | 11-14 00:08 那次只走了 **PUT 更新**分支 | 按 §5.3，等它们自然触发时**去 Gitee 网页亲眼看** |
-| **网页实时时间线** | 需要在浏览器里打开页面 | 按 §5.4，开 Pages 或用本地 HTTP 服务器 |
-| **待考考试行解析** | 样本里两场考试都是「已完成」 | 第一次遇到待考时核对 `onclick` 函数名和倒计时结构 |
+| **待考考试行解析 + exam 深链能否打开** | 样本里两场考试都是「已完成」 | 第一次遇到待考时核对 `onclick` 函数名和倒计时结构，并点一次深链 |
 | **详情页年份推算** | 学期交界/暑假前后可能错一年 | 12 月底和 1 月初人工核对一次 |
-| **tick 的长期稳定性** | 单 cron 设计是新改的 | 连续观察几天 `data/runtime.json` 的 `last_ok`，确认三个采集器都在按间隔前进 |
 | **名言点评 AI 回填** | `backfill` 模式只在本地跑通 | 在 runner 上派发 `backfill`，看 README `## 📔 我的名言` 是否补上点评 |
+| **Pages 的像素级外观** | 数值全对，但 Qoder 内置浏览器 `viewport=0×0`，`take_screenshot` 报 `NATIVE_BROWSER_VIEWPORT_UNAVAILABLE` | 用真浏览器截一张图，确认红线没有遮住课程名 |
 
-**已验过的别再列进这张表**：日记写回的 PUT 分支已于 **2026-11-14 00:08:14** 真实验证
-（Gitee sha `647a1e8b…`、20 个复选框 + 20 个 pid 标签），证据在 §5.3。
+**已验过的别再列进这张表**：
+- 日记写回的 PUT 分支已于 **2026-11-14 00:08:14** 真实验证
+  （Gitee sha `647a1e8b…`、20 个复选框 + 20 个 pid 标签），证据在 §5.3。
+- **网页实时时间线已于 2026-11-14 09:2x 在真实浏览器里验证**：Pages `built`，
+  6 个 `docs/data/*.json` 全 200，任务 3 / 公告 8 / 计划 20 / 名言 10 行都渲染出来了；
+  红线 `border-top: 2px solid rgb(250,82,82)`，`top/left/width` 与 `schedule_geo.json`
+  算出的几何**吻合到小数点后 4 位**，跨 9 个采样点单调移动，跨周正确隐藏。证据在 §5.4。
+  **注意红线是 DOM 覆盖层不是 SVG 元素**，去查 `stroke` 或 `background` 会得出「线不见了」的错误结论。
+
 **过时的「未验证」和过时的「已完成」一样会误导接手的人。**
+
+### 定时触发：内部调度已验证，平台投递率只有 ~8%（改不掉）
+
+**这两件事必须分开说，混在一起就会得出错误的完成度。**
+
+| 层 | 状态 | 证据 |
+| --- | --- | --- |
+| **仓库内部调度**（谁该跑、推送该不该发、写回窗口） | ✅ **已验证正确** | run #81/#82 日志 + `data/runtime.json`：到点选中 study/diary/notice，07:00 早报在 09:00 补发成功，`errors {}` |
+| **GitHub 把 cron 投递过来** | ⚠️ **实测 ~8%，平台行为** | 单 cron 架构上线后 ~8.5 小时只自然触发 **2 次**（应有 ~25 次），最大间隔 **280 分钟** |
+
+**由此修掉的一个真缺陷**：原来的补发窗口是全局 3 小时（180 分钟），**比实测最大间隔 280 分钟还窄**
+→ 整个推送时段会落在间隔里被静默丢掉。现在按时段给：
+`PUSH_CATCHUP_HOURS = {"morning": 5, "noon": 5, "night": 2}`。
+
+**别再做这两件事**：
+- **别再「观察 24 小时就好了」**。v1.3.3 曾假设「手动派发挤掉了 schedule 的 pending」，
+  本轮**证伪**：run #80（17:04:54Z）之后没有任何手动派发，8.5 小时自然观测仍只有 2 次。
+- **别再加 cron 条数**。8 条 → 1 条正是为了绕开节流，加回去是倒退，且违反 AGENT.md。
+
+要准点只有两条路，**都需要用户明确授权**：外部调度器定时 `workflow_dispatch`（要把 PAT 交给第三方），
+或 self-hosted runner。**未经授权不要自己选一条做。**
+另外：统计触发次数时**必须按 workflow 名 `个人助手` 过滤** —— API 里的 `dynamic` 事件是
+「pages build and deployment」，不是助手运行；**归因架构要看每个 run 的 `head_sha`**，
+不能看提交日期（本轮就因此一度把 8-cron 时期的 6 次触发算到新架构头上）。
 
 ### 已知未决 → 已全部决定（2026-11-14）
 
@@ -645,7 +699,10 @@ Actions 里一定有这个 Secret，所以**线上是 166**。本地不带变量
   `study.public_links` 这个开关保留，但默认值已是安全的那一档。
 - **§7.3 私人计划**：Secret **`DIARY_EXCLUDE` 已创建**，仓库里只出现名字。
   本地数据已按它清洗（plans 63→40、quotes 15→13、state.json 去 5 个私人键）。
-- **§7.4 Pages**：**决定开**，但**必须先做 §7.1**，否则历史学号会通过构建缓存再暴露一次。
+- **§7.4 Pages**：✅ **已开、已构建、已在浏览器里验证**（`https://jiuyuan233.github.io/personal-assistant/`，
+  源 = `main` 的 `/docs`）。顺序按要求先做了 §7.1 再开，避免历史学号经构建缓存二次暴露。
+  **站点根就是 `docs/`** —— 这条几何事实坑过一次：页脚写 `../README.md` 会 404，
+  文件在磁盘上存在 ≠ 线上点得开。selftest 现有两条守卫（链接可达 + 不逃出 Pages 根）。
 
 ---
 
@@ -658,7 +715,12 @@ Actions 里一定有这个 Secret，所以**线上是 166**。本地不带变量
 - [ ] 改了解析器 → selftest 断言和 `SAMPLE_*` 都跟着改了
 - [ ] 改了日志文案 → `notify_feishu.js` 的 `TASK_TEMPLATES` 跟着改了
 - [ ] 改了脱敏正则 → Python 和 JS **两边**都改了
-- [ ] 改了频率 → 四处文档描述都同步了
+- [ ] 改了频率 / 推送窗口 → **七处**都同步了：`AGENT.md`、`DEV_GUIDE.md`、`docs/AI提示词.md`、
+      `docs/工作原理.md`、`docs/技术路径.md`、`docs/数据结构.md`、`docs/AI运维手册.md`
+- [ ] 新增/改动了 md 或 `index.html` 里的**相对链接** → selftest 两条守卫会扫
+      （「相对链接全部可达」+「不逃出 Pages 根」）。**代码块与行内代码里的链接不算**，
+      所以审计文档可以原样引用坏链接当证据
+- [ ] 改了 Pages 页脚 → 记住**站点根就是 `docs/`**，跨出仓库的文件要写 github.com 绝对地址
 - [ ] 新增了公开字段 → 问过「能不能定位到人」，清洗在采集层
 - [ ] `git status` 看一遍要提交的文件 → 没有凭据、没有 HAR、没有临时探测目录
 - [ ] 提交信息说清楚**为什么**改，不只是改了什么

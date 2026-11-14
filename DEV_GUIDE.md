@@ -71,8 +71,10 @@ git push -u origin main
 > 旋钮 2 的价值是省 AI token 和降低账号风控概率。
 >
 > **三时段推送不用单独保**：它们由 `due_pushes()` 在 tick 里判断，
-> `PUSH_CATCHUP_HOURS = 3` 意味着巡检间隔只要 ≤ 3 小时就一定能补上。
+> `PUSH_CATCHUP_HOURS = {"morning": 5, "noon": 5, "night": 2}` 意味着巡检间隔只要 ≤ 对应窗口就一定能补上。
 > 间隔拉到 `*/30` 完全不影响早/中/晚消息。
+> ⚠️ 但**实测 GitHub 自身就会丢槽位**：两次 schedule 触发间隔可达 4 小时 40 分，
+> 所以「间隔 ≤ 窗口」只是必要条件，不是保证。见 [docs/不足与风险.md](docs/不足与风险.md) §4.1。
 >
 > **凌晨写回也不用单独保**：`do_tick()` 发现「在窗口内且今天还没写回」就强制加跑 diary，
 > 窗口 `00:00-06:00` 有 6 小时宽。只要 cron 间隔 ≤ 6 小时，写回就不会被饿死。
@@ -211,13 +213,20 @@ mode 选 **`probe`** → Run。看日志里的出口 IP 和每个站点的可达
 
 ---
 
-## 5. 启用网页看板（可选）
+## 5. 网页看板（已启用）
 
-仓库 → Settings → Pages → Source 选 **Deploy from a branch** →
+**当前状态：已开、已构建、已在浏览器里验证**（2026-11-14）。
+地址 `https://jiuyuan233.github.io/personal-assistant/`，源 = `main` 的 **`/docs`**。
+
+配置位置：仓库 → Settings → Pages → Source 选 **Deploy from a branch** →
 Branch 选 `main`，目录选 **`/docs`** → Save。
 
-几分钟后访问 `https://jiuyuan233.github.io/personal-assistant/`。
-私有仓库的 Pages 需要 GitHub Pro；没有就只看 README 和飞书。
+**站点根就是 `docs/`**，这条几何事实要记住：看板里写 `../README.md` 会 404
+（文件在磁盘上存在 ≠ 线上点得开）。跨出 `docs/` 的链接一律写 github.com 绝对地址。
+selftest 有两条守卫盯着这件事。
+
+本仓库是**公开**的，所以 Pages 免费可用。若哪天改成私有，Pages 需要 GitHub Pro；
+没有就只看 README 和飞书 —— 但**改私有前先想清楚历史里的隐私**（见审计 §7.1）。
 
 ---
 

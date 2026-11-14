@@ -278,12 +278,16 @@ README 顶部出 🔴 告警，网页看板单列一桶 —— **绝不混进「
 | `night` | 22:00 起 | 一天的总结，数据来源于日记 |
 
 **没有推送专用 cron。** 三个时刻写在 `main.PUSH_HOURS`，由 `due_pushes()` 在每轮 tick 里判断：
-`now` 落在 `[目标时刻, 目标时刻 + PUSH_CATCHUP_HOURS(3h)]` 且 `runtime.pushed[kind] != 今天` 才发。
+`now` 落在 `[目标时刻, 目标时刻 + PUSH_CATCHUP_HOURS[kind]]` 且 `runtime.pushed[kind] != 今天` 才发。
 
 - **按日期记账，不是按小时**：`pushed[kind]` 存 `YYYY-MM-DD`，所以**一天最多一条**，
-  3 小时补发窗口内 tick 跑 9 次也只发第一次。
-- **3 小时补发**是为了扛 Actions 延迟/跳过：7 点那轮没跑成，8 点、9 点还能补上；
-  超过 10 点就不发了 —— 迟到的「早安」比不发更烦人。
+  补发窗口内 tick 跑再多次也只发第一次。
+- **补发窗口按时段给**：`{"morning": 5, "noon": 5, "night": 2}`。morning 5h 正好补到 noon 时段；
+  noon 5h 到 17:00 仍是下午；night 2h —— 迟到的「晚安总结」拖到凌晨毫无意义，还会吵醒用户。
+  `target` 取的是「今天的整点」，所以 night 实际只覆盖 22:00–24:00，**跨零点不补**。
+- **为什么不是全局一个数**：2026-11-14 实测 GitHub 两次 schedule 触发间隔达 **280 分钟**
+  （11-13T20:20Z → 11-14T01:00Z）。原来的全局 3 小时比这个间隔还窄，
+  整个补发窗口会落在间隔里、那个时段的推送被**静默丢掉**。详见 [docs/不足与风险.md](docs/不足与风险.md) §4.1。
 - 想改时刻改 `PUSH_HOURS`，想改补发宽度改 `PUSH_CATCHUP_HOURS`。**不要往 workflow 加 cron。**
 
 **人格只有一份，在 `prompts.py` 的 `PERSONA`。** 傲娇雌小鬼：先损一句，再落到实事上。

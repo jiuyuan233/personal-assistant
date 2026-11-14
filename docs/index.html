@@ -46,9 +46,12 @@
 </main>
 
 <footer>
-  <a href="../README.md">README</a> ·
-  <a href="技术路径.md">技术路径</a> ·
-  <a href="../AGENT.md">维护交接</a>
+  <!-- 必须写绝对地址：Pages 源是 main 的 /docs，站点根就是 docs/，
+       写 ../README.md 会解析成 jiuyuan233.github.io/README.md → 404（实测）。
+       走 github.com blob 还能让 md 正常渲染，Pages 直出 .md 是 text/markdown 纯文本。 -->
+  <a href="https://github.com/jiuyuan233/personal-assistant/blob/main/README.md">README</a> ·
+  <a href="https://github.com/jiuyuan233/personal-assistant/blob/main/docs/技术路径.md">技术路径</a> ·
+  <a href="https://github.com/jiuyuan233/personal-assistant/blob/main/AGENT.md">维护交接</a>
 </footer>
 
 <script src="js/app.js"></script>

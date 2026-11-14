@@ -37,10 +37,13 @@ COLLECT_MODES = ("diary", "study", "notice", "schedule")
 # tick 的调度参数。单位分钟；判定留 5 分钟宽限，因为 Actions 的 cron 经常晚几分钟。
 TICK_INTERVALS = {"study": 60, "diary": 120, "notice": 360}
 TICK_SLACK_MIN = 5
-# 飞书三时段（北京时间）。错过整点后 3 小时内补发，超过就不发了 ——
-# 晚上 10 点的总结拖到凌晨 1 点毫无意义，还会吵醒用户。
+# 飞书三时段（北京时间）。错过整点后在补发窗口内仍发，超过就不发了。
 PUSH_HOURS = {"morning": 7, "noon": 12, "night": 22}
-PUSH_CATCHUP_HOURS = 3
+# 补发窗口按时段给，不能全局一个数：实测 GitHub 两次 schedule 触发间隔达 280 分钟
+# （2026-11-13T20:20Z → 11-14T01:00Z），全局 3 小时会让整个窗口落在间隔里、推送被静默丢掉。
+# morning 5h 正好补到 noon 时段；noon 5h 到 17:00 仍是下午；night 2h 不吵醒用户。
+# target 取「今天的整点」，所以 night 实际只覆盖 22:00–24:00，跨零点不补。
+PUSH_CATCHUP_HOURS = {"morning": 5, "noon": 5, "night": 2}
 RUNTIME_PATH = DATA_DIR / "runtime.json"
 
 
@@ -76,7 +79,7 @@ def due_pushes(runtime: dict, now) -> list[str]:
             continue
         target = now.replace(hour=hour, minute=0, second=0, microsecond=0)
         hours = (now - target).total_seconds() / 3600
-        if 0 <= hours <= PUSH_CATCHUP_HOURS:
+        if 0 <= hours <= PUSH_CATCHUP_HOURS[kind]:
             out.append(kind)
     return out
 
@@ -872,13 +875,22 @@ def do_selftest() -> bool:
           str(due_collectors({"last_ok": hourly}, base)))
     check("失败也按间隔重试，不每 20 分钟烧一次登录链",
           due_collectors({"last_try": fresh}, base) == [])
+    day = base.date().isoformat()
+    sent_m = {"pushed": {"morning": day}}
+    sent_mn = {"pushed": {"morning": day, "noon": day}}
     check("到点发早报", due_pushes({}, base.replace(hour=7)) == ["morning"])
     check("早报错过 2 小时仍补发", due_pushes({}, base.replace(hour=9)) == ["morning"])
-    check("早报错过 4 小时不再补发", due_pushes({}, base.replace(hour=11)) == [])
-    check("中午发问好", due_pushes({}, base.replace(hour=12)) == ["noon"])
-    check("晚上发总结", due_pushes({}, base.replace(hour=22)) == ["night"])
-    check("同一天不重复发",
-          due_pushes({"pushed": {"morning": base.date().isoformat()}}, base.replace(hour=7)) == [])
+    check("早报错过 4 小时仍补发（实测 cron 间隔可达 4h40m）",
+          due_pushes({}, base.replace(hour=11)) == ["morning"])
+    check("早报补发止于 noon 时段", due_pushes({}, base.replace(hour=13)) == ["noon"])
+    check("中午发问好", due_pushes(sent_m, base.replace(hour=12)) == ["noon"])
+    check("中午错过 5 小时仍补发", due_pushes(sent_m, base.replace(hour=17)) == ["noon"])
+    check("中午错过 6 小时不再补发", due_pushes(sent_m, base.replace(hour=18)) == [])
+    check("晚上发总结", due_pushes(sent_mn, base.replace(hour=22)) == ["night"])
+    check("夜间总结补到当天 23:59", due_pushes(sent_mn, base.replace(hour=23, minute=59)) == ["night"])
+    check("凌晨不补发昨晚的总结",
+          due_pushes(sent_mn, (base + timedelta(days=1)).replace(hour=0, minute=30)) == [])
+    check("同一天不重复发", due_pushes(sent_m, base.replace(hour=7)) == [])
 
     # §2.2 私人路径黑名单：值来自 Secret，判定按路径前缀，已入库的也要清掉
     check("黑名单按前缀命中", dc.is_excluded("Tasks/私人/长期计划.md", ["Tasks/私人"]))
@@ -936,6 +948,52 @@ def do_selftest() -> bool:
                 "清理黑名单生效前入库的私人条目", "课表源文件污染修复")
     missing = [s for s in promised if s not in src_all]
     check("运维手册承诺的日志关键字都真实存在", not missing, str(missing))
+
+    # 渲染产物里的相对链接必须真的能点开。实测踩过两次：render_plans/render_notices
+    # 的截断行少写 ../（产物在 docs/ 下），以及 index.html 页脚写 ../README.md
+    # 逃出了 Pages 根（Pages 源就是 docs/）。scripts/*_template.md 不算 ——
+    # 它们的链接是相对「渲染后的位置」，不是相对模板自己。
+    from urllib.parse import unquote
+
+    link_re = _re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+    html_re = _re.compile(r"(?:href|src)=\"([^\"]+)\"")
+    code_re = _re.compile(r"`[^`]*`")
+    bad_links = []
+    escaped = []
+    pages = [rr.REPO_ROOT / "docs" / "index.html"]
+    pages += sorted(rr.REPO_ROOT.glob("*.md"))
+    pages += sorted((rr.REPO_ROOT / "docs").glob("*.md"))
+    docs_root = (rr.REPO_ROOT / "docs").resolve()
+    for p in pages:
+        if not p.exists():
+            continue
+        txt = p.read_text(encoding="utf-8")
+        if p.suffix == ".md":
+            # 代码块与行内代码里的链接是「在讲这个链接」，不是真链接。审计文档必须
+            # 能原样引用坏链接（§9.7 引了两条），否则守卫会逼着文档把证据改掉。
+            kept, fence = [], False
+            for ln in txt.splitlines():
+                if ln.lstrip().startswith(("```", "~~~")):
+                    fence = not fence
+                elif not fence:
+                    kept.append(code_re.sub("", ln))
+            txt = "\n".join(kept)
+        targets = link_re.findall(txt) + (html_re.findall(txt) if p.suffix == ".html" else [])
+        for t in targets:
+            if t.startswith(("http://", "https://", "mailto:", "#", "data:")):
+                continue
+            rel = unquote(t.split("#")[0])
+            if not rel:
+                continue
+            dest = (p.parent / rel).resolve()
+            if not dest.exists():
+                bad_links.append(f"{p.name}:{t}")
+            # Pages 源是 main 的 /docs，站点根就是 docs/。文件在磁盘上存在不代表
+            # 线上点得开：../README.md 会解析成 jiuyuan233.github.io/README.md → 404。
+            if p.name == "index.html" and docs_root not in dest.parents:
+                escaped.append(t)
+    check("文档与看板的相对链接全部可达", not bad_links, str(bad_links[:10]))
+    check("看板链接不逃出 Pages 根目录", not escaped, str(escaped))
 
     log(f"[selftest] 失败 {len(failures)} 项")
     return not failures

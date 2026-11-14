@@ -337,7 +337,7 @@ def render_notices(limit: int = NOTICE_LIMIT) -> tuple[str, int]:
     if total > len(items):
         lines.append("")
         lines.append(f"_另有 **{total - len(items)}** 条相关公告未显示（共 {total} 条），"
-                     f"完整数据见 [notices.json](data/notice/notices.json)。_")
+                     f"完整数据见 [notices.json](../data/notice/notices.json)。_")
     return "\n".join(lines) + "\n", total
 
 
@@ -355,12 +355,12 @@ def render_plans(limit: int = PLAN_LIMIT) -> tuple[str, int]:
     for p in items:
         lines.append("| {} | {} | {} | {} | {} |".format(
             esc(p.get("text")), f"{(p.get('confidence') or 0):.1f}",
-            p.get("due_date") or "—", esc(p.get("source_date") or p.get("source_file")),
+            p.get("due_date") or "—", esc(p.get("source_date")) or "—",
             esc(" / ".join(p.get("tags") or [])) or "—"))
     if total > len(items):
         lines.append("")
         lines.append(f"_另有 **{total - len(items)}** 条未完成计划未显示（共 {total} 条），"
-                     f"完整数据见 [plans.json](data/diary/plans.json)。_")
+                     f"完整数据见 [plans.json](../data/diary/plans.json)。_")
     return "\n".join(lines) + "\n", total
 
 
