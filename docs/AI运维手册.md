@@ -551,7 +551,7 @@ curl -sS -H "Authorization: Bearer $GH_PAT" \
 | 3 | `POST /repos/{o}/{r}/git/commits` | `{message, tree, parents, author, committer}` |
 | 4 | `PATCH /repos/{o}/{r}/git/refs/heads/main` | `{sha, force: false}` |
 
-**⚠️ 两个会让内容静默变质的坑（都实测踩过）**：
+**⚠️ 三个会让内容静默变质或直接报错的坑（都实测踩过）**：
 
 1. **`core.autocrlf=true` 时不能读工作区文件当 blob。**
    本机工作区是 **CRLF**、仓库对象是 **LF**（同一个文件：blob 里 0 个 `\r`，工作区 478 个）。
@@ -561,6 +561,12 @@ curl -sS -H "Authorization: Bearer $GH_PAT" \
    实测（v1.4.3，`1b768a8`）：POST 上去的 message 是 802 字节、结尾 `\n\n`；
    `GET /git/commits/{sha}` 返回的 `message` 只有 **800 字节、尾换行被 GitHub 削掉了**，
    但**仓库对象里存的仍是 802 字节那份**。所以「照 API 返回值重建 commit」必然 sha 不符。
+3. **取变更文件列表时中文路径会被转义。**
+   `git diff --name-only` 默认 `core.quotepath=true`，`docs/AI运维手册.md` 出来是
+   `"docs/AI\350\277\220\347\273\264\346\211\213\345\206\214.md"`（还带引号），
+   拿去拼路径读文件就 `OSError: [Errno 22] Invalid argument`。
+   **一律用 `git -c core.quotepath=false diff --name-only`**，`git ls-files` 同理。
+   （v1.4.4 实测踩到；失败发生在第 1 步上传 blob，**ref 还没动**，所以重试是安全快进。）
 
 **✅ 正确的验收口径是 tree sha，不是 commit sha。**
 commit sha 里含 author/committer 时间戳，API 造提交用的是「当下」，本地提交用的是你 commit 的那一刻，
@@ -679,6 +685,7 @@ v1.4.3 实测两者都是 `2651cc6d9e99ef0a8b3a3bfd6f6558071f7c5ae3`，这才叫
 | `git push` 20 秒超时，但 `api.github.com` 秒回 200 | `github.com:443` 间歇不通，**不是配置错** | 先重试一次普通 push，再走 §6.9；**别改 git config、别设代理、别换镜像地址** |
 | API 推完，本地 sha 与远端对不上 | 你比的是 **commit sha**（含时间戳，两边永远不等） | 断言 **tree sha** 相等才是验收口径，见 §6.9 |
 | 用 API 返回值重建 commit，sha 还是对不上 | ①GET 回来的 `message` **尾换行被削**（对象里保留）②对象里时区是 `+0800`，API 却显示 `Z` | 用 POST 时的原文 + 原始 `<unix> +0800`；对不上就穷举 3 时区 × 3 尾部，见 §6.9 |
+| API 推送脚本读文件报 `OSError: [Errno 22]`，路径里有 `\350\277\220` | **`git diff --name-only` 默认转义非 ASCII 路径**（`core.quotepath=true`） | 取文件列表一律用 **`git -c core.quotepath=false diff --name-only`**；`git ls-files` 同理 |
 | 日志里搜中文关键词一条都搜不到 | `/logs` 302 到 blob 且**不带 charset**，`resp.text` 猜成 latin-1 | **`resp.content.decode('utf-8')`**，且跨主机**丢掉 `Authorization`** |
 | 改了一个数字，文档别处还是旧值 | 凭记忆列举改动点 | **全文 grep 那个数字**，逐处判断是「过时」还是「历史快照」；历史快照加删除线标注而不是删掉 |
 | `ruff` 全绿但运行到某行 `NameError` | **F821 抓不全未定义名**（函数内 `import re as _re`，模块级没有 `re`） | 加完断言**必须真跑一遍 selftest**，静态门禁不是兜底 |
@@ -723,7 +730,15 @@ python scripts/main.py finalize                      # 成功，README + SVG + d
 `morning`、`noon`、`night`。海外 IP 可达性实测通过（Actions 出口在美国 Azure，
 学习通/校网/飞书全 200，Gitee 与 AI 中转 401 = 可达只是未带凭据）。
 
-**最近一次交接复核**：v1.4.3 `1b768a8` → run
+**最近一次交接复核**：v1.4.4 `599a4ef` → run
+[`43560629313`](https://github.com/jiuyuan233/personal-assistant/actions/runs/43560629313)
+（job `132343272659`，`completed / success`，2026-11-14 13:15）。
+按日志逐行数：**门禁 + 执行两次 selftest 各 178 条 ✅、失败 0 项**，
+4 条「README 两节加回」新守卫两次都真跑，隐私守卫与链接可达性守卫也都 ✅，末尾 `[feishu] ✅ 推送成功`。
+**这一版是走 §6.9 的 API 推的**（`github.com:443` 不通），
+tree sha 与本地 `HEAD^{tree}` 一致（`36bf173e…`），本地 main 已用 `git commit-tree` 对齐到同一 sha。
+
+**上一次复核**：v1.4.3 `1b768a8` → run
 [`43547019765`](https://github.com/jiuyuan233/personal-assistant/actions/runs/43547019765)
 （job `132300612077`，`completed / success`，2026-11-14 10:34）。
 按日志逐行数：**门禁 + 执行两次 selftest 各 174 条 ✅、失败 0 项**，
