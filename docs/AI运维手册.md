@@ -50,7 +50,8 @@ scripts/main.py  ── 质量门禁：ruff + selftest（不过就红，不采�
    README.md · docs/*.md · docs/data/*.json · docs/week.svg
         ↓ git add / commit / pull --rebase / push（不 force）
         ↓ notify_feishu.js（if: always()）
-     飞书：有文案发纯文本，没文案发运行状态卡片
+     飞书：有文案发卡片（人话+作业/公告清单+一言+图），没文案发运行状态卡片
+     ★降噪闸门：常规成功且无 [urgent] → 一条都不发
 ```
 
 **三个必须记住的结构约束：**
@@ -107,7 +108,7 @@ python scripts/main.py selftest
 cd <仓库根>
 "C:/Users/XOS/AppData/Local/Temp/py311/python.exe" -m ruff check scripts --select E9,F63,F7,F82,F821,F401
 DIARY_EXCLUDE='<Secret 里的值>' "C:/Users/XOS/AppData/Local/Temp/py311/python.exe" -X utf8 \
-  "C:/Users/XOS/AppData/Local/Temp/pa_run.py" selftest      # 178 条；不设黑名单是 177 条
+  "C:/Users/XOS/AppData/Local/Temp/pa_run.py" selftest      # 213 条；不设黑名单是 212 条
 ```
 
 **这些路径在仓库外，不属于版本控制**；换机器就按上表三个坑重新解锁。
@@ -190,13 +191,13 @@ git push origin main       # ★ 绝不 --force
 | `notice` | 公告采集 + AI 打分 | ✅ | ✅ | 只 `data` | `抓取站点：N，成功：N` |
 | `schedule` | 只重算课表 | ❌ | ❌ | 只 `data` | `课表解析：186 条上课记录` |
 | `all` | 逐个跑全部采集 + 渲染 | ✅ | ✅ | `data docs README.md` | 单个失败不影响其他 |
-| `backfill` | 给存量名言补 AI 点评（每批 8 条） | ✅ | ✅ | 只 `data` | `名言点评回填：补上 N 条，仍空 M 条` |
-| `probe` | 13 个目标连通性 + 解析冒烟 | ✅ | ❌ | **不提交** | `可达：N`、`解析冒烟：{...}` |
+| `backfill` | 给存量名言补 AI 点评（每批 8 条）**+ 价值打分（每批 10 条）** | ✅ | ✅ | 只 `data` | `名言点评回填：补上 N 条，仍空 M 条` + `名言价值打分：补上 N 条` |
+| `probe` | 15 个目标连通性 + 解析冒烟 | ✅ | ❌ | **不提交** | `可达：N`、`解析冒烟：{...}` |
 | `studydiag` | dump 学习通页面形状（**数字全打码**） | ✅ | ❌ | **不提交** | 输出里数字应是 `D`、标题应是 `TITLE` |
-| `selftest` | 离线断言（带 `DIARY_EXCLUDE` **178** 条 / 不带 177 条） | ❌ | ❌ | **不提交** | `失败 0 项` |
-| `morning` | 早 7 点飞书文案 | ✅ | ✅ | **不提交** | `文案来源：AI`（或 `降级`） |
-| `noon` | 中午问好 | ✅ | ✅ | **不提交** | 同上 |
-| `night` | 晚间总结 | ✅ | ✅ | **不提交** | 同上 |
+| `selftest` | 离线断言（带 `DIARY_EXCLUDE` **213** 条 / 不带 212 条） | ❌ | ❌ | **不提交** | `失败 0 项` |
+| `morning` | 早 7 点飞书：作业 + 公告 + 一言 + 二次元图 + 中文问好 | ✅ | ✅ | **不提交** | `文案来源：AI`（或 `降级`）、`[image] 选中 …` |
+| `noon` | 中午问好 | ✅ | ✅ | **不提交** | 同上（无图） |
+| `night` | 晚间日记总结 | ✅ | ✅ | **不提交** | 同上（无图） |
 
 **不带参数 = `tick`。**
 
@@ -309,7 +310,7 @@ git push origin main       # ★ 绝不 --force
 **教师列恒为空是预期行为**：`assets/WakeUp导入课表.ics` 已脱敏剥离教师名。
 **不要去"修"它**，换回未脱敏原件即生效。
 
-### 5.5 名言 + AI 点评
+### 5.5 名言 + AI 点评 + AI 价值分
 
 | 要验的点 | 怎么验 | 合格证据 |
 | --- | --- | --- |
@@ -317,6 +318,11 @@ git push origin main       # ★ 绝不 --force
 | 存量名言能补 | 派发 `backfill` | `名言点评回填：补上 N 条，仍空 M 条（共 K 条）`，N > 0 |
 | 点评不覆盖已有的 | 重复跑 `backfill` | 第二次 `N 条全部已有评论，无需回填`（`_carry` 只填空字段） |
 | 逐字引用不改字 | 抽查几条对照原日记 | 一字未改 |
+| **价值分真的打上了** | 派发 `backfill` 后读 `data/diary/quotes.json` | 每条有 `value`（0–10 整数）与 `value_why`；日志 `名言价值打分：补上 N 条` |
+| **README 只 3 条且按分排** | 看 README `## 📔 我的名言` | 恰好 3 个 blockquote，每条带 `· AI 价值 N/10`，N 降序 |
+| **看板同口径** | 打开 Pages 看板 | 也按 `value` 降序（取前 10 条），显示同样的分 |
+| **finalize 不联网** | 断网跑 `finalize` | 仍成功、仍出 3 条（挑选是纯函数 `pick_quotes()`） |
+| 没打分不开天窗 | 临时把某条 `value` 删掉再 `finalize` | 该条排最后，README 仍有 3 条、无报错 |
 
 **runner 实测证据（2026-11-14 09:55，run `43543336759`）**：
 `名言点评回填：补上 6 条，仍空 0 条（共 13 条）` → 提交 `6a12eaa..eec43bb` → `[feishu] ✅ 推送成功`。
@@ -329,15 +335,21 @@ git push origin main       # ★ 绝不 --force
 
 | 要验的点 | 怎么验 | 合格证据 |
 | --- | --- | --- |
-| 早 7 点收到 | 派发 `morning`，看飞书 | **纯文本**（不是卡片），含今天任务 + 一言 |
-| 中午/晚上同上 | 派发 `noon` / `night` | 问好鼓励 / 一天总结 |
+| 早 7 点收到 | 派发 `morning`，看飞书 | **卡片**：人话 + `📚 待完成作业` + `📢 值得关注的公告` + `今日一言` + 图（或「点开今天的图」按钮） |
+| 中午/晚上同上 | 派发 `noon` / `night` | 问好鼓励 / 当天日记总结 |
 | 人格对 | 读消息 | 傲娇雌小鬼：先损一句再落到实事；**不是客服腔** |
 | **不含课表** | 读消息 | 没有任何上课时间/教室（用户原话「课表的提醒我不用你」） |
-| 不编造 | 对照 `data/diary/plans.json` | 消息里的任务都能找到出处 |
-| AI 挂了会降级 | 临时清空 `AI_API_KEY` 跑一次 | 日志 `文案来源：降级`，仍收到含事实和一言的消息 |
+| 不编造 | 对照 `data/study/tasks.json` + `data/notice/notices.json` + `data/diary/plans.json` | 消息里的任务/公告都能找到出处 |
+| **清单与 README 同口径** | 对比早报作业与 README 任务清单 | 同一批 ID、同一排序（共用 `actionable()` + `sort_by_deadline()`） |
+| **一言只出现一次** | 读消息 | 恰好一条「今日一言」（降级路径传 `hit=""`，重复是 bug） |
+| AI 挂了会降级 | 临时清空 `AI_API_KEY` 跑一次 | 日志 `文案来源：降级`，仍收到含清单和一言的消息 |
 | 一天最多一条 | 看 `data/runtime.json` 的 `pushed` | 值是 `YYYY-MM-DD`，同一天重复 tick 不再发 |
 | **错过整点仍补发** | 看 `PUSH_CATCHUP_HOURS` + selftest | morning/noon 各 5 小时、night 2 小时；11 条断言守着边界 |
 | 失败报红 | 看采集失败时的卡片 | 红色 ❌（用的是 `job.status`，不是 `steps.execute.outcome`） |
+| **常规成功不打扰** | 派发一次成功的 `tick`，看飞书 | **一条消息都没有**，日志 `[feishu] 常规成功且无紧急任务，按用户要求静默（不发卡）` |
+| **紧急才发橙卡** | 造一条 24h 内截止的作业再跑 `study` | 日志 `[urgent] …`，飞书橙色 ⏰ 卡且该行置顶 |
+| **同一批紧急不重复轰炸** | 紧接着再跑一次 `study` | 日志 `[urgent-same] …`，**不发第二条卡** |
+| **图片双路径** | 分别在有/无 `FS_APP_ID`+`FS_APP_SECRET` 下派发 `morning` | 有 → 日志 `[image] 已换取 image_key`、卡片内嵌图；无 → 卡片带「点开今天的图」按钮 |
 
 **补发窗口为什么按时段给而不是全局一个数**：实测 GitHub 两次 schedule 触发最大间隔 **280 分钟**，
 全局 3 小时（180 分钟）会让整个时段落在间隔里被静默丢掉。
@@ -523,15 +535,20 @@ curl -sS -H "Authorization: Bearer $GH_PAT" \
 | 装 PyNaCl 1.6.2 | 依赖 `cffi>=2.0.0` 拉不到，安装失败 | **退到 1.5.0**（只需 `cffi>=1.4.1`），另装 cffi + pycparser |
 | wheel 文件名不规范 | pip 报 `from versions: none` | pip **只认规范名** `pynacl-1.5.0-cp36-abi3-win_amd64.whl`，`pynacl.whl` 不行 |
 
-**当前仓库的 6 个 Secret**（名字可以写进仓库，**值永远不行**）：
+**当前仓库的 6 个必需 Secret + 2 个可选 Secret**（名字可以写进仓库，**值永远不行**）：
 
 | 名字 | 用途 | 缺了会怎样 |
 | --- | --- | --- |
 | `CX_USERNAME` / `CX_PASSWORD` | 学习通登录 | study 采集失败，清单不更新 |
 | `GITEE_TOKEN` | 读日记 + **写回** | diary 采集失败；**只读 token 会让写回 403** |
-| `AI_API_KEY` | 抽取 / 点评 / 人格推送 | 抛 `MissingCredential`，推送降级但不崩（§4.5） |
+| `AI_API_KEY` | 抽取 / 点评 / 价值打分 / 人格推送 | 抛 `MissingCredential`，推送降级但不崩（§4.5） |
 | `FS_WEBHOOK` | 飞书机器人 | 推送静默跳过 |
 | `DIARY_EXCLUDE` | **私人日记目录黑名单**（逗号分隔路径前缀） | **私人计划会被公开采集** —— 这是隐私开关，不是可选优化 |
+| `FS_APP_ID`（可选） | 飞书企业自建应用 App ID | 图片改走「点开今天的图」按钮，**其余功能不受影响** |
+| `FS_APP_SECRET`（可选） | 同一应用的 App Secret | 同上；与 `FS_APP_ID` 成对，缺一个就退回按钮路径 |
+
+⚠️ **两个可选 Secret 截至 v1.5.0 尚未配置**，所以「内嵌真图」这条路径的联网部分没有真实验证过。
+取法四步见 [AI回复与自更新手册](AI回复与自更新手册.md) §6。
 
 **⚠️ `DIARY_EXCLUDE` 的值为什么不能进仓库**：路径名本身就暴露了用户把哪些主题标成私人。
 所以仓库里只出现这个名字，selftest 在运行时读它做反向守卫（见 §5.8）。
@@ -589,6 +606,24 @@ v1.4.3 实测两者都是 `2651cc6d9e99ef0a8b3a3bfd6f6558071f7c5ae3`，这才叫
 对不上就**穷举 9 种组合**（3 个时区偏移 `+0000/-0000/+0800` × 3 种尾部 `''/\n/\n\n`）算 sha1，
 一次就能定位是哪个字段差异 —— 比反复猜快得多。v1.4.3 就是这么对齐的，
 **最终本地 main == 远端 main == `1b768a8`，工作区干净，没有分叉、没有 force push。**
+
+**⚠️ 第 4 个坑（v1.5.0 实测踩到，会让穷举永远不命中）：git 对象 sha1 必须带类型头。**
+
+```
+sha1( b"<type> <字节长度>\0" + <内容> )      # type ∈ blob / tree / commit / tag
+```
+
+**漏掉 `commit 1410\0` 这个头，算出来的 sha 永远对不上**，而且不报错 ——
+表现为「9 种组合全试过了还是不等」，很容易误判成「时间戳格式猜错了」而无限穷举。
+自查方法（一行就能证明）：
+
+```bash
+printf 'abc' | git hash-object -t blob --stdin --literally
+# → f2ba8f84…  == sha1(b"blob 3\0abc")
+```
+
+v1.5.0 就是靠这个定位的：加上头之后一次命中（`+0800`/`+0800`、message 1411 字节含尾 `\n\n`），
+`git commit-tree` 重造出与远端相同的 `b0dfc82`，`git update-ref` 成功，**没有 force push**。
 
 ### 6.10 抹掉 git 历史里的隐私（**需要用户明确授权，不得自行发起**）
 
@@ -704,16 +739,19 @@ v1.4.3 实测两者都是 `2651cc6d9e99ef0a8b3a3bfd6f6558071f7c5ae3`，这才叫
 ```bash
 ruff check scripts --select E9,F63,F7,F82,F821,F401   # All checks passed
 # ⚠️ 必须带上 DIARY_EXCLUDE，否则私人路径守卫会跳过，等于没验
-DIARY_EXCLUDE='<Secret 里的值>' python scripts/main.py selftest   # 178 项断言，失败 0 项
+DIARY_EXCLUDE='<Secret 里的值>' python scripts/main.py selftest   # 213 项断言，失败 0 项
 python scripts/main.py finalize                      # 成功，README + SVG + docs/data 全部生成
 ```
 
-**断言条数随环境变**：带 `DIARY_EXCLUDE` 是 **178**，不带是 **177**（那条守卫打 ⏭️ 跳过后不计入）。
-**质量门禁与执行两步都注入了这个 Secret，所以线上每轮都是 178。**
+**断言条数随环境变**：带 `DIARY_EXCLUDE` 是 **213**，不带是 **212**（那条守卫打 ⏭️ 跳过后不计入）。
+**质量门禁与执行两步都注入了这个 Secret，所以线上每轮都是 213。**
 本地不带变量跑绿了，不代表隐私守卫过了。
-条数演进：107 → 166 → 173 → 174 → **178**
-（+5 推送补发窗口、+2 链接守卫、+1 门禁注入黑名单、**+4 README 两节加回**）。
-**下面凡引用具体 run 的「174 条」都是那次运行的历史事实，不要跟着改成 178。**
+条数演进：107 → 166 → 173 → 174 → 178 → 208 → **213**
+（174→178：+5 推送补发窗口、+2 链接守卫、+1 门禁注入黑名单、+4 README 两节加回；
+178→208：v1.5.0 的名言挑选 / 早报清单口径 / 紧急告警去重 / 二次元图选型 /
+JS 降噪闸门 / yml 凭证与残留清理；208→213：+3 锁住 backfill 与价值打分的接线、
++2 锁住看板名言与 README 同口径）。
+**下面凡引用具体 run 的「174 条」「178 条」「208 条」都是那次运行的历史事实，不要跟着改成 213。**
 **改完断言必须真跑一遍**：本轮有一次新守卫用了 `re.compile`，而 `do_selftest()` 里只有
 函数内的 `import re as _re` —— **`ruff --select F821` 没报**，跑起来才 `NameError`。静态门禁不是兜底。
 
@@ -730,7 +768,16 @@ python scripts/main.py finalize                      # 成功，README + SVG + d
 `morning`、`noon`、`night`。海外 IP 可达性实测通过（Actions 出口在美国 Azure，
 学习通/校网/飞书全 200，Gitee 与 AI 中转 401 = 可达只是未带凭据）。
 
-**最近一次交接复核**：v1.4.4 `599a4ef` → run
+**最近一次交接复核**：v1.5.0 `b0dfc82a8` → run
+[`43564376700`](https://github.com/jiuyuan233/personal-assistant/actions/runs/43564376700)
+（job `132354881641`，`completed / success`，2026-11-14 14:02）。
+按日志逐行数：**门禁 + 执行两次 selftest 各 208 条 ✅、失败 0 项**（合计 416 ✅），
+隐私守卫 `私人路径不出现在仓库任何文件里` 两遍都在。
+⚠️ 那次跑的是 208 条的版本；收尾又加了 5 条守卫（现值 **213**），**只在本地验过**。
+**这一版是走 §6.9 的 API 推的**（`github.com:443` 不通），
+tree sha 与本地 `HEAD^{tree}` 一致（`34db21e3…`），本地 main 已用 `git commit-tree` 对齐到同一 sha。
+
+**上一次复核**：v1.4.4 `599a4ef` → run
 [`43560629313`](https://github.com/jiuyuan233/personal-assistant/actions/runs/43560629313)
 （job `132343272659`，`completed / success`，2026-11-14 13:15）。
 按日志逐行数：**门禁 + 执行两次 selftest 各 178 条 ✅、失败 0 项**，
@@ -754,6 +801,11 @@ tree sha 与本地 `HEAD^{tree}` 一致（`2651cc6d…`），本地 main 已用 
 | **待考考试行解析 + exam 深链能否打开** | 样本里两场考试都是「已完成」 | 第一次遇到待考时核对 `onclick` 函数名和倒计时结构，并点一次深链 |
 | **详情页年份推算** | 学期交界/暑假前后可能错一年 | 12 月底和 1 月初人工核对一次 |
 | **Pages 的像素级外观** | 数值全对，但 Qoder 内置浏览器 `viewport=0×0`，`take_screenshot` 报 `NATIVE_BROWSER_VIEWPORT_UNAVAILABLE` | 用真浏览器截一张图，确认红线没有遮住课程名 |
+| **飞书内嵌真图（`upload()` 的联网部分）** | `FS_APP_ID`/`FS_APP_SECRET` 只能由用户创建自建应用后填入，**截至 v1.5.0 未配置**。离线部分已验（无凭证不上传、两种卡片结构、7 个 JS 场景） | 用户补两个 Secret → 派发 `morning` → 日志出现 `[image] 已换取 image_key（N 字符）`，飞书里看到内嵌图 |
+| **降噪闸门在真实 runner 上的表现** | 离线用拦截 `https.request` 验过 7 个场景（含「常规成功 → exit 0 且 0 条消息」），**但没在真实 webhook 上跑过一次成功的 tick** | 派发一次 `tick`，确认飞书**没收到**任何消息、日志有 `常规成功且无紧急任务…静默` |
+| **`[urgent]` 24h 窗口 + 跨轮去重** | `urgent_alerts()` 是纯函数、5 条离线断言守着；**真实数据里还没出现过 24h 内截止的作业** | 等一条真实临期作业，确认第一次发橙卡、第二次打 `[urgent-same]` 且不发卡 |
+| **名言价值分的 runner 端到端** | 本地 `pick_quotes()` 排序已验；**`backfill` 的打分分支尚未在 runner 上跑过** | 派发 `backfill` → 看 `名言价值打分：补上 N 条` → 派发 `finalize` → README 恰好 3 条且带 `· AI 价值 N/10` |
+| **新增 5 个 probe 目标的海外可达性** | 2026-11-13 那次实测只有 10 个目标；科研处/研究生处/一言/nekos.best/i.pixiv.re 是后加的 | 派发 `probe`，重点看这 5 行 |
 
 **已验过的别再列进这张表**：
 - 日记写回的 PUT 分支已于 **2026-11-14 00:08:14** 真实验证

@@ -112,10 +112,16 @@ function renderPlans(data) {
 }
 
 function renderQuotes(data) {
-  const items = ((data && data.items) || []).slice(0, 10);
+  // 与 README 的 pick_quotes() 同一口径：AI 价值降序，同分新的在前，没打分按 0 排最后。
+  // 看板是全量视图所以留 10 条，README 只留 3 条（QUOTE_LIMIT）。
+  const items = ((data && data.items) || []).slice().sort((a, b) => {
+    const d = (b.value || 0) - (a.value || 0);
+    return d !== 0 ? d : String(b.first_seen || '').localeCompare(String(a.first_seen || ''));
+  }).slice(0, 10);
   if (!items.length) { $('quotes').innerHTML = '<p class="empty">暂无摘录。</p>'; return; }
   $('quotes').innerHTML = items.map((q) =>
-    `<blockquote>${esc(q.text)}<span class="ctx">${esc(q.context || '')}${q.source_date ? ' · ' + esc(q.source_date) : ''}</span>${
+    `<blockquote>${esc(q.text)}<span class="ctx">${esc(q.context || '')}${q.source_date ? ' · ' + esc(q.source_date) : ''}${
+      q.value != null ? ' · AI 价值 ' + esc(q.value) + '/10' : ''}</span>${
       q.comment ? `<span class="ctx">💬 ${esc(q.comment)}</span>` : ''}</blockquote>`
   ).join('');
 }

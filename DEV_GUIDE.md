@@ -105,6 +105,16 @@ git push -u origin main
 | `CX_PASSWORD` | 学习通密码 | |
 | `DIARY_EXCLUDE` | 逗号分隔的目录前缀 | **可选但强烈建议**。日记里不想被采集/公开的目录，例如 `私人,情绪/崩溃`。前缀匹配 `Tasks` 下的相对路径。仓库里只出现名字，值不入库 |
 
+### Secrets（可选，只影响飞书消息里能不能内嵌图片）
+
+| 名称 | 值 | 说明 |
+| --- | --- | --- |
+| `FS_APP_ID` | 飞书企业自建应用的 App ID | **不配也能推送**：图片改走卡片上的「点开今天的图」按钮。配了才走 `POST /open-apis/im/v1/images` 换 `image_key` 内嵌真图 |
+| `FS_APP_SECRET` | 同一应用的 App Secret | 与 `FS_APP_ID` 成对使用，缺一个就退回按钮路径。应用必须和 webhook 机器人**在同一个租户**，且开通「上传图片」权限 |
+
+取法四步见 [docs/AI回复与自更新手册.md](docs/AI回复与自更新手册.md) §6。
+⚠️ **截至 v1.5.0 这两个 Secret 尚未配置**，内嵌图路径的联网部分因此没有真实验证过。
+
 **`DIARY_EXCLUDE` 的两段作用**（`diary_collector.excluded_prefixes()` / `is_excluded()` / `drop_excluded()`）：
 
 1. **采集时跳过**：命中的文件根本不读、不喂 AI，所以隐私内容不会进入 `data/`
@@ -159,10 +169,14 @@ Variables 不用加密：`POST /actions/variables`，已存在则 `PATCH /action
 
 mode 选 **`probe`** → Run。看日志里的出口 IP 和每个站点的可达性。
 
-**2026-11-13 已在真实 runner 上跑过，结果：可达 10 / 不可达 0。**
+**2026-11-13 已在真实 runner 上跑过，当时 10 个目标：可达 10 / 不可达 0。**
 出口 IP `20.118.38.104`（美国 Azure），学习通登录/作业/课程/空间四个端点全部 HTTP 200，
 校网公告、教务处、校团委、飞书 200，Gitee 与 AI 中转 401（可达，只是没带凭据）。
 **架构级风险已排除，这一步现在只是回归检查**，直接继续 4.4 即可。
+
+⚠️ **v1.5.0 起目标是 15 个**，比那次实测多了 5 个：科研处、研究生处、一言、
+nekos.best 图 API、Pixiv 图床（`i.pixiv.re`）。**这 5 个尚未在 Actions 出口实测**，
+本地测过 nekos.best 与 i.pixiv.re 可达。下一次派发 `probe` 时重点看这 5 行。
 
 - **学习通三个域名都可达** → 继续 4.4
 - **学习通不可达（超时/连接重置）** → 说明学校后来改了策略，见下方「4.3 失败怎么办」
@@ -239,8 +253,15 @@ selftest 有两条守卫盯着这件事。
 | 标记某个计划已完成 | `data/diary/plans.json` 里对应项的 `state` 改成 `done` |
 | 换课表 | 替换 `assets/WakeUp导入课表.ics`，跑一次 `schedule` |
 | 换 AI 模型 | 仓库 Variables 的 `AI_MODEL` |
-| 改推送频率 | `.github/workflows/assistant.yml` 的 `cron` |
+| 改推送频率 | **`scripts/main.py` 的 `PUSH_HOURS` / `PUSH_CATCHUP_HOURS`**（不是 workflow 的 cron —— 只有一条 `*/20` cron，推送时刻由 tick 判断） |
+| 改采集频率 | `scripts/main.py` 的 `TICK_INTERVALS`（study 60 / diary 120 / notice 360 分钟） |
 | 改 README 版式 | `scripts/readme_template.md` |
+| 改名言显示条数 | `scripts/render_readme.py` 的 `QUOTE_LIMIT`（当前 3） |
+| 改名言挑选标准 | `scripts/prompts.py` 的 `QUOTE_VALUE_INSTRUCTIONS`（AI 打分 0–10 的口径） |
+| 改早报放几条作业/公告 | `scripts/daily_push.py` 的 `MORNING_TASK_LIMIT` / `MORNING_NOTICE_LIMIT` / `NOTICE_MIN_SCORE` |
+| 改二次元图风格 | `scripts/anime_image.py` 的 endpoint 列表（`neko` / `kitsune` / `waifu`） |
+| 改人格说话风格 | `scripts/prompts.py` 的 `PERSONA`（**只此一份**，名言点评与三时段共用） |
+| 改飞书降噪规则 | `scripts/notify_feishu.js` 的静默闸门（`status != success` 或日志含 `[urgent]` 才发状态卡） |
 
 **改完任何代码，先跑 `selftest` 模式。**
 
@@ -267,5 +288,8 @@ Windows 上 `zoneinfo` 可能缺 tzdata，`utils.py` 会自动退回固定 +08:0
 ## 8. 卸载 / 暂停
 
 - **临时暂停**：Actions → 个人助手 → 右上 `...` → Disable workflow
-- **彻底删除**：删仓库即可。本项目不写任何外部系统，只读三个数据源，
-  唯一的副作用是往自己仓库提交和往自己飞书群发消息。
+- **彻底删除**：删仓库即可。本项目的副作用只有三处：往自己仓库提交、往自己飞书群发消息、
+  **凌晨往自己的 Gitee 日记仓库写回复选框**（`diary_writeback.py`，只在 00:00–06:00 窗口内）。
+  读取的外部系统有四个：Gitee 日记、学习通、学校公告站、课表 .ics；
+  另外会请求一言（`v1.hitokoto.cn`）、二次元图（`nekos.best`）和 AI 中转站。
+  **不碰任何第三方仓库**（两个参考仓库只读不改，AGENT.md 铁律 4）。

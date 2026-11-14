@@ -435,13 +435,14 @@ def run() -> dict:
 
 
 def backfill_comments(batch: int = 8) -> dict:
-    """给 comment 为空的名言补 AI 点评（审计 §3.3）。
+    """给 comment 为空的名言补 AI 点评，并连带补价值分（审计 §3.3 + 用户「AI 挑 3 条」）。
 
     为什么需要单独一个模式：增量采集只处理 sha 变化的文件，老日记不再重跑 AI，
     而 merge_quotes 的 _carry 只补空字段 → 空 comment 永远空着。
     实测 15 条名言只有 8 条有点评，用户要求的「名言加 AI 点评」只做了一半。
 
     零采集、只读 quotes.json + 调 AI，跑一次即可（`main.py backfill`）。
+    点评每批 8 条，价值分每批 10 条（`score_quotes`），两个出口都会调打分。
     """
     from ai_client import AIClient
     from prompts import COMMENT_SCHEMA, comment_messages
@@ -481,7 +482,8 @@ def backfill_comments(batch: int = 8) -> dict:
                   .get("diary", {}).get("repo", ""))
     log(f"名言点评回填：补上 {filled} 条，仍空 {len(todo) - filled} 条（共 {len(quotes)} 条）")
     sv = score_quotes()
-    return {"ok": filled > 0 or sv.get("scored", 0) > 0, "filled": filled,
+    # 「全都补过了」也是成功：否则存量名言补齐之后再跑 backfill 会假报失败。
+    return {"ok": filled > 0 or sv.get("ok", False), "filled": filled,
             "pending": len(todo) - filled, "scored": sv.get("scored", 0)}
 
 

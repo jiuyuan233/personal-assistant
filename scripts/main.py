@@ -552,6 +552,15 @@ def do_selftest() -> bool:
     check("没打分的名言排最后", rr.pick_quotes(qs, 5)[-1]["id"] == "d")
     check("名言不足 3 条时不开天窗", len(rr.pick_quotes(qs[:2])) == 2)
     check("一条名言都没有时返回空列表", rr.pick_quotes([]) == [])
+    # 打分只在联网模式里做，finalize 不许碰网络（铁律 5）。这两条接线断了
+    # README 就会永远显示 0 分排序，而且不报错 —— 所以锁住源码里的调用关系。
+    _bf_src = inspect.getsource(_dc.backfill_comments)
+    check("backfill 模式连带补价值分", _bf_src.count("score_quotes()") == 2,
+          str(_bf_src.count("score_quotes()")))
+    check("diary 采集当场给新名言打分",
+          "score_quotes()" in inspect.getsource(_dc.run))
+    check("backfill 入口接到补点评函数",
+          "backfill_comments" in inspect.getsource(HANDLERS["backfill"]))
 
     # 早报清单：用户点名的作业 + 公告 + 一言必须在，且清单不经过 AI（prose/清单分离）。
     blk = dp.info_block("morning", now, "测试一言（来源）")
@@ -968,6 +977,10 @@ def do_selftest() -> bool:
     check("SVG 源码不再烘焙红色时间线", "#FA5252" not in inspect.getsource(ws.run))
     check("网页端仍有实时时间线",
           "nowline" in (rr.REPO_ROOT / "docs" / "js" / "app.js").read_text(encoding="utf-8"))
+    # 看板与 README 的名言口径必须一致，否则用户在看板上看到的排序和 README 不一样。
+    _appjs = (rr.REPO_ROOT / "docs" / "js" / "app.js").read_text(encoding="utf-8")
+    check("看板名言也按 AI 价值排序", "(b.value || 0) - (a.value || 0)" in _appjs)
+    check("看板名言显示 AI 价值分", "AI 价值 " in _appjs)
 
     # §5.3 嵌套加粗：**第 **10** 周** 在 Markdown 里渲染成字面星号
     _, _, sched_detail = rr.render_schedule(now)

@@ -137,8 +137,9 @@ scripts/
   schedule_parser.py  课表 .ics
   render_readme.py    README + docs/公告.md + docs/潜在计划.md + docs/已剔除任务.md + docs/data
   week_svg.py         本周课表 SVG + 当前时间线 + 几何导出
-  daily_push.py       早/中/晚三时段飞书文案（日记事实 + 一言 + AI 人格）
-  notify_feishu.js    飞书推送（有文案发纯文本，无文案发运行状态卡片）
+  daily_push.py       早/中/晚三时段飞书文案（作业 + 公告 + 日记 + 一言 + AI 人格）
+  anime_image.py      二次元图：nekos.best 取图，优先 Pixiv 来源，产出图片 JSON
+  notify_feishu.js    飞书推送（有文案发卡片，无文案发运行状态卡片；常规成功不发）
   readme_template.md  README 模板（{{占位符}}）
   notice_template.md  docs/公告.md 模板
   plans_template.md   docs/潜在计划.md 模板
@@ -165,7 +166,7 @@ python scripts/main.py study      # 采集学习通 + 渲染
 python scripts/main.py diary      # 采集日记 + 写回 Gitee（写回只在凌晨窗口内发生）
 python scripts/main.py notice     # 采集公告
 python scripts/main.py schedule   # 只重算课表
-python scripts/main.py backfill   # 给历史名言补 AI 点评（每批 8 条）
+python scripts/main.py backfill   # 给历史名言补 AI 点评 + 价值打分（每批 10 条）
 python scripts/main.py studydiag  # dump 学习通页面形状（数字全打码，可进公开日志）
 python scripts/main.py morning    # 早 7 点飞书文案（不提交任何文件）
 python scripts/main.py noon       # 中午问好
@@ -283,9 +284,14 @@ README 顶部出 🔴 告警，网页看板单列一桶 —— **绝不混进「
 
 | 模式 | 触发时刻（北京） | 内容 |
 | --- | --- | --- |
-| `morning` | 07:00 起 | 今天该做的事，**来源于日记**，附一言 |
+| `morning` | 07:00 起 | 中文问好 + **待完成作业** + **值得关注的公告** + 一言 + 二次元图 |
 | `noon` | 12:00 起 | 问好 + 鼓励 |
-| `night` | 22:00 起 | 一天的总结，数据来源于日记 |
+| `night` | 22:00 起 | 对当天日记的总结 |
+
+**人话与清单分离**：AI 只写人格化的人话（`prose`），作业/公告/一言由
+`daily_push.info_block()` 确定性拼接，图片由 `notify_feishu.js` 追加。
+**这样用户点名要的内容永远不会被 AI 漏掉或改写。** 早报作业与 README 任务清单
+共用 `render_readme.actionable()` + `dedup.sort_by_deadline()`，口径不会漂。
 
 **没有推送专用 cron。** 三个时刻写在 `main.PUSH_HOURS`，由 `due_pushes()` 在每轮 tick 里判断：
 `now` 落在 `[目标时刻, 目标时刻 + PUSH_CATCHUP_HOURS[kind]]` 且 `runtime.pushed[kind] != 今天` 才发。
@@ -306,22 +312,35 @@ README 顶部出 🔴 告警，网页看板单列一桶 —— **绝不混进「
 调侃对象是「拖延这件事」，不是用户这个人。改这段前先想清楚边界还在不在。
 
 **绝对不许带课表。** 用户原话「课表的提醒我不用你」。
-`diary_facts()` 只读 `data/diary/plans.json` 和 `quotes.json`，**不碰任何 schedule 数据**。
-提示词里也写死了这条。加事实来源时别顺手把课表塞进去。
+`diary_facts()` 只读 `data/diary/plans.json` 和 `quotes.json`，
+`study_facts()` / `notice_facts()` 只读 `data/study/tasks.json` 和 `data/notice/notices.json`，
+**都不碰任何 schedule 数据**。提示词里也写死了这条，selftest 有守卫断言三种文案都不含「课表」。
+加事实来源时别顺手把课表塞进去。
 
 **一言**：`https://v1.hitokoto.cn/`，用户指定的源。取 `hitokoto` + `from`，拼成「text（from）」。
 请求失败只 WARN 并返回空串，**不影响推送**。提示词要求「不许改它的字」。
+**一言只由 `info_block()` 拼一次**；降级路径调用 `fallback_message(..., hit="")`，
+否则会出现两条重复的一言（v1.5.0 修掉的真实 bug）。
+
+**二次元图**：`anime_image.py` 从 `https://nekos.best/api/v2/{neko|kitsune|waifu}` 取候选，
+**优先 `source_url` 是 pixiv.net 的那张**（用户要 P 站来源）。
+产出 `/tmp/push-image.json`，JS 侧双路径：有 `FS_APP_ID`/`FS_APP_SECRET` 就上传换 `image_key`
+发内嵌图，没有就发带「点开今天的图」按钮的卡片。**lolicon setu 已实测否决**（r18=0 仍不安全）。
 
 **事实驱动，不许编造。** `diary_facts(kind, today)` 按 kind 给不同事实集：
 早上给 due_today / overdue / no_due，中午给计数 + 两条优先项，晚上给今天新增 / 今日到期仍未完成 / 逾期 / 今天的名言（带点评）。
 全空时明确输出「日记里今天没有任何可播报的内容」，让 AI 直说没有，而不是硬凑。
 
-**降级路径**：AI 失败或返回空 → `fallback_message()` 出确定性文案（仍含事实和一言）。
+**降级路径**：AI 失败或返回空 → `fallback_message()` 出确定性文案（仍含事实；一言由 `info_block()` 补）。
 判断用显式 `ai_ok` 布尔，**不要改回 `text.startswith(...)` 那种脆判断**。
 日志会打「文案来源：AI / 降级」，看这行就知道有没有真的用上 AI。
 
-**交付方式**：文案写进 `/tmp/push-message.txt`，workflow 的飞书步骤
-`if [ -s ... ]` 就发纯文本，否则发原来的状态卡片。执行步骤开头有 `rm -f` 清残留。
+**交付方式**：文案写进 `/tmp/push-message.txt`、图片写进 `/tmp/push-image.json`，
+workflow 的飞书步骤 `if [ -s ... ]` 就发**卡片**（人话 + 清单 + 图），否则发运行状态卡片。
+执行步骤开头 `rm -f` **两个文件都清**。
+**降噪闸门**：状态卡片只在 `status != success` 或日志里有 `[urgent]` 时才发，
+常规运行成功**一条都不发**（用户原话「正常运行的不用给我汇报」）。
+`[urgent]` 只算 **24h 内截止且可做**的作业，并按任务 ID 签名跨轮去重（`[urgent-same]` 表示不重复告警）。
 **推送模式不提交任何文件**（`steps.mode.outputs.push == 'true'` 时跳过提交步骤）。
 
 ### 5.2 潜在计划写回日记（`diary_writeback.py`）
@@ -402,23 +421,42 @@ JS 侧按 `geo.date` 算日期漂移来平移 `today_col`，超出 0..6 就隐�
 **必须含 `comment`**（否则旧条目永远补不上点评）→ `render_readme.render_quotes()` 输出 `> 💬 ...`
 → 前端 `renderQuotes` 输出 `<span class="ctx">💬 ...</span>`。
 
-**存量名言靠 `backfill` 模式补点评**：`diary_collector.backfill_comments(batch=8)`
-挑出 `comment` 为空的名言，每批 8 条调 `prompts.comment_messages()`，成功才写回。
+**存量名言靠 `backfill` 模式补点评 + 价值分**：`diary_collector.backfill_comments(batch=8)`
+挑出 `comment` 为空的名言，每批 8 条调 `prompts.comment_messages()`，成功才写回；
+两个出口都连带调 `score_quotes(batch=10)`，给 `value` 缺失的名言打 0–10 分
+（提示词 `prompts.quote_value_messages()`，schema `QUOTE_VALUE_SCHEMA`）。
 `_carry` 只填空字段、不覆盖已有点评，所以重复跑是幂等的。
 Actions 上手动派发 `backfill`；本地 `python scripts/main.py backfill`。
 **不要靠清 `quotes.json` 重抽来补** —— 那会连带重抽计划，人工 `state` 标记有丢失风险。
+
+**README 只显示 3 条，由 AI 的分挑**（用户 2026-11-14 原话「名言就显示3条就可以了，
+让这里的 AI 挑选出有价值的放上去」）。链路分两半，**不许把打分挪到 finalize**：
+
+| 阶段 | 谁做 | 联网/花 token |
+| --- | --- | --- |
+| 打分 | `diary` 采集时当场打 + `backfill` 补存量 → 写 `quotes.json` 的 `value` / `value_why` | 是 |
+| 挑选 | `render_readme.pick_quotes()`：先按 `first_seen` 降序、再按 `-value` 稳定排序，取前 `QUOTE_LIMIT=3` | **否** |
+
+`pick_quotes()` 是纯函数，selftest 直接喂数据验排序；缺 `value` 的按 0 分排最后，
+不足 3 条就显示实际条数，**不开天窗也不报错**。改上限只改 `QUOTE_LIMIT`，
+模板里的 `{{QUOTE_LIMIT}}` / `{{QUOTE_COUNT}}` 会自动跟。
 
 ---
 
 ## 6. 已知限制 / 待办
 
-- **海外 IP 可达性：已实测通过（2026-11-13）。** Actions 出口 IP `20.118.38.104`（美国 Azure），
-  `probe` 模式 10 个目标 **全部可达，不可达 0**：学习通登录/作业/课程/空间、校网公告、教务处、
+- **海外 IP 可达性：已实测通过（2026-11-13，当时 10 个目标）。** Actions 出口 IP `20.118.38.104`（美国 Azure），
+  `probe` 模式当时 10 个目标 **全部可达，不可达 0**：学习通登录/作业/课程/空间、校网公告、教务处、
   校团委、飞书均 HTTP 200；Gitee 与 AI 中转 HTTP 401（可达，只是未带凭据）。
+  **v1.5.0 起 probe 目标是 15 个**（新增一言、nekos.best 图 API、Pixiv 图床等），
+  ⚠️ **新增的 5 个尚未在 Actions 出口实测**，本地实测 nekos.best / i.pixiv.re 可达。
   **不需要 self-hosted runner，也不需要国内定时任务兜底。**
   学校日后若封海外 IP，重跑 `probe` 即可确认，退路见 DEV_GUIDE 4.3。
 - **Secrets 已配置（2026-11-13）**：`FS_WEBHOOK`、`AI_API_KEY`、`GITEE_TOKEN`、
   `CX_USERNAME`、`CX_PASSWORD`、`DIARY_EXCLUDE`，Variables `AI_BASE_URL`、`AI_MODEL`。
+  **另有 2 个可选 Secret 尚未配置**：`FS_APP_ID` / `FS_APP_SECRET`（飞书企业自建应用，
+  只有配了才能在消息里内嵌图片；不配就走「点开今天的图」按钮，功能不缺）。
+  取法见 [docs/AI回复与自更新手册.md](docs/AI回复与自更新手册.md) §6。
   **能用 API 写，不必走网页**（轮换凭据时照这个做）：
   GET `/actions/secrets/public-key` 取 base64 公钥与 `key_id` → 用 libsodium `crypto_box_seal`
   加密 → PUT `/actions/secrets/{name}`，body 为 `{encrypted_value, key_id}`。
@@ -499,7 +537,7 @@ Actions 上手动派发 `backfill`；本地 `python scripts/main.py backfill`。
 - [ ] 改了调度频率 → 改 `main.TICK_INTERVALS` / `PUSH_HOURS`，**不要往 workflow 加 cron**；同步改 AGENT/README 模板/工作原理里的频率描述
 - [ ] 改了提交步骤 → 确认采集模式仍只 `git add data`，派生产物只由 `tick`/`finalize`/`all` 提交（见第 6 节事故）；推送模式一个文件都不提交
 - [ ] 改了人格/说话风格 → 只改 `prompts.py` 的 `PERSONA`，别在各处复制一份；确认硬边界还在
-- [ ] 改了推送事实来源 → 确认仍然**不含课表**，且只用 `data/diary/*`
+- [ ] 改了推送事实来源 → 确认仍然**不含课表**，且只用 `data/diary/*` + `data/study/tasks.json` + `data/notice/notices.json`
 - [ ] 改了日记写回 → 确认 `strip_assistant_block()` 仍在抽取前调用，区块外正文零改动，`[x]` 不被覆盖
 - [ ] 改了日记写回 → 确认凌晨窗口守卫还在（`in_window()`），**白天一次都不提交**，窗口外不推进 `last_date`
 - [ ] 改了 `pick_plans()` → 确认 `done_ids` 仍在选取前被剔掉，`first_seen` 仍升序（老计划不被饿死）

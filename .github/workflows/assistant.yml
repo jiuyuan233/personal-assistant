@@ -144,7 +144,7 @@ jobs:
           python scripts/main.py "$MODE" 2>&1 | tee -a /tmp/task-output.log
 
       - name: 提交数据
-        # probe / selftest / studydiag 不产生数据，三时段推送只读日记，都跳过提交
+        # probe / selftest / studydiag 不产生数据，三时段推送只读 data/ 不写，都跳过提交
         if: steps.mode.outputs.push != 'true' && steps.mode.outputs.mode != 'probe' && steps.mode.outputs.mode != 'selftest' && steps.mode.outputs.mode != 'studydiag'
         env:
           MODE: ${{ steps.mode.outputs.mode }}
