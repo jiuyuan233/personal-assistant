@@ -15,12 +15,8 @@
   },
   "errors": {},
   "writeback_date": "2026-11-14",
-  "last_tick": "2026-11-14T15:39:21+08:00",
+  "last_tick": "2026-11-14T16:05:53+08:00",
   "last_results": {
-    "study": true,
-    "diary": true,
-    "notice": true,
-    "noon": true,
     "finalize": true
   }
 }
