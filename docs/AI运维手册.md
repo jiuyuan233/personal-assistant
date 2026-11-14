@@ -151,8 +151,11 @@ git push origin main       # ★ 绝不 --force
 # GET /repos/{owner}/{repo}/actions/jobs/{id}/logs       → 302 到 Azure blob
 ```
 
-**⚠️ 两个实测坑：**
+**⚠️ 三个实测坑：**
 - 日志接口 302 跳到 Azure blob 时**必须把 Authorization 头去掉**，否则 403
+- **必须 `resp.content.decode('utf-8')`，不要用 `resp.text`**：blob 响应不带 charset，
+  requests 会猜成 latin-1 → 整份日志乱码 → 搜中文关键字一条都搜不到，
+  于是得出「日志里没有这条记录」的**反的结论**（2026-11-14 实际踩过）
 - API 返回的 `head_sha` 是**完整 40 位**，和你手里的短 sha 比要用 `startsWith`
 
 ---
@@ -171,7 +174,7 @@ git push origin main       # ★ 绝不 --force
 | `backfill` | 给存量名言补 AI 点评（每批 8 条） | ✅ | ✅ | 只 `data` | `名言点评回填：补上 N 条，仍空 M 条` |
 | `probe` | 13 个目标连通性 + 解析冒烟 | ✅ | ❌ | **不提交** | `可达：N`、`解析冒烟：{...}` |
 | `studydiag` | dump 学习通页面形状（**数字全打码**） | ✅ | ❌ | **不提交** | 输出里数字应是 `D`、标题应是 `TITLE` |
-| `selftest` | 164 项离线断言 | ❌ | ❌ | **不提交** | `失败 0 项` |
+| `selftest` | 离线断言（带 `DIARY_EXCLUDE` **174** 条 / 不带 173 条） | ❌ | ❌ | **不提交** | `失败 0 项` |
 | `morning` | 早 7 点飞书文案 | ✅ | ✅ | **不提交** | `文案来源：AI`（或 `降级`） |
 | `noon` | 中午问好 | ✅ | ✅ | **不提交** | 同上 |
 | `night` | 晚间总结 | ✅ | ✅ | **不提交** | 同上 |
@@ -347,7 +350,7 @@ morning 5h 正好补到 noon 时段、noon 5h 到 17:00 仍是下午、night 2h 
 | 飞书侧也脱敏 | 看 `notify_feishu.js` | `redact()` 套在 `NOTIFY_OUTPUT` 和命令行文案上 |
 | 网页不暴露私有路径 | 看 `docs/data/plans.json` | **没有 `source_file` 字段** |
 | 私人目录不被采集 | 配 `DIARY_EXCLUDE` 后派发 `diary` | 日志 `清理黑名单生效前入库的私人条目：…` |
-| **私人路径守卫每轮都跑** | 看门禁步骤的 env | `DIARY_EXCLUDE` 在**质量门禁与执行两处**都注入；日志是 ✅ 而不是 ⏭️ 跳过 |
+| **私人路径守卫每轮都跑** | 看门禁步骤的 env | `DIARY_EXCLUDE` 在**质量门禁与执行两处**都注入；日志是 ✅ 而不是 ⏭️ 跳过。**已验**：run `43544212451`（10:04，`f2c1b11`）两次 selftest 各 174 条 ✅ |
 | **守卫命中时不泄露值** | 故意造一次失败 | 学号守卫输出 `学号: DDDDDDDDDD`、私人路径守卫输出 `私人路径#N`，**都不含真实值** |
 | 抓包文件不在仓库 | `git ls-files \| grep -i har` | **空**；`.gitignore` 拒绝一切 `*.har`，无例外 |
 
