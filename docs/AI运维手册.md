@@ -833,18 +833,20 @@ tree sha 与本地 `HEAD^{tree}` 一致（`2651cc6d…`），本地 main 已用 
 
 **过时的「未验证」和过时的「已完成」一样会误导接手的人。**
 
-### 定时触发：内部调度已验证，平台投递率只有 6.9%（改不掉）
+### 定时触发：内部调度已验证，平台投递率只有 5–6.9%（改不掉）
 
 **这两件事必须分开说，混在一起就会得出错误的完成度。**
 
 | 层 | 状态 | 证据 |
 | --- | --- | --- |
-| **仓库内部调度**（谁该跑、推送该不该发、写回窗口） | ✅ **已验证正确** | run #81/#82 日志 + `data/runtime.json`：到点选中 study/diary/notice，07:00 早报在 09:00 补发成功，`errors {}` |
-| **GitHub 把 cron 投递过来** | ⚠️ **复测 6.9%，平台行为** | 单 cron 上线（`9522fdb`，11-14 00:47）后 **9.6 小时只自然触发 2 次**（29 个槽位），最大间隔 **280 分钟**。11-14 10:21 按 head_sha 归因复测；旧快照 ~8% |
+| **仓库内部调度**（谁该跑、推送该不该发、写回窗口） | ✅ **已验证正确** | run #81/#82 + run 43572087243 日志 + `data/runtime.json`：到点选中 study/diary/notice，07:00 早报在 09:00 补发成功，午报在 15:39 补发成功（`文案来源：AI`），`errors {}` |
+| **GitHub 把 cron 投递过来** | ⚠️ **复测 5–6.9%，平台行为** | 单 cron 上线（`9522fdb`，11-14 00:47）后 **9.6 小时只自然触发 2 次**（29 个槽位，6.9%）；**11-14 16:40 再复测：01:00Z → 07:39Z 的 6.65 小时只触发 1 次（20 槽位，5%），连续两次 schedule 间隔 399 分钟，刷新旧纪录 280**。按 head_sha 归因复测 |
 
-**由此修掉的一个真缺陷**：原来的补发窗口是全局 3 小时（180 分钟），**比实测最大间隔 280 分钟还窄**
+**由此修掉的一个真缺陷**：原来的补发窗口是全局 3 小时（180 分钟），**比实测最大间隔还窄**
 → 整个推送时段会落在间隔里被静默丢掉。现在按时段给：
 `PUSH_CATCHUP_HOURS = {"morning": 5, "noon": 5, "night": 2}`。
+**⚠️ 但 399 分钟的新纪录已超过 morning/noon 的 300 分钟窗口** —— 这两个时段也不再「稳兜住」，
+11-14 午报能发出是因为触发恰好落进窗口；night（120 分钟）最危险。详见 [不足与风险 §4.1](不足与风险.md)。
 
 **别再做这两件事**：
 - **别再「观察 24 小时就好了」**。v1.3.3 曾假设「手动派发挤掉了 schedule 的 pending」，
@@ -853,6 +855,24 @@ tree sha 与本地 `HEAD^{tree}` 一致（`2651cc6d…`），本地 main 已用 
 
 要准点只有两条路，**都需要用户明确授权**：外部调度器定时 `workflow_dispatch`（要把 PAT 交给第三方），
 或 self-hosted runner。**未经授权不要自己选一条做。**
+用户若授权，照下面的 runbook 做（约 10 分钟）：
+
+**路线 ①：外部调度器（免费、无服务器，推荐 cron-job.org）**
+1. 让用户建一个 **fine-grained PAT**：Settings → Developer settings → Fine-grained tokens，
+   Repository access 只勾 `personal-assistant`，Permissions 只给 **Actions: Read and write**。
+   **这个 PAT 泄露面只有「能触发这一个仓库的 workflow」**，比 classic PAT 小得多；
+2. 把 PAT 填进 cron-job.org（或同类服务）的请求头，配 3 条任务（北京时间）：
+   `07:05` / `12:05` / `21:55` 各一次，
+   `POST https://api.github.com/repos/jiuyuan233/personal-assistant/actions/workflows/assistant.yml/dispatches`，
+   header `Authorization: Bearer <PAT>` + `Accept: application/vnd.github+json`，
+   body `{"ref":"main","inputs":{"mode":"tick"}}`（用 `tick` 而不是 `morning/night` —— tick 自己会判断该发什么，还能顺带采集）；
+3. 外部触发与 GitHub schedule 并存没有冲突：`pushed[kind]` 按日期记账，一天最多一条，谁先触发谁发。
+4. **验收**：连续两天早/中/晚各收到一条，且 GitHub Actions 列表里能看到对应的 workflow_dispatch run。
+
+**路线 ②：self-hosted runner**（国内常开机器，顺带解决海外 IP 问题）：
+照 [DEV_GUIDE 4.3](../DEV_GUIDE.md) 的步骤装 runner，`runs-on: self-hosted`。
+**公开仓库挂 self-hosted runner 有安全风险（任何人提 PR 都能在你机器上跑代码）**，
+做之前先读 DEV_GUIDE 那一节的完整警告。
 另外：统计触发次数时**必须按 workflow 名 `个人助手` 过滤** —— API 里的 `dynamic` 事件是
 「pages build and deployment」，不是助手运行；**归因架构要看每个 run 的 `head_sha`**，
 不能看提交日期（本轮就因此一度把 8-cron 时期的 6 次触发算到新架构头上）。

@@ -304,6 +304,9 @@ README 顶部出 🔴 告警，网页看板单列一桶 —— **绝不混进「
 - **为什么不是全局一个数**：2026-11-14 实测 GitHub 两次 schedule 触发间隔达 **280 分钟**
   （11-13T20:20Z → 11-14T01:00Z）。原来的全局 3 小时比这个间隔还窄，
   整个补发窗口会落在间隔里、那个时段的推送被**静默丢掉**。详见 [docs/不足与风险.md](docs/不足与风险.md) §4.1。
+- **⚠️ 窗口不是保险箱**：同日再复测出 **399 分钟**的间隔（11-14T01:00Z → 07:39Z），
+  **已超过 morning/noon 的 300 分钟窗口**。night（120 分钟）丢失概率最高。
+  用户授权外部调度器后的 setup 步骤见 [docs/AI运维手册.md](docs/AI运维手册.md)「定时触发」一节。
 - 想改时刻改 `PUSH_HOURS`，想改补发宽度改 `PUSH_CATCHUP_HOURS`。**不要往 workflow 加 cron。**
 
 **人格只有一份，在 `prompts.py` 的 `PERSONA`。** 傲娇雌小鬼：先损一句，再落到实事上。
@@ -445,11 +448,11 @@ Actions 上手动派发 `backfill`；本地 `python scripts/main.py backfill`。
 
 ## 6. 已知限制 / 待办
 
-- **海外 IP 可达性：已实测通过（2026-11-13，当时 10 个目标）。** Actions 出口 IP `20.118.38.104`（美国 Azure），
-  `probe` 模式当时 10 个目标 **全部可达，不可达 0**：学习通登录/作业/课程/空间、校网公告、教务处、
-  校团委、飞书均 HTTP 200；Gitee 与 AI 中转 HTTP 401（可达，只是未带凭据）。
-  **v1.5.0 起 probe 目标是 15 个**（新增一言、nekos.best 图 API、Pixiv 图床等），
-  ⚠️ **新增的 5 个尚未在 Actions 出口实测**，本地实测 nekos.best / i.pixiv.re 可达。
+- **海外 IP 可达性：已实测通过（2026-11-14 16:08 复测，15 个目标）。** Actions 出口（美国 Azure），
+  `probe` 模式 **15/15 全部可达，不可达 0**（run 43574332399）：学习通登录/作业/课程/空间、
+  校网公告、教务处、校团委、科研处、研究生处、飞书、一言、二次元图 API、Pixiv 图床均 HTTP 200；
+  Gitee 与 AI 中转 HTTP 401（可达，只是未带凭据）。解析冒烟同步通过
+  （`{'work': 2, 'exam': 1, 'pending': 2, 'eval_window': True, 'work_window': True, 'deadline': True}`）。
   **不需要 self-hosted runner，也不需要国内定时任务兜底。**
   学校日后若封海外 IP，重跑 `probe` 即可确认，退路见 DEV_GUIDE 4.3。
 - **Secrets 已配置（2026-11-13）**：`FS_WEBHOOK`、`AI_API_KEY`、`GITEE_TOKEN`、
