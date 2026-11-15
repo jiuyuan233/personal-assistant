@@ -227,7 +227,7 @@ jobs:
           # 每轮 run 结束都接力（失败也接：下一轮可能自愈）。接力器睡 19.5 分钟后
           # 触发下一轮 tick + 下一棒接力。防失控设计见 relay.yml 头注释：
           # 独立并发组保证链恒 ≤1 条；推送由 pushed 记账防重，重复触发无害。
-          # cron-job.org（准点主力）与 GitHub schedule 两路独立于此，坏了不影响它们。
+          # GitHub 错峰 cron 独立于此作为兜底（cron-job.org 已于 2026-11-15 停用）。
           curl -s -X POST \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \

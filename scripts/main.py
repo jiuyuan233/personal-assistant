@@ -1118,6 +1118,27 @@ def do_selftest() -> bool:
     check("科技热点节只出现在傍晚档",
           "科技热点" not in dp.info_block("morning", now, "")
           and "科技热点" not in dp.info_block("night", now, ""))
+    # v1.5.20 用户要求：早报作业全部完成时，推送潜在任务（来自 Obsidian 笔记）
+    pb = dp.plans_block([
+        {"text": "学会 Rust", "state": "open", "confidence": 0.9},
+        {"text": "读完一本书", "state": "open", "confidence": 0.7, "due_date": "2026-12-01"},
+        {"text": "已取消的", "state": "cancelled"},
+        {"text": "已完成的", "state": "done"},
+    ])
+    check("潜在任务块：只取 open、置信度降序、截止日标注",
+          "学会 Rust" in pb and "读完一本书（截止 2026-12-01）" in pb
+          and "已取消" not in pb and "已完成的" not in pb, pb[:120])
+    check("潜在任务块：无 open 计划时为空", dp.plans_block([{"text": "x", "state": "done"}]) == "")
+    all_done = [{"id": "d1", "state": "done", "course_id": "c1", "title": "已交的作业",
+                 "kind": "work", "url": "u"}]
+    blk_full = dp.info_block("morning", now, "", tech_provider=lambda: "", tasks=all_done)
+    check("早报作业全清空时改推潜在任务（用户 2026-11-15 要求）",
+          "全部清空" in blk_full and "潜在任务" in blk_full, blk_full[:150])
+    blk_has = dp.info_block("morning", now, "", tech_provider=lambda: "",
+                            tasks=[{"id": "p1", "state": "pending", "course_id": "c1",
+                                    "title": "还没做的", "kind": "work", "url": "u"}])
+    check("早报有作业时不推潜在任务",
+          "潜在任务" not in blk_has and "待完成作业" in blk_has, blk_has[:150])
 
     # §5.3 嵌套加粗：**第 **10** 周** 在 Markdown 里渲染成字面星号
     _, _, sched_detail = rr.render_schedule(now)

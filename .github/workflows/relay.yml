@@ -1,15 +1,16 @@
 name: 接力器
 
-# ★ 仓库内自续链（用户 2026-11-15 要求「定时任务不能外包，在仓库里也要做一套」）：
+# ★ 仓库内自续链（用户 2026-11-15 要求「定时任务不能外包，在仓库里也要做一套」；
+#   同日进一步定调「不能依赖外部的定时」——cron-job.org 已停用，本接力器是**主路**）：
 #   assistant.yml 的每轮 run 结束时 dispatch 本接力器 → 本接力器睡 19.5 分钟 →
-#   再触发下一轮 tick + 下一棒接力。三路触发并存（接力链 / cron-job.org / GitHub schedule），
+#   再触发下一轮 tick + 下一棒接力。两路触发并存（接力链主路 / GitHub 错峰 cron 兜底），
 #   `pushed[kind]` 按日期记账保证**绝不重复推送**（谁先触发谁发，后到的自动跳过）。
 #
 # 防失控三道闸（改动前先理解，别拆）：
 # 1. 独立并发组 pa-relay + cancel-in-progress: true —— 无论 dispatch 几条链，
 #    同一时刻只剩一个 relay 在跑（后到的取消先到的），链条数恒 ≤1；
 # 2. tick 走 pa-run 串行组（cancel-in-progress: false 排队）+ pushed 记账 —— 重复触发无害；
-# 3. 本接力器睡到一半被取消也没关系：cron-job.org / GitHub schedule 两路兜底，
+# 3. 本接力器睡到一半被取消也没关系：GitHub 错峰 cron 兜底，
 #    任何一次 assistant.yml 的 run 结尾都会重新接力，链自动重建。
 #
 # 额度：public 仓库 Actions 免费。relay 每 ~20 分钟一个 run（睡 19.5 分钟），

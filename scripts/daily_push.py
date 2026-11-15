@@ -78,14 +78,16 @@ def _when(t: dict) -> str:
     return s if t.get("deadline_exact") else s + "≈"
 
 
-def study_facts(now: datetime) -> tuple[str, list[dict]]:
+def study_facts(now: datetime, tasks: list[dict] | None = None) -> tuple[str, list[dict]]:
     """待完成作业。与 README 任务清单共用 actionable()，口径不会漂。
 
     链接紧跟在每条作业下面（不是集中堆在末尾）：飞书里一眼能对上是哪条作业的入口。
+    tasks 可注入（selftest 离线测「全部完成」场景），缺省读 data/study/tasks.json。
     """
     import render_readme as rr
 
-    tasks = load_list(DATA_DIR / "study" / "tasks.json")
+    if tasks is None:
+        tasks = load_list(DATA_DIR / "study" / "tasks.json")
     kept, _ = rr.actionable(tasks, now)
     kept = sort_by_deadline(kept)
     lines = [f"待完成作业 {len(kept)} 条（只算能做的：待完成且未逾期）。"]
@@ -250,6 +252,30 @@ def tech_news() -> str:
     return out
 
 
+PLANS_MORNING_LIMIT = 5
+
+
+def plans_block(plans: list[dict], limit: int = PLANS_MORNING_LIMIT) -> str:
+    """潜在任务块（用户 2026-11-15：「作业全部完成时，就推送我的潜在任务，来自
+    我的 obsidian 笔记」）。纯函数，selftest 可离线测。
+
+    口径与 README「潜在计划」节一致：state=open，按置信度降序、截止日升序。
+    计划的常规播报仍然撤除（v1.5.5 的约定），这个块**只在作业全部完成时**作为
+    「没事干？干这个」的填充出现——且只显示 text/confidence，不播报详情细节。
+    """
+    open_plans = [p for p in plans if p.get("state") == "open" and p.get("text")]
+    if not open_plans:
+        return ""
+    open_plans.sort(key=lambda p: (-(p.get("confidence") or 0),
+                                   p.get("due_date") or "9999-12-31"))
+    lines = []
+    for p in open_plans[:limit]:
+        due = f"（截止 {p['due_date']}）" if p.get("due_date") else ""
+        lines.append(f"- {p.get('text')}{due}")
+    lines.append("（全量见 README「潜在计划」节）")
+    return "\n".join(lines)
+
+
 def urgent6_pick(now: datetime, ledger: dict, tasks: list | None = None) -> tuple[str, dict]:
     """6 小时紧急截止提醒（用户 2026-11-14 授权的独立通道）。
 
@@ -336,7 +362,8 @@ def _actionable_sorted(now: datetime, tasks: list | None = None) -> list[dict]:
     return sort_by_deadline(kept)
 
 
-def info_block(kind: str, now: datetime, hit: str, tech_provider=None) -> str:
+def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
+               tasks: list[dict] | None = None) -> str:
     """确定性清单，拼在 AI prose 后面。**不经过 AI**，保证用户点名的内容一条不漏。
 
     分工（用户 2026-11-14：「作业部分可以重复」+ 三时段增值）：
@@ -348,14 +375,22 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None) -> str:
     parts: list[str] = []
     today_iso = now.date().isoformat()
     if kind == "morning":
-        sf, _ = study_facts(now)
-        parts.append("📚 待完成作业\n" + sf)
+        sf, kept_m = study_facts(now, tasks)
+        if kept_m:
+            parts.append("📚 待完成作业\n" + sf)
+        else:
+            # 用户 2026-11-15：「全部都完成了的话，就推送我的潜在任务，来自我的
+            # obsidian 笔记」——没作业可做的日子，用他自己的长期计划填满这一格
+            block = plans_block(load_list(DIARY_DIR / "plans.json"))
+            if block:
+                parts.append("🎉 待完成作业全部清空！来干点长期的事：\n"
+                             "🎯 潜在任务（来自你的 Obsidian 笔记）\n" + block)
         nf, _ = notice_facts()
         parts.append("📢 值得关注的公告\n" + nf)
     elif kind == "noon":
-        kept = _actionable_sorted(now)
-        tasks = load_list(DATA_DIR / "study" / "tasks.json")
-        fresh = [t for t in tasks
+        kept = _actionable_sorted(now, tasks)
+        all_tasks = tasks if tasks is not None else load_list(DATA_DIR / "study" / "tasks.json")
+        fresh = [t for t in all_tasks
                  if t.get("first_seen") == today_iso and t.get("state") == "pending"]
         if fresh:
             lines = [f"🆕 今天新发的作业 {len(fresh)} 条："]
@@ -383,7 +418,7 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None) -> str:
     elif kind == "dusk":
         # v1.5.19 傍晚冲刺：今天 24:00 前截止的作业（全天最后一次「还来得及」）
         # + HN 科技热点（本档独有）。不含英语/名言回顾（午安专属）与天气（晚安专属）。
-        kept = _actionable_sorted(now)
+        kept = _actionable_sorted(now, tasks)
         day_end = now.replace(hour=23, minute=59, second=59)
         today = [t for t in kept
                  if t.get("deadline")
@@ -400,7 +435,7 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None) -> str:
         if tn:
             parts.append("📰 今日科技热点（Hacker News）\n" + tn)
     else:
-        kept = _actionable_sorted(now)
+        kept = _actionable_sorted(now, tasks)
         soon = [t for t in kept
                 if t.get("deadline")
                 and (parse_datetime(t["deadline"]) or now) <= now + timedelta(hours=48)]
@@ -411,9 +446,9 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None) -> str:
             if len(soon) > 3:
                 lines.append(f"（还有 {len(soon) - 3} 条，全量在 README）")
             parts.append("\n".join(lines))
-        tasks = load_list(DATA_DIR / "study" / "tasks.json")
+        all_tasks = tasks if tasks is not None else load_list(DATA_DIR / "study" / "tasks.json")
         monday_iso = (now.date() - timedelta(days=now.date().weekday())).isoformat()
-        this_week = [t for t in tasks if (t.get("first_seen") or "") >= monday_iso]
+        this_week = [t for t in all_tasks if (t.get("first_seen") or "") >= monday_iso]
         done_w = [t for t in this_week if t.get("state") != "pending"]
         open_w = [t for t in this_week if t.get("state") == "pending"]
         parts.append(f"📊 本周新发作业 {len(this_week)} 条：已交/处理 {len(done_w)} 条，"

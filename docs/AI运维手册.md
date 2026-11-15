@@ -884,7 +884,10 @@ probe 15/17 目标可达**都已在真实 runner 上验证（证据见 CHANGELOG
 - **别因为一天数据难看就急着上重手段**（外部调度器 / self-hosted runner）——先让错峰跑几天；
 - **别再加 cron 条数**。8 条 → 1 条正是为了绕开节流，加回去是倒退，且违反 AGENT.md。
 
-**外部调度器（✅ 已接入并端到端验证，2026-11-15）**：cron-job.org 上建了 3 条 job
+**外部调度器 cron-job.org（⚠️ 已停用，2026-11-15 用户定调「不能依赖外部的定时」）**：
+曾接入并端到端验证（3 条 job 每天触发 3 次，pa-noon 真机成功一次），当日因 API 日配额
+限流无法删除 job（后台删除任务执行中）——**在 job 删除前它们仍会触发，但无害**
+（pushed 记账防重，重复 tick 幂等）。API 用法留档如下，供未来参考：
 （`pa-morning` 8866928 / `pa-noon` 8866929 / `pa-night` 8866930，时区 Asia/Shanghai，
 每天 07:05 / 12:05 / 22:05，POST `tick` 到 dispatch API）。**接入全程用 cron-job.org
 的 API 完成**（用户提供了 API key），下面把 Web UI 步骤和 **API 的三个坑**都留档：
