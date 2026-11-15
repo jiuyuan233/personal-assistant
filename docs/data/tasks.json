@@ -1,76 +1,19 @@
 {
-  "updated_at": "2026-11-15T14:18:07+08:00",
+  "updated_at": "2026-11-15T15:27:03+08:00",
   "stats": {
-    "pending": 3,
+    "pending": 0,
     "overdue": 0,
-    "today": 1,
-    "week": 2,
+    "today": 0,
+    "week": 0,
     "later": 0,
     "unknown": 0,
     "dropped": {
-      "not_pending": 34,
+      "not_pending": 37,
       "overdue": 2
     },
     "courses": 14
   },
-  "items": [
-    {
-      "id": "219232606-947f336d92",
-      "kind": "exam",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "class_id": "153566712",
-      "title": "期中测试题（前三章）",
-      "work_id": "11087147",
-      "label": "考试",
-      "status": "待做",
-      "state": "pending",
-      "deadline": "2026-11-15T23:40:32+08:00",
-      "deadline_exact": true,
-      "remaining_text": "剩余9小时22分钟",
-      "url": "https://mooc1.huuc.edu.cn/exam-ans/exam/test/examcode/examnotes?courseId=219232606&classId=153566712&examId=11087147",
-      "first_seen": "2026-11-15T13:39:15+08:00",
-      "last_seen": "2026-11-15T14:17:02+08:00"
-    },
-    {
-      "id": "201780805-ba99d83e8f",
-      "kind": "work",
-      "course": "新世纪大学英语综合教程(一)",
-      "course_id": "201780805",
-      "class_id": "156290484",
-      "title": "Unit 1 words in action (第2-3大题)",
-      "work_id": "58170556",
-      "label": "",
-      "status": "未交",
-      "state": "pending",
-      "deadline": "2026-11-19T23:55:00+08:00",
-      "deadline_exact": true,
-      "remaining_text": "剩余105小时37分钟",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=58170556",
-      "start_time": "2026-11-07T15:12:00+08:00",
-      "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-15T14:17:02+08:00"
-    },
-    {
-      "id": "201780805-8722437faf",
-      "kind": "work",
-      "course": "新世纪大学英语综合教程(一)",
-      "course_id": "201780805",
-      "class_id": "156290484",
-      "title": "unit 1 翻译",
-      "work_id": "58170689",
-      "label": "",
-      "status": "未交",
-      "state": "pending",
-      "deadline": "2026-11-20T23:55:00+08:00",
-      "deadline_exact": true,
-      "remaining_text": "剩余129小时38分钟",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=58170689",
-      "start_time": "2026-11-07T15:17:00+08:00",
-      "first_seen": "2026-11-13T14:28:50+08:00",
-      "last_seen": "2026-11-15T14:17:02+08:00"
-    }
-  ],
+  "items": [],
   "courses": [
     {
       "course_id": "269154829",
@@ -166,7 +109,7 @@
       "ismooc2": "1",
       "name": "新世纪大学英语综合教程(一)",
       "task_count": 3,
-      "pending_count": 2
+      "pending_count": 0
     },
     {
       "course_id": "219232606",
@@ -174,7 +117,7 @@
       "ismooc2": "1",
       "name": "高等数学A",
       "task_count": 15,
-      "pending_count": 2
+      "pending_count": 1
     },
     {
       "course_id": "205372276",

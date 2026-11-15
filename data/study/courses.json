@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-15T14:17:53+08:00",
+  "updated_at": "2026-11-15T15:27:03+08:00",
   "count": 14,
   "items": [
     {
@@ -96,7 +96,7 @@
       "ismooc2": "1",
       "name": "新世纪大学英语综合教程(一)",
       "task_count": 3,
-      "pending_count": 2
+      "pending_count": 0
     },
     {
       "course_id": "219232606",
@@ -104,7 +104,7 @@
       "ismooc2": "1",
       "name": "高等数学A",
       "task_count": 15,
-      "pending_count": 2
+      "pending_count": 1
     },
     {
       "course_id": "205372276",
