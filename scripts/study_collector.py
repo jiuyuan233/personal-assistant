@@ -637,6 +637,8 @@ def run() -> dict:
                     log(f"[quiz]   XHR：{safe_text(u, 200)}")
                 for r in qb.extract_quiz_rows(res["dom_text"])[:8]:
                     log(f"[quiz]   行：{r['line'][:120]}")
+                # 渲染后 DOM 文本 dump（打码）——第一版迭代用，确认随堂作业的呈现位置
+                log(f"[quiz]   DOM 文本前 1200 字：{_shape(clean_html_text(res['dom_text'][:1200]))}")
             new_cursor = (cursor + len(picks)) % max(1, len(courses))
             meta_now = load_json(META_PATH) or {}
             meta_now["quiz_cursor"] = new_cursor
