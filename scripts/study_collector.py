@@ -715,6 +715,10 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
             log(f"[diag] {c.get('name')} 课程页 {len(shtml)} 字节 | "
                 f"knowledge×{shtml.count('knowledge')} chapter×{shtml.count('chapter')} "
                 f"随堂×{shtml.count('随堂')}")
+            # 781 字节的空壳页（v1.5.21 实测）：看它到底说了什么/让我们去哪
+            log(f"[diag]   前 240 字节：{_shape(clean_html_text(shtml[:240]))[:200]}")
+            for m in re.finditer(r"""(?:location\.href|window\.location|src)\s*=\s*["']([^"']{10,150})["']""", shtml):
+                log(f"[diag]   跳转目标：{_shape(m.group(1))[:160]}")
             seen: set[str] = set()
             for m in re.finditer(r"""(?:href|src|data|url)=["']([^"']*(?:knowledge|worklist|examlist|quiz|chapter|module|datalist)[^"']*)["']""", shtml):
                 u = _shape(m.group(1))[:180]
