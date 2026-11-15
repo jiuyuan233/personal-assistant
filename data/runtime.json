@@ -12,13 +12,14 @@
   "pushed": {
     "morning": "2026-11-15",
     "noon": "2026-11-15",
-    "night": "2026-11-14",
+    "night": "2026-11-15",
     "dusk": "2026-11-15"
   },
   "errors": {},
   "writeback_date": "2026-11-15",
-  "last_tick": "2026-11-15T21:32:27+08:00",
+  "last_tick": "2026-11-15T22:05:33+08:00",
   "last_results": {
+    "night": true,
     "finalize": true
   }
 }
