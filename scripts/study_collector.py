@@ -715,10 +715,39 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
             log(f"[diag] {c.get('name')} 课程页 {len(shtml)} 字节 | "
                 f"knowledge×{shtml.count('knowledge')} chapter×{shtml.count('chapter')} "
                 f"随堂×{shtml.count('随堂')}")
-            # 781 字节的空壳页（v1.5.21 实测）：看它到底说了什么/让我们去哪
-            log(f"[diag]   前 240 字节：{_shape(clean_html_text(shtml[:240]))[:200]}")
-            for m in re.finditer(r"""(?:location\.href|window\.location|src)\s*=\s*["']([^"']{10,150})["']""", shtml):
-                log(f"[diag]   跳转目标：{_shape(m.group(1))[:160]}")
+        # v1.5.21 续：mycourse/stu 直抓得到 781 字节图片占位页（enc 不同源）——
+        # 浏览器进课程是被 stucoursemiddle 302 跳过去的，跟跳拿真实课程页 URL。
+        try:
+            mid_url = (f"https://mooc1.huuc.edu.cn/visit/stucoursemiddle"
+                       f"?courseid={c['course_id']}&clazzid={c['class_id']}&cpi={c['cpi']}"
+                       f"&ismooc2={c.get('ismooc2', '1')}")
+            cur = mid_url
+            hops: list[str] = []
+            page = None
+            for _ in range(5):
+                resp_h = cx.s.get(cur, timeout=30, allow_redirects=False)
+                if resp_h.status_code in (301, 302, 303, 307, 308):
+                    from urllib.parse import urljoin as _uj
+                    cur = _uj(cur, resp_h.headers.get("Location") or "")
+                    hops.append(_shape(cur)[:180])
+                    continue
+                page = resp_h.text if resp_h.status_code == 200 else None
+                hops.append(f"final HTTP {resp_h.status_code} ({len(page or '')}B)")
+                break
+            log(f"[diag] {c.get('name')} 302 链：{' → '.join(hops[:3])}")
+            if page:
+                log(f"[diag]   真实课程页 knowledge×{page.count('knowledge')} "
+                    f"随堂×{page.count('随堂')} worklist×{page.count('worklist')} "
+                    f"examlist×{page.count('examlist')}")
+                if "高等数学" in (c.get("name") or ""):
+                    seen2: set[str] = set()
+                    for m in re.finditer(r"""(?:href|src|data|url)=["']([^"']*(?:knowledge|worklist|quiz|datalist|chapter)[^"']*)["']""", page):
+                        u = _shape(m.group(1))[:200]
+                        if u not in seen2:
+                            seen2.add(u)
+                            log(f"[diag]   高数入口：{u}")
+        except Exception as e:
+            log(f"[diag] 302 链失败：{type(e).__name__}", level="WARN")
             seen: set[str] = set()
             for m in re.finditer(r"""(?:href|src|data|url)=["']([^"']*(?:knowledge|worklist|examlist|quiz|chapter|module|datalist)[^"']*)["']""", shtml):
                 u = _shape(m.group(1))[:180]
