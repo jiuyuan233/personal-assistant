@@ -213,3 +213,19 @@ jobs:
           if [ "$sent_any" = 0 ]; then
             node scripts/notify_feishu.js
           fi
+
+      - name: 接力（触发仓库内自续链，维持 20 分钟节奏的第三道保险）
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          # 每轮 run 结束都接力（失败也接：下一轮可能自愈）。接力器睡 19.5 分钟后
+          # 触发下一轮 tick + 下一棒接力。防失控设计见 relay.yml 头注释：
+          # 独立并发组保证链恒 ≤1 条；推送由 pushed 记账防重，重复触发无害。
+          # cron-job.org（准点主力）与 GitHub schedule 两路独立于此，坏了不影响它们。
+          curl -s -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/actions/workflows/relay.yml/dispatches" \
+            -d '{"ref":"main"}' -w "relay-dispatch HTTP %{http_code}\n"

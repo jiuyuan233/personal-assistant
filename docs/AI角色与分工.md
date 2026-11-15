@@ -80,7 +80,7 @@
 | 7 | 提交数据到仓库（`git pull --rebase` + push，不 force） | `assistant.yml`「提交数据」步 |
 | 8 | 发飞书：三时段卡片照发；**常规成功静默**（用户原话「正常运行的不用给我汇报」）；失败/紧急才报 | `scripts/notify_feishu.js` |
 
-**触发来源有两路**（2026-11-15 起）：GitHub 自己的错峰 cron（`7-59/20`，兜底）+
+**触发来源有三路**（2026-11-15 起）：GitHub 自己的错峰 cron（`7-59/20`，兜底）+
 **cron-job.org 外部定时器**（`pa-morning/noon/night` 每天 07:05/12:05/22:05，主路，
 解决 schedule 投递不稳）。两路并存无冲突：`pushed[kind]` 按日期记账，谁先触发谁发。
 

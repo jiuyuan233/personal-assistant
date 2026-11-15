@@ -862,6 +862,17 @@ def do_selftest() -> bool:
     # 紧急提醒与三时段同轮时两条都必须发出（elif 会吞掉 urgent 且记账已写=永久丢失）
     check("紧急提醒走独立 if 分支（elif 会吞掉它）",
           "if [ -s /tmp/push-urgent.txt ]" in yml and "elif [ -s /tmp/push-urgent.txt ]" not in yml)
+    # v1.5.17 仓库内自续链：relay.yml 接力器（用户要求定时不能外包、仓库里也要一套）
+    ryml = (rr.REPO_ROOT / ".github" / "workflows" / "relay.yml").read_text(encoding="utf-8")
+    check("接力器独立并发组且 cancel-in-progress（链恒 ≤1 条）",
+          "group: pa-relay" in ryml and "cancel-in-progress: true" in ryml)
+    check("接力器会触发下一轮 tick 和下一棒自己",
+          "assistant.yml/dispatches" in ryml and "relay.yml/dispatches" in ryml
+          and '"mode":"tick"' in ryml)
+    check("接力器用 GITHUB_TOKEN（workflow_dispatch 官方例外，不需要 PAT）",
+          "${{ github.token }}" in ryml)
+    check("assistant.yml 每轮结束都接力（第三道保险）",
+          "relay.yml/dispatches" in yml)
     wcfg = ((dw.load_json(dw.DATA_DIR / "sources.json") or {}).get("diary") or {}).get("writeback_window")
     check("sources.json 的写回窗口可解析", dw.parse_window(wcfg or dw.DEFAULT_WINDOW) is not None, str(wcfg))
 
