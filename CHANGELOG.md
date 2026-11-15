@@ -3,9 +3,40 @@
 本项目的所有版本记录。日期为北京时间。
 
 > **读法**：每条版本记录都是**当时的快照**，里面的「未验证 / 仍未完成」不代表现状。
-> 当前状态只看两处：最新版（v1.5.21）的 **「仍未完成」一节**（**认标题不认编号**，
+> 当前状态只看两处：最新版（v1.5.22）的 **「仍未完成」一节**（**认标题不认编号**，
 > 编号会随补记漂移），和 [不足与风险 §0.5 状态表](docs/不足与风险.md)（唯一权威）。
 > 被后续版本推翻的结论已就地加注，**保留原文是为了记住当时为什么这么判断，不是让人照着做**。
+
+## v1.5.22 — 2026-11-15/16
+
+**用户要求**：「全部都在 action 上跑，就弄 playwright 吧」——随堂作业（挂课程章节页、
+四层逆向确认 requests 拿不到）改用 Playwright 无头浏览器采集。
+
+### 1. 已落地
+
+- 新模块 `scripts/quiz_browser.py`：cookie 注入（复用登录链会话）+ 打开课程页（JS 渲染）
+  + XHR 拦截 + 渲染文本提取 + 任务行启发式；**任何失败不影响主采集**。
+- study 集成：每轮只抓 cursor 指向的 2 门课（轮换记账 `meta.quiz_cursor`），
+  请求率低于主采集（反爬约束）。
+- requirements + playwright；yml 加 Chromium 缓存与安装步；selftest 新增 3 条接线断言。
+- **真机三轮验证**：Chromium 安装 11 秒（缓存）、课程页渲染 107-108KB 成功、
+  cursor 轮换正常；**同时抓到并修了 2 个 bug**（页面菜单含用户姓名进公开日志——
+  run 已删、dump 改为只打任务行；`_save_meta` 全量重建抹掉 `quiz_cursor`——已改保留 old 键）。
+
+### 2. 随堂列表收录：差最后一环（mobilelearn 域认证）
+
+- 渲染后页面 URL 里的 enc 构造 `stuActiveList` 地址（mobilelearn.huuc.edu.cn 域）
+  → Playwright 打开成功但 **innerText 为 0 字**——该域的认证与 mooc 域不同，
+  cookie 注入未覆盖。**下个 AI 的接力点**：mobilelearn 域认证（抓包看它要什么
+  cookie/token，或用 Playwright 从课程页内点击跳转保持会话）。
+- 诚实评估：随堂作业「当堂发布当堂做」，隔天收录价值有限——优先级由用户定。
+
+### 3. 过程中修掉的其他问题
+
+- `_save_meta` 全量重建抹掉 `quiz_cursor`（cursor 停 0 的根因）——已改保留 old 键；
+- f-string 表达式内反斜杠 SyntaxError 曾上 main 33 秒（已修）；诊断临时文件两次
+  误提交被隐私守卫拦下（stu.html / examnotes.html，均已删）；
+- AI 配置一次误切换（SiliconFlow）已完整恢复 ChatAnyWhere（Secret+两 Variables）。
 
 ## v1.5.21 — 2026-11-15
 
