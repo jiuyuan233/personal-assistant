@@ -23,6 +23,9 @@
 - 用 **GITHUB_TOKEN** 派发（workflow_dispatch 是官方文档明确的 GITHUB_TOKEN 可触发例外事件），
   **不需要任何新凭据**；public 仓库额度无限，接力 job 属轻量睡眠（每 ~20 分钟 20 分钟计费）。
 - selftest 新增 4 条结构断言；relay.yml 头注释写明防失控设计（改前必读）。
+- **真机首启踩到一个坑已修**：接力 dispatch 返回 403——assistant.yml 的默认
+  `permissions` 只有 `contents: write`，dispatches API 需要 `actions: write`。
+  已加；修复后接力器成功启动（07:32:50 in_progress），链存活。
 
 ### 2. 与 cron-job.org 的关系
 
