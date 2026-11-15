@@ -318,9 +318,11 @@ def do_selftest() -> bool:
         # v1.5.16 用户报「考试没收录」：待考行是 goTest(...) 形状，必须收录为 pending
         check("待考 goTest 行收录为 pending", todo_row["title"] == "期末考试"
               and todo_row["state"] == "pending", f"{todo_row['title']}/{todo_row['state']}")
-        check("goTest 第 4 参解析出真实开始时间",
-              (todo_row.get("start_time") or "").startswith("2026-11-15T14:00"),
-              str(todo_row.get("start_time")))
+        # v1.5.16 实测：goTest 参数 4 是页面给的精确截止时间（秒级），deadline 直接用它
+        check("goTest 第 4 参是精确截止时间（deadline_exact=True）",
+              todo_row["deadline"].startswith("2026-11-15T14:00")
+              and todo_row["deadline_exact"] is True,
+              f"{todo_row['deadline']}/{todo_row['deadline_exact']}")
         check("待考深链是 examnotes 且带 examId",
               "examnotes" in todo_row["url"] and "examId=11087147" in todo_row["url"],
               todo_row["url"])

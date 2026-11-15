@@ -324,7 +324,8 @@ def parse_exam_rows(html: str, course: dict, now: datetime,
 
     - 已完成：onclick="viewExamAnswer('examId','relationId')"，两参数带引号纯数字
     - **待考**：onclick="goTest('examId',…,'开始时间',…,false,'考试码',…)"（v1.5.16），
-      goTest 第 4 参是**自带年份的真实开始时间**——比倒计时推算准，直接收进 start_time；
+      goTest 第 4 参是**自带年份的精确截止时间**（v1.5.16 实测修正：参数顺序
+      (courseId, examId, classId, '结束时间', cpi, …)，deadline 直接用它并标 exact）；
       深链用 examnotes 页（courseId/classId/examId，均考试级参数，无每生一份的 enc）。
     """
     out = []
@@ -341,13 +342,18 @@ def parse_exam_rows(html: str, course: dict, now: datetime,
         sm = STATUS_RE.search(chunk)
         status = clean_html_text(sm.group(1)) if sm else ""
         deadline, exact, rem_text, _over = _row_deadline(chunk, now)
-        start_time = None
         if gm:
-            # 待考：examId 是 goTest 参数 1；开始时间是参数 4（页面自带年份，精确值）
-            exam_id, relation_id = gm.group(1), gm.group(5)
-            start_time = parse_datetime(gm.group(4))
-            # examnotes 页按用户实测深链可进（登录态下）；三个参数都是考试级，
-            # 不含每生一份的 enc/cpi——cpi 虽在用户原链接里出现，但按 §7.2 白名单口径不落盘
+            # v1.5.16 修正：实测（run 43681528635 落盘对比）goTest 参数顺序是
+            #   (courseId, examId, classId, '结束时间', cpi, false, 考试码, flag)
+            # —— 参数 4 是页面给的**精确截止时间**（秒级，比列表倒计时的分钟级推算准），
+            # 直接覆盖倒计时估算并标 deadline_exact=True；参数里没有开始时间。
+            exam_id, relation_id = gm.group(2), ""
+            end_dt = parse_datetime(gm.group(4))
+            if end_dt:
+                deadline = end_dt.isoformat(timespec="seconds")
+                exact = True
+            # examnotes 页深链（用户实测登录态下可进）；三个参数都是考试/课程级，
+            # 不含每生一份的 enc——cpi 虽在用户原链接里出现，但按 §7.2 白名单口径不落盘
             url = (f"https://mooc1.huuc.edu.cn/exam-ans/exam/test/examcode/examnotes"
                    f"?courseId={course['course_id']}&classId={course['class_id']}"
                    f"&examId={exam_id}")
@@ -375,7 +381,6 @@ def parse_exam_rows(html: str, course: dict, now: datetime,
             "deadline": deadline,
             "deadline_exact": exact,
             "remaining_text": rem_text,
-            "start_time": start_time.isoformat(timespec="seconds") if start_time else None,
             "url": url,
         })
     return out
@@ -804,7 +809,7 @@ SAMPLE_EXAM_HTML = '''<div class="bottomList"><ul><li>
 <div onclick="viewExamAnswer('10959519','170844300')">
 <div class="right-content"><p class="overHidden2 fl">第二章测试题</p>
 <p class="status fl">已完成</p></div></div></li><li>
-<div style="float: left; width: 90%;" tabindex="0" role="option" onclick="goTest('11087147', 153566712, 219232606, '2026-11-15 14:00:00.0', 577967959, false, 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6', '1');">
+<div style="float: left; width: 90%;" tabindex="0" role="option" onclick="goTest('219232606', 11087147, 153566712, '2026-11-15 14:00:00.0', 577967959, false, 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6', '1');">
 <div class="tag icon-exam icon-exam"></div>
 <div class="right-content"><p class="overHidden2 fl">期末考试</p>
 <div class="clear"></div><p class="status fl">待做</p></div></div>
