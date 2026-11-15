@@ -777,6 +777,19 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
                         for m in re.finditer(r".{0,260}知识总结.{0,340}", resp_dl2):
                             log(f"[diag]   知识总结 HTML 片段：{_shape(m.group(0))[:500]}")
                             break
+                        # v1.5.21 最后一层：datalist 页的任务数据由前端 AJAX 再请求——
+                        # dump 它的 AJAX 端点与 data-* 属性（打码）
+                        hits_a = 0
+                        for m in re.finditer(r"""(?:url|action)\s*[:=]\s*["']([^"']*(?:\.ac\?|\.ac"|/work/|/exam/|/api/|/mooc/|List|list)[^"']{0,100})["']""", resp_dl2):
+                            u = _shape(m.group(1))[:180]
+                            if u not in seen2:
+                                seen2.add(u)
+                                log(f"[diag]   datalist AJAX 端点：{u}")
+                            hits_a += 1
+                            if hits_a >= 10:
+                                break
+                        for m in re.finditer(r"""data-(?:url|api|src|page)=["']([^"']{10,150})["']""", resp_dl2):
+                            log(f"[diag]   data 属性：{_shape(m.group(1))[:160]}")
                         hits_d = 0
                         for m in re.finditer(r"<tr\b.*?</tr>", resp_dl2, re.S):
                             tr = _shape(_mask_title(re.sub(r"\s+", " ", m.group(0)))[:360])
