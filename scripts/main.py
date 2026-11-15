@@ -235,8 +235,8 @@ def do_probe() -> bool:
         ("每日英语", "https://open.iciba.com/dsapi/"),
         ("明日天气", "https://api.open-meteo.com/v1/forecast?latitude=33.77&longitude=113.19"
                      "&daily=temperature_2m_max&timezone=Asia/Shanghai&forecast_days=1"),
-        # v1.5.19 傍晚档科技热点：Hacker News 官方 API（免费无 key）
-        ("科技热点", "https://hacker-news.firebaseio.com/v0/topstories.json"),
+        # v1.5.19 傍晚档科技热点：IT之家 RSS（中文，免费无 key；v1.5.19 曾用 HN 后换源）
+        ("科技热点", "https://www.ithome.com/rss/"),
     ]
     ua = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
           "(KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36")
@@ -1092,15 +1092,27 @@ def do_selftest() -> bool:
     check("看板有立即更新按钮（dispatch tick）",
           "refreshBtn" in _idx and "triggerRefresh" in _appjs
           and "assistant.yml/dispatches" in _appjs)
-    # v1.5.19 傍晚档科技热点：格式化是纯函数（离线可测），hn_top/AI 翻译是联网不测
+    # v1.5.19 傍晚档科技热点：RSS 解析是纯函数（离线可测），抓取是联网不测
+    _syn_xml = (b'<?xml version="1.0"?><rss version="2.0"><channel>'
+                b'<item><title>\xe6\x96\xb0\xe9\x97\xbb\xe4\xb8\x80</title>'
+                b'<link>https://example.com/1</link>'
+                b'<pubDate>Mon, 10 Nov 2026 08:00:00 GMT</pubDate></item>'
+                b'<item><title>\xe6\x96\xb0\xe9\x97\xbb\xe4\xba\x8c</title>'
+                b'<link>https://example.com/2</link>'
+                b'<pubDate>Mon, 10 Nov 2026 09:00:00 GMT</pubDate></item>'
+                b'</channel></rss>')
+    _syn_parsed = dp.parse_ithome_rss(
+        _syn_xml, datetime(2026, 11, 10, 12, 0, tzinfo=BJ_TZ))
+    check("IT之家 RSS 解析：标题/链接/顺序",
+          len(_syn_parsed) == 2 and _syn_parsed[0]["title"] == "新闻一"
+          and _syn_parsed[0]["url"] == "https://example.com/1", str(_syn_parsed))
+    check("超过 24 小时的旧资讯被过滤",
+          len(dp.parse_ithome_rss(_syn_xml, datetime(2026, 11, 12, 12, 0, tzinfo=BJ_TZ))) == 0)
     tn_fmt = dp.format_tech_news([
-        {"title": "OpenAI ships GPT-5", "zh": "OpenAI 发布 GPT-5，值得看模型评测", "url": "https://example.com/1"},
-        {"title": "Rust 2.0 released", "zh": "", "url": ""},
-    ])
-    check("科技热点格式化：中文摘要在前+原文兜底+空对不出现",
-          "OpenAI 发布 GPT-5" in tn_fmt and "OpenAI ships GPT-5" in tn_fmt
-          and "Rust 2.0" in tn_fmt and "（原文：" in tn_fmt, tn_fmt[:120])
-    # dusk 的科技热点 provider 可注入：selftest 离线确定性（不真的联 HN）
+        {"title": "合成新闻一", "url": "https://example.com/1"},
+        {"title": "合成新闻二", "url": ""}])
+    check("科技热点格式化", "合成新闻一" in tn_fmt and "合成新闻二" in tn_fmt, tn_fmt[:120])
+    # dusk 的科技热点 provider 可注入：selftest 离线确定性（不真的联 IT之家）
     blk_dusk = dp.info_block("dusk", now, "", tech_provider=lambda: "1. 合成热点\n   ↳ https://example.com/t")
     check("傍晚档含科技热点节（provider 注入）", "今日科技热点" in blk_dusk and "合成热点" in blk_dusk)
     check("科技热点节只出现在傍晚档",

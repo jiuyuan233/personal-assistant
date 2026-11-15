@@ -24,7 +24,8 @@ from pathlib import Path
 import requests
 
 from dedup import load_list, sort_by_deadline
-from utils import DATA_DIR, log, now_bj, parse_datetime, safe_text
+from utils import (BJ_TZ, DATA_DIR, clean_html_text, log, now_bj,
+                   parse_datetime, safe_text)
 
 DIARY_DIR = DATA_DIR / "diary"
 # workflow 的飞书步骤读这个文件；存在就发推送，不存在就走运行状态卡片（且只报重要信息）。
@@ -47,11 +48,12 @@ MORNING_TASK_LIMIT = 6
 MORNING_NOTICE_LIMIT = 3
 NOTICE_MIN_SCORE = 3
 # v1.5.19 傍晚冲刺档（用户 2026-11-15 新增）：18:30，今天截止的最后一次"还来得及"提醒
-# + Hacker News 科技热点。内容与其他三档错开：科技热点只在此档出现。
-HN_API = "https://hacker-news.firebaseio.com/v0"
-HN_TOP_LIMIT = 8        # 取前 8 个候选，按得分挑
-HN_MIN_SCORE = 100      # 得分门槛（HN 热门）
-HN_STORY_COUNT = 3      # 最终展示条数
+# + 中文科技热点（IT之家 RSS；v1.5.19 曾用 Hacker News + AI 翻译，用户定调要中文后换源）。
+# 内容与其他三档错开：科技热点只在此档出现。
+ITHOME_RSS = "https://www.ithome.com/rss/"
+TECH_NEWS_HOURS = 24   # 科技快讯时效：超过 24 小时的不算「今日热点」
+HN_TOP_LIMIT = 6       # 候选条数（沿用的常量名，含义=科技热点候选上限）
+HN_STORY_COUNT = 3     # 最终展示条数
 
 
 def hitokoto() -> str:
@@ -185,83 +187,66 @@ def quote_recall(today: date) -> str:
     return out
 
 
-def hn_top(limit: int = HN_TOP_LIMIT) -> list[dict]:
-    """Hacker News 当日热门（官方 API，免费无 key）。失败返回空列表。
+def parse_ithome_rss(xml_bytes: bytes, now: datetime,
+                     limit: int = HN_TOP_LIMIT) -> list[dict]:
+    """解析 IT之家 RSS（标准 RSS 2.0，UTF-8）。纯函数，selftest 用合成 XML 离线测。
 
-    取 topstories 前 limit*2 个 id 再逐个取 item，按得分过滤排序——
-    topstories 本身已按热度排序，过滤后仍保序。
+    只留 TECH_NEWS_HOURS 小时内发布的条目（科技快讯要新鲜，旧的不算「今日热点」）。
     """
-    try:
-        ids = requests.get(f"{HN_API}/topstories.json", timeout=15).json() or []
-        out = []
-        for i in ids[:limit * 2]:
-            it = requests.get(f"{HN_API}/item/{i}.json", timeout=15).json() or {}
-            title, score, url = it.get("title"), it.get("score") or 0, it.get("url") or ""
-            if title and score >= HN_MIN_SCORE:
-                out.append({"title": safe_text(title, 200).strip(),
-                            "url": url, "score": score})
-            if len(out) >= limit:
-                break
-        return out
-    except Exception as e:
-        log(f"HN 热门获取失败：{type(e).__name__}", level="WARN")
-        return []
+    import xml.etree.ElementTree as ET
+    from email.utils import parsedate_to_datetime
+    root = ET.fromstring(xml_bytes)
+    out = []
+    for item in root.iter("item"):
+        title = clean_html_text(item.findtext("title") or "")
+        link = (item.findtext("link") or "").strip()
+        pub_raw = item.findtext("pubDate") or ""
+        pub = None
+        try:
+            pub = parsedate_to_datetime(pub_raw.strip())
+        except (TypeError, ValueError):
+            pub = None
+        if not title or not link:
+            continue
+        if pub is not None:
+            pub = pub.astimezone(BJ_TZ)
+            if (now - pub).total_seconds() > TECH_NEWS_HOURS * 3600:
+                continue  # 超过 24 小时的旧资讯不算「今日热点」
+        out.append({"title": safe_text(title, 120).strip(), "url": link, "pub": pub})
+        if len(out) >= limit:
+            break
+    return out
 
 
-def format_tech_news(pairs: list[dict]) -> str:
-    """格式化科技热点节。纯函数（pairs = [{title, zh, url}]），selftest 可离线测。
-
-    zh 为空（AI 翻译失败）就显示英文标题原文——降级不阻断。
-    """
-    if not pairs:
+def format_tech_news(items: list[dict]) -> str:
+    """格式化科技热点节。纯函数，selftest 可离线测。"""
+    if not items:
         return ""
     lines = []
-    for i, p in enumerate(pairs[:HN_STORY_COUNT], 1):
-        head = p.get("zh") or p.get("title") or ""
-        lines.append(f"{i}. {head}")
+    for i, p in enumerate(items[:HN_STORY_COUNT], 1):
+        lines.append(f"{i}. {p.get('title') or ''}")
         if p.get("url"):
             lines.append(f"   ↳ {p['url']}")
-        if p.get("zh") and p.get("title"):
-            lines.append(f"   （原文：{p['title']}）")
     return "\n".join(lines)
 
 
 def tech_news() -> str:
-    """傍晚档科技热点：HN 热门前 3 条 + AI 中文一句话摘要。失败返回空串，不阻断推送。
+    """傍晚档科技热点：IT之家 RSS 最新 3 条（中文，24h 内）。失败返回空串，不阻断推送。
 
-    AI 只做翻译摘要（英文标题是事实输入），提示词明确不许编造细节。
+    用户 2026-11-15 定调要中文科技报；IT之家标题即中文，**零 AI 依赖**（比 HN 翻译
+    少一层失败面）。换源记录：HN（英文+AI 翻译）只在 v1.5.19 存活半天即被替换。
     """
-    stories = hn_top()
-    if not stories:
-        return ""
-    pairs = [{"title": s["title"], "url": s["url"], "zh": ""} for s in stories[:HN_STORY_COUNT]]
     try:
-        from ai_client import AIClient
-        client = AIClient(timeout=90)
-        prompt = (
-            "把下面每条英文科技新闻标题翻译成中文，并用一句话（30 字以内）说明"
-            "它为什么值得关注。只基于标题本身的信息，不许编造细节。"
-            "只输出 JSON 数组：[{\"index\": 0, \"zh\": \"中文摘要\"}, …]，"
-            "长度必须与输入条数一致。\n\n" +
-            "\n".join(f"{i}. {p['title']}" for i, p in enumerate(pairs)))
-        data = client.chat_json([{"role": "user", "content": prompt}],
-                                temperature=0.2, max_tokens=2000)
-        if isinstance(data, list):
-            by_index = {int(d.get("index", -1)): d for d in data
-                        if isinstance(d, dict)}
-            for j, p in enumerate(pairs):
-                d = by_index.get(j)
-                if d and safe_text(d.get("zh"), 80).strip():
-                    p["zh"] = safe_text(d.get("zh"), 80).strip()
-        else:
-            # 静默跳过会让「AI 摘要 0/3」无迹可循（v1.5.19 首跑实测）——必须留痕
-            log(f"科技热点翻译返回异常结构：{safe_text(repr(data)[:200], 200)}", level="WARN")
+        r = requests.get(ITHOME_RSS, timeout=15,
+                         headers={"User-Agent": "Mozilla/5.0 (compatible; personal-assistant)"})
+        r.raise_for_status()
+        items = parse_ithome_rss(r.content, now_bj())
     except Exception as e:
-        log(f"科技热点翻译失败：{type(e).__name__}，降级为英文原文", level="WARN")
-    out = format_tech_news(pairs)
+        log(f"IT之家 RSS 获取失败：{type(e).__name__}", level="WARN")
+        return ""
+    out = format_tech_news(items)
     if out:
-        log(f"[tech] 科技热点 {len(pairs)} 条（AI 摘要 "
-            f"{sum(1 for p in pairs if p['zh'])}/{len(pairs)}）")
+        log(f"[tech] 科技热点 {min(len(items), HN_STORY_COUNT)} 条（IT之家，24h 内）")
     return out
 
 
