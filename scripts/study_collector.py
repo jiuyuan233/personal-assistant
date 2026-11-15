@@ -459,14 +459,16 @@ def detail_work_window(html: str, now: datetime) -> tuple[datetime | None, datet
 # 主流程
 # ---------------------------------------------------------------------------
 def _save_meta(now: datetime, **kw) -> dict:
-    """写 meta.json，**保留上一次的 last_success**。
+    """写 meta.json，**保留上一次的 last_success 与其他既有键**。
 
     审计 §3.8：原来三个失败分支都用全新 dict 覆盖，把 last_success 抹掉了，
     事后无法判断数据有多旧。失败时只更新 last_attempt 与失败原因。
+    v1.5.22 修正：old 的其他键（如 quiz_cursor 轮换记账）也必须保留——
+    之前的写法会把它们全部抹掉。
     """
     old = load_json(META_PATH) or {}
-    meta = {"last_attempt": now.isoformat(timespec="seconds"),
-            "last_success": old.get("last_success"), **kw}
+    meta = {**{k: v for k, v in old.items() if k != "last_attempt"},
+            "last_attempt": now.isoformat(timespec="seconds"), **kw}
     save_json(META_PATH, meta)
     return meta
 
