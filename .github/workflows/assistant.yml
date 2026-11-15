@@ -99,6 +99,14 @@ jobs:
           pip install -r scripts/requirements.txt
           pip install ruff
 
+      - name: 缓存与安装 Playwright Chromium（随堂作业抓取用，v1.5.22）
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-v1
+      - name: 安装 Playwright Chromium
+        run: python -m playwright install chromium
+
       - name: 决定模式
         id: mode
         env:

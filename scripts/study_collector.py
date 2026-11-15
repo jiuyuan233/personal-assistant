@@ -29,10 +29,10 @@ from urllib.parse import parse_qs, urlparse
 import requests
 
 from dedup import load_list, merge_tasks, save_list, sort_by_deadline
-from utils import (DATA_DIR, clean_html_text, env, fmt_remaining, load_json, log,
-                   make_id, now_bj, parse_datetime, parse_remaining, safe_text,
-                   save_json, scrub_course_name, scrub_task_title,
-                   strip_personal_fields)
+from utils import (DATA_DIR, clean_html_text, env, exc_brief, fmt_remaining,
+                   load_json, log, make_id, now_bj, parse_datetime,
+                   parse_remaining, safe_text, save_json, scrub_course_name,
+                   scrub_task_title, strip_personal_fields)
 
 STUDY_DIR = DATA_DIR / "study"
 TASKS_PATH = STUDY_DIR / "tasks.json"
@@ -609,6 +609,41 @@ def run() -> dict:
     for t in still_unknown:
         anomalies.append(f"待完成但抓不到截止：{t.get('course')} · {t.get('title')}")
         log(f"⚠️ 待完成却无截止时间，可能已逾期：{t.get('course')} · {t.get('title')}", level="WARN")
+
+    # v1.5.22 随堂作业 Playwright 采集：每轮只抓 cursor 指向的少数课程（轮换），
+    # 请求率低于主采集（反爬约束）。**任何失败都不影响主采集**（诊断信息落日志，
+    # 第一版不并入 tasks.json——等真实渲染样本确认结构后实现精确解析）。
+    if cfg.get("quiz_browser", True):
+        try:
+            import quiz_browser as qb
+            meta_q = load_json(META_PATH) or {}
+            cursor = int(meta_q.get("quiz_cursor") or 0) % max(1, len(courses))
+            per_round = max(1, int(cfg.get("quiz_per_round") or 2))
+            picks = courses[cursor:cursor + per_round] or courses[:1]
+            log(f"[quiz] 本轮随堂探测 {len(picks)} 门（cursor={cursor}）："
+                f"{', '.join((c.get('name') or '?')[:12] for c in picks)}")
+            q_cookies = qb.cookies_from_session(cx.s)
+            for c in picks:
+                time.sleep(2)
+                mid_url = (f"https://mooc1.huuc.edu.cn/visit/stucoursemiddle"
+                           f"?courseid={c['course_id']}&clazzid={c['class_id']}&cpi={c['cpi']}"
+                           f"&ismooc2={c.get('ismooc2', '1')}")
+                res = qb.collect_course_page(c, mid_url, q_cookies, UA)
+                if not res.get("ok"):
+                    log(f"[quiz] {c.get('name')} 失败：{res.get('error', '')[:120]}", level="WARN")
+                    continue
+                log(f"[quiz] {c.get('name')} 课程页 {res['html_len']}B | XHR {len(res['xhr'])} 条")
+                for u in res["xhr"][:8]:
+                    log(f"[quiz]   XHR：{safe_text(u, 200)}")
+                for r in qb.extract_quiz_rows(res["dom_text"])[:8]:
+                    log(f"[quiz]   行：{r['line'][:120]}")
+            new_cursor = (cursor + len(picks)) % max(1, len(courses))
+            meta_now = load_json(META_PATH) or {}
+            meta_now["quiz_cursor"] = new_cursor
+            save_json(META_PATH, meta_now)
+            log(f"[quiz] cursor → {new_cursor}")
+        except Exception as e:
+            log(f"[quiz] 随堂探测异常（不影响主采集）：{exc_brief(e)}", level="WARN")
 
     merged = merge_tasks(load_list(TASKS_PATH), all_tasks, now)
     # 审计 §2.5 / §7.2：data/ 是公开仓库的一部分，不是本地缓存。

@@ -876,6 +876,15 @@ def do_selftest() -> bool:
           "${{ github.token }}" in ryml)
     check("assistant.yml 每轮结束都接力（第三道保险）",
           "relay.yml/dispatches" in yml)
+    # v1.5.22 随堂作业 Playwright 采集：依赖/浏览器安装/轮换记账的接线守卫
+    check("Playwright 在依赖与安装步骤里（随堂作业抓取）",
+          "playwright" in (rr.REPO_ROOT / "scripts" / "requirements.txt").read_text(encoding="utf-8")
+          and "playwright install chromium" in yml)
+    check("study 集成随堂探测且失败不影响主采集",
+          "quiz_browser" in inspect.getsource(study_collector.run)
+          and "不影响主采集" in inspect.getsource(study_collector.run))
+    check("随堂轮换 cursor 记账在 meta.json",
+          "quiz_cursor" in inspect.getsource(study_collector.run))
     wcfg = ((dw.load_json(dw.DATA_DIR / "sources.json") or {}).get("diary") or {}).get("writeback_window")
     check("sources.json 的写回窗口可解析", dw.parse_window(wcfg or dw.DEFAULT_WINDOW) is not None, str(wcfg))
 
