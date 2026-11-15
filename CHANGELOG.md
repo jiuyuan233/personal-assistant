@@ -13,13 +13,13 @@
 
 ### 1. 外部定时器接入完成（cron-job.org，全程 API 自动化）
 
-- 用 API key 走  建 3 条 job：**pa-morning（每天 07:05）/ pa-noon（12:05）/
-  pa-night（22:05）**，时区 Asia/Shanghai，POST  到 GitHub dispatch API，
+- 用 API key 走 `api.cron-job.org` 建 3 条 job：**pa-morning（每天 07:05）/ pa-noon（12:05）/
+  pa-night（22:05）**，时区 Asia/Shanghai，POST `tick` 到 GitHub dispatch API，
   header 带现有 PAT（用户明确不轮换）。jobId 8866928 / 8866929 / 8866930。
 - **API 的三个坑全部踩平并留档**（运维手册「定时触发」节）：创建用 PUT /jobs（POST 404）、
   更新用 PATCH /jobs/{id}；headers 是**对象**形式（数组 500）；名字字段是 title（name 被忽略）。
 - 端到端首验：2026-11-15 12:05 pa-noon 首次真实触发（结果见后续 run 记录）。
-- 与错峰 cron（）并存： 按日期记账，谁先触发谁发；GitHub schedule 自动降级为兜底。
+- 与错峰 cron（`7-59/20`）并存：`pushed[kind]` 按日期记账，谁先触发谁发；GitHub schedule 自动降级为兜底。
 - **安全账目**：cron API key 由用户贴进会话、只存在于 cron-job.org 服务端，未写进仓库任何文件；
   PAT 交给 cron-job.org 是用户明确授权的取舍（泄露面 = 触发这一个仓库的 workflow）。
 
