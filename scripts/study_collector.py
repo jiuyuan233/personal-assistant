@@ -871,6 +871,42 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
                                 break
             except Exception as e:
                 log(f"[diag] 高数 302 链失败：{type(e).__name__}", level="WARN")
+            # v1.5.22 突破：随堂活动列表页 stuActiveList（mobilelearn 域）——
+            # iframe 结构实测（v1.5.22 诊断）：课程页 4 个 frame，其一即
+            # stuActiveList?courseid&clazzid&cpi&ut&s&t&stuenc——全部可构造（requests 可抓）
+            time.sleep(3)
+            try:
+                from urllib.parse import urlparse as _up2
+                _enc302 = ""
+                try:
+                    _enc302 = (_pq(_up2(cur).query).get("enc") or [""])[0]
+                except Exception:
+                    _enc302 = ""
+                import time as _t
+                active_url = (f"https://mobilelearn.huuc.edu.cn/page/active/stuActiveList"
+                              f"?courseid={c['course_id']}&clazzid={c['class_id']}"
+                              f"&cpi={c['cpi']}&ut=s&t={int(_t.time() * 1000)}"
+                              f"&stuenc={_enc302}")
+                resp_act = cx.get(active_url)
+                size_a = len(resp_act or "")
+                log(f"[diag]   stuActiveList → {size_a}B")
+                if resp_act and size_a > 1000:
+                    log(f"[diag]   随堂×{resp_act.count('随堂')} "
+                        f"知识总结×{resp_act.count('知识总结')} "
+                        f"test×{resp_act.count('test')} active×{resp_act.count('active')}")
+                    hits_a = 0
+                    for m in re.finditer(r"[^\n<>]{0,30}(?:随堂|知识总结|测试|测验)[^\n<]{0,90}", resp_act):
+                        s = _shape(clean_html_text(m.group(0))).strip()
+                        if len(s) > 12:
+                            log(f"[diag]   内容行：{s}")
+                        hits_a += 1
+                        if hits_a >= 12:
+                            break
+                    for m in re.finditer(r".{0,200}知识总结.{0,300}", resp_act):
+                        log(f"[diag]   知识总结片段：{_shape(m.group(0))[:420]}")
+                        break
+            except Exception as e:
+                log(f"[diag] stuActiveList 失败：{type(e).__name__}", level="WARN")
             time.sleep(3)
             seen: set[str] = set()
             for m in re.finditer(r"""(?:href|src|data|url)=["']([^"']*(?:knowledge|worklist|examlist|quiz|chapter|module|datalist)[^"']*)["']""", shtml):
