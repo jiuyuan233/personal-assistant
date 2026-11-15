@@ -310,10 +310,20 @@ def do_selftest() -> bool:
         check("ID 不含 enc", "abc123" not in rows[0]["id"] and "def456" not in rows[1]["id"])
 
     erows = study_collector.parse_exam_rows(study_collector.SAMPLE_EXAM_HTML, course, now)
-    check("考试行数=1", len(erows) == 1, f"实际 {len(erows)}")
-    if erows:
-        check("考试状态 done", erows[0]["state"] == "done", erows[0]["state"])
-        check("考试标题", erows[0]["title"] == "第二章测试题", erows[0]["title"])
+    check("考试行数=2（已完成 viewExamAnswer + 待考 goTest）", len(erows) == 2, f"实际 {len(erows)}")
+    if len(erows) == 2:
+        done_row = next(r for r in erows if r["state"] == "done")
+        todo_row = next(r for r in erows if r["state"] == "pending")
+        check("已完成考试状态与标题", done_row["title"] == "第二章测试题", done_row["title"])
+        # v1.5.16 用户报「考试没收录」：待考行是 goTest(...) 形状，必须收录为 pending
+        check("待考 goTest 行收录为 pending", todo_row["title"] == "期末考试"
+              and todo_row["state"] == "pending", f"{todo_row['title']}/{todo_row['state']}")
+        check("goTest 第 4 参解析出真实开始时间",
+              (todo_row.get("start_time") or "").startswith("2026-11-15T14:00"),
+              str(todo_row.get("start_time")))
+        check("待考深链是 examnotes 且带 examId",
+              "examnotes" in todo_row["url"] and "examId=11087147" in todo_row["url"],
+              todo_row["url"])
 
     check("未交 归为 pending", study_collector.classify("未交") == "pending",
           study_collector.classify("未交"))

@@ -233,7 +233,8 @@ def scrub_task_title(s: str) -> str:
 
 # 审计 §2.5 / §7.2：cpi / enc / stuenc / answerId 都是每生一份的，能定位到用户本人，
 # 所以用白名单而不是黑名单 —— 学习通以后新增什么个人参数都不会漏出去。
-_PUBLIC_KEEP = {"courseid", "classid", "clazzid", "workid", "ut", "ismooc2"}
+# v1.5.16 加 examid：待考考试深链（examnotes 页）的考试级 ID，非个人参数。
+_PUBLIC_KEEP = {"courseid", "classid", "clazzid", "workid", "ut", "ismooc2", "examid"}
 
 
 def public_url(url: str, mode: str = "course") -> str:

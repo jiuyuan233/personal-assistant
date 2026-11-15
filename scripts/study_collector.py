@@ -63,6 +63,15 @@ LABEL_RE = re.compile(r'<i class="label[^"]*">\s*([^<]*?)\s*</i>', re.I)
 TITLE_RE = re.compile(r'<p class="overHidden2[^"]*">\s*([^<]*?)\s*</p>', re.I)
 TIME_RE = re.compile(r'<div class="time\s+(\w+)"[^>]*>(.*?)</div>', re.I | re.S)
 EXAM_ONCLICK_RE = re.compile("onclick=\"(\\w+)\\('(\\d+)','(\\d+)'\\)\"")
+# v1.5.16 用户报「考试没收录」：待考考试的行是 goTest(...)，与已完成的 viewExamAnswer
+# 完全不同（2026-11-15 studydiag run 43680922922 实测 dump，数字打码形状）：
+#   onclick="goTest('DDDDDDDDD',DDDDDDDD,DDDDDDDDD,'DDDD-DD-DD DD:DD:DD.D',DDDDDDDDD,
+#                   false,'DeeDDDddcDDDcDcDDDbDcDcbDDDDdDed', 'D');"
+# 参数：examId（带引号）、两个无引号数字、**开始时间字符串（自带年份+毫秒）**、
+# 一个数字、布尔、一个混合字母数字的考试码、一个标志位。注意 D 打码只掩数字不掩字母。
+GOTEST_RE = re.compile(
+    r"goTest\('(\d+)',\s*(\d+),\s*(\d+),\s*'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(?:\.\d+)?',"
+    r"\s*(\d+),\s*(?:true|false),\s*'([A-Za-z0-9]+)',\s*'(\d+)'\)")
 DETAIL_DT_RE = re.compile(
     r"(?:截止时间|结束时间|作答时间|截止|结束)[^0-9]{0,40}(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日]?\s*\d{1,2}:\d{2})")
 # 实测（2026-11-13 studydiag，run 43448758305）：作业详情页给的是
@@ -311,30 +320,45 @@ def parse_work_rows(html: str, course: dict, now: datetime) -> list[dict]:
 
 def parse_exam_rows(html: str, course: dict, now: datetime,
                     tokens: dict | None = None) -> list[dict]:
+    """考试列表解析，两种行形状（diag 实测）：
+
+    - 已完成：onclick="viewExamAnswer('examId','relationId')"，两参数带引号纯数字
+    - **待考**：onclick="goTest('examId',…,'开始时间',…,false,'考试码',…)"（v1.5.16），
+      goTest 第 4 参是**自带年份的真实开始时间**——比倒计时推算准，直接收进 start_time；
+      深链用 examnotes 页（courseId/classId/examId，均考试级参数，无每生一份的 enc）。
+    """
     out = []
-    # 考试行是 <li> 里嵌 onclick="viewExamAnswer('id','rel')" / enterExam(...)
-    for m in re.finditer(r"<li>(.*?)</li>", html, re.S):
+    for m in re.finditer(r"<li\b[^>]*>(.*?)</li>", html, re.S):
         chunk = m.group(1)
         om = EXAM_ONCLICK_RE.search(chunk)
+        gm = GOTEST_RE.search(chunk)
         tm = TITLE_RE.search(chunk)
-        if not om or not tm:
+        if not tm or not (om or gm):
             continue
-        title = clean_html_text(tm.group(1))
+        title = scrub_task_title(clean_html_text(tm.group(1)))
         if not title:
             continue
-        title = scrub_task_title(title)
         sm = STATUS_RE.search(chunk)
         status = clean_html_text(sm.group(1)) if sm else ""
-        exam_id, relation_id = om.group(2), om.group(3)
         deadline, exact, rem_text, _over = _row_deadline(chunk, now)
-        # §3.7 原来这个 URL 没带 stuenc/enc，按四步链的实测结论必然「参数传递不正确」。
-        # 补上现铸 token，至少课程级考试列表能打开。单场考试的深链需要 viewExamAnswer
-        # 的 JS 实现，未实测前不猜（见 diagnose 的 JS dump）。
-        url = (f"https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list"
-               f"?courseid={course['course_id']}&clazzid={course['class_id']}"
-               f"&cpi={course['cpi']}&ut=s")
-        if tokens:
-            url += f"&stuenc={tokens.get('enc', '')}&enc={tokens.get('examEnc', '')}"
+        start_time = None
+        if gm:
+            # 待考：examId 是 goTest 参数 1；开始时间是参数 4（页面自带年份，精确值）
+            exam_id, relation_id = gm.group(1), gm.group(5)
+            start_time = parse_datetime(gm.group(4))
+            # examnotes 页按用户实测深链可进（登录态下）；三个参数都是考试级，
+            # 不含每生一份的 enc/cpi——cpi 虽在用户原链接里出现，但按 §7.2 白名单口径不落盘
+            url = (f"https://mooc1.huuc.edu.cn/exam-ans/exam/test/examcode/examnotes"
+                   f"?courseId={course['course_id']}&classId={course['class_id']}"
+                   f"&examId={exam_id}")
+        else:
+            exam_id, relation_id = om.group(2), om.group(3)
+            # §3.7 已完成考试的列表深链：带现铸 token（enc 每次变，落盘前被 public_url 剥掉）
+            url = (f"https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list"
+                   f"?courseid={course['course_id']}&clazzid={course['class_id']}"
+                   f"&cpi={course['cpi']}&ut=s")
+            if tokens:
+                url += f"&stuenc={tokens.get('enc', '')}&enc={tokens.get('examEnc', '')}"
         out.append({
             "id": make_id(course["course_id"], course["class_id"], "exam", exam_id, relation_id),
             "kind": "exam",
@@ -351,6 +375,7 @@ def parse_exam_rows(html: str, course: dict, now: datetime,
             "deadline": deadline,
             "deadline_exact": exact,
             "remaining_text": rem_text,
+            "start_time": start_time.isoformat(timespec="seconds") if start_time else None,
             "url": url,
         })
     return out
@@ -778,7 +803,12 @@ SAMPLE_WORK_HTML = '''<h2>示例课程26级高等数学A（一）</h2>
 SAMPLE_EXAM_HTML = '''<div class="bottomList"><ul><li>
 <div onclick="viewExamAnswer('10959519','170844300')">
 <div class="right-content"><p class="overHidden2 fl">第二章测试题</p>
-<p class="status fl">已完成</p></div></div></li></ul></div>'''
+<p class="status fl">已完成</p></div></div></li><li>
+<div style="float: left; width: 90%;" tabindex="0" role="option" onclick="goTest('11087147', 153566712, 219232606, '2026-11-15 14:00:00.0', 577967959, false, 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6', '1');">
+<div class="tag icon-exam icon-exam"></div>
+<div class="right-content"><p class="overHidden2 fl">期末考试</p>
+<div class="clear"></div><p class="status fl">待做</p></div></div>
+<div class="time notOver"><img src="x.png" />剩余5小时30分钟</div></li></ul></div>'''
 # 实测形状（run 43448758305）：作业详情页的「作答时间」，值在 <em> 里、不带年份
 SAMPLE_DETAIL_HTML = "<p>作答时间:<em>11-05 23:59</em>至<em>11-10 23:59</em></p>"
 SAMPLE_EVAL_HTML = '<p class="hpInfo">互评时间：11-06 07:01 至 11-10 23:01</p>'
