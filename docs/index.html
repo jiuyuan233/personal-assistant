@@ -15,9 +15,14 @@
 
 <main>
   <section>
-    <h2>⏰ 待完成任务</h2>
+    <h2>⏰ 待完成任务
+      <button id="refreshBtn" class="refresh-btn" onclick="triggerRefresh()">🔄 立即更新</button>
+    </h2>
     <div id="stats" class="stats"></div>
     <div id="tasks"></div>
+    <p class="meta">「立即更新」远程触发一次采集（去学习通重新拉全部作业状态），约 2 分钟生效后本页自动刷新。
+      首次使用会要求粘贴一个 GitHub Token（需本仓库 <b>Actions:write</b> 权限）；它只保存在
+      你自己的浏览器本地，仅发往 api.github.com，不上传到任何其他地方。</p>
   </section>
 
   <section>

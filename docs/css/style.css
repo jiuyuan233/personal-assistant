@@ -90,3 +90,16 @@ footer { padding: 8px 16px 32px; color: var(--muted); font-size: 12px; }
   th:nth-child(2), td:nth-child(2) { display: none; }
   section { padding: 14px; }
 }
+/* 立即更新按钮（v1.5.18）：贴在 h2 标题右侧，弱化样式不抢焦点 */
+.refresh-btn {
+  float: right;
+  padding: 3px 12px;
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--blue);
+  cursor: pointer;
+}
+.refresh-btn:hover { background: #f0f6ff; border-color: var(--blue); }
+.refresh-btn:disabled { color: var(--muted); cursor: wait; }

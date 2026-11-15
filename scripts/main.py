@@ -1084,6 +1084,11 @@ def do_selftest() -> bool:
     _appjs = (rr.REPO_ROOT / "docs" / "js" / "app.js").read_text(encoding="utf-8")
     check("看板名言也按 AI 价值排序", "(b.value || 0) - (a.value || 0)" in _appjs)
     check("看板名言显示 AI 价值分", "AI 价值 " in _appjs)
+    # 用户 2026-11-15：看板要有「立即更新」按钮（远程触发一次采集）
+    _idx = (rr.REPO_ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+    check("看板有立即更新按钮（dispatch tick）",
+          "refreshBtn" in _idx and "triggerRefresh" in _appjs
+          and "assistant.yml/dispatches" in _appjs)
 
     # §5.3 嵌套加粗：**第 **10** 周** 在 Markdown 里渲染成字面星号
     _, _, sched_detail = rr.render_schedule(now)
