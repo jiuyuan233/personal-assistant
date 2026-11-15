@@ -322,7 +322,7 @@ img 元素的必填**属性名是 `img_key`**——v1.5.5 真机首验时 JS 写
 5. 跑本地门禁：`ruff check scripts --select E9,F63,F7,F82,F821,F401` + `python scripts/main.py selftest`，确认**失败 0 项**（v1.5.8 起 222 条断言，断言总数随版本增长，**认「失败 0 项」不认具体数字**）。
 6. 派发一次 `selftest`，**读日志**确认 runner 上同样 0 失败（本地过不代表 runner 过）。
 7. 看 `data/diary/quotes.json` 的 `value` 字段是否齐全（当前 13/13）；README 名言节应是 3 条且带「AI 价值 N/10」。
-8. 派发一次 `morning`（**会真的给用户发一条飞书**，别反复派发），读日志确认 `[image] 已换取 image_key` + `[push] morning … 图有 … 文案来源：AI`。
+8. 派发一次 `morning`（用户 2026-11-15 明确：**测试卡片不算打扰，可以继续发**），读日志确认 `[image] 已换取 image_key` + `[push] morning … 图有 … 文案来源：AI`。
 9. 确认降噪生效：随便一轮常规成功的 tick，日志里应有 `[feishu] 常规成功且无紧急任务，按用户要求静默（不发卡）`，且用户**没收到**状态卡。
 10. 把本轮改动写进 [CHANGELOG.md](../CHANGELOG.md)，同步所有受影响的 md（**文档与代码不一致就是缺陷**）。
 11. 收工前跑 [AI 运维手册 §10](AI运维手册.md) 的自检清单。

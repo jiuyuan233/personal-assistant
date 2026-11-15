@@ -75,10 +75,14 @@
 | 2 | 按 `data/runtime.json` 的时间戳决定该不该采集：study 60min / diary 120min / notice 360min | `main.TICK_INTERVALS` |
 | 3 | 采集：学习通模拟登录 → Gitee 日记（名言+计划+写回复查）→ 6 个公告站 | `scripts/*_collector.py` + `data/sources.json` |
 | 4 | 三时段推送判断（07/12/22 + 补发窗口 morning/noon 5h、night 2h） | `main.PUSH_HOURS` / `PUSH_CATCHUP_HOURS` |
-| 5 | **6 小时紧急截止提醒**（剩余 <6h 且未交的作业，每条只提醒一次） | `daily_push.URGENT_HOURS`，记账 `runtime.urgent6` |
+| 5 | **6 小时紧急截止提醒**（剩余 <6h 且未交的作业，同一截止时间只提醒一次） | `daily_push.URGENT_HOURS`，记账 `runtime.urgent6` |
 | 6 | 渲染 README / docs / 看板数据（零网络零 token） | `scripts/render_readme.py` + `*_template.md` |
 | 7 | 提交数据到仓库（`git pull --rebase` + push，不 force） | `assistant.yml`「提交数据」步 |
 | 8 | 发飞书：三时段卡片照发；**常规成功静默**（用户原话「正常运行的不用给我汇报」）；失败/紧急才报 | `scripts/notify_feishu.js` |
+
+**触发来源有两路**（2026-11-15 起）：GitHub 自己的错峰 cron（`7-59/20`，兜底）+
+**cron-job.org 外部定时器**（`pa-morning/noon/night` 每天 07:05/12:05/22:05，主路，
+解决 schedule 投递不稳）。两路并存无冲突：`pushed[kind]` 按日期记账，谁先触发谁发。
 
 凌晨 00:00–06:00 窗口内它还会把挖出来的计划写回日记复选框（`scripts/diary_writeback.py`，
 窗口在 `data/sources.json`，白天一次都不提交）。
@@ -101,7 +105,8 @@
 3. **不主动发明任务**。它只做设定文件里写明的事——你觉得它「少做了什么」，
    那是设定如此；要改就找开发 AI 改设定。
 4. 手动派发 `morning/noon/night` 是无副作用的测试（`daily_push` 不写记账，
-   当天的正式推送照常），但**每发一次用户就真收到一条**，别刷屏。
+   当天的正式推送照常）。用户 2026-11-15 明确：**测试卡片不算打扰，可以继续发**——
+   所以开发 AI 验证推送格式时直接派发即可，不用绕道本地渲染。
 
 ### 3.4 「让 Actions 里的 AI 更新这个仓库」的准确含义
 
