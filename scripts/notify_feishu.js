@@ -187,6 +187,7 @@ const timeStr = bjTime.toISOString().replace('T', ' ').substring(0, 19) + ' (UTC
 const PUSH_HEADER = {
     morning: { emoji: '🌅', name: '早安', color: 'orange' },
     noon:    { emoji: '☀️', name: '午安', color: 'blue' },
+    dusk:    { emoji: '🌆', name: '傍晚冲刺', color: 'purple' },
     night:   { emoji: '🌙', name: '晚安', color: 'indigo' },
     urgent:  { emoji: '⏰', name: '紧急截止提醒', color: 'red' },
 };

@@ -41,11 +41,17 @@ ICIBA_URL = "https://open.iciba.com/dsapi/"
 WEATHER_URL = ("https://api.open-meteo.com/v1/forecast?latitude=33.77&longitude=113.19"
                "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max"
                "&timezone=Asia/Shanghai&forecast_days=2")
-KINDS = ("morning", "noon", "night")
+KINDS = ("morning", "noon", "dusk", "night")
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 MORNING_TASK_LIMIT = 6
 MORNING_NOTICE_LIMIT = 3
 NOTICE_MIN_SCORE = 3
+# v1.5.19 傍晚冲刺档（用户 2026-11-15 新增）：18:30，今天截止的最后一次"还来得及"提醒
+# + Hacker News 科技热点。内容与其他三档错开：科技热点只在此档出现。
+HN_API = "https://hacker-news.firebaseio.com/v0"
+HN_TOP_LIMIT = 8        # 取前 8 个候选，按得分挑
+HN_MIN_SCORE = 100      # 得分门槛（HN 热门）
+HN_STORY_COUNT = 3      # 最终展示条数
 
 
 def hitokoto() -> str:
@@ -179,6 +185,83 @@ def quote_recall(today: date) -> str:
     return out
 
 
+def hn_top(limit: int = HN_TOP_LIMIT) -> list[dict]:
+    """Hacker News 当日热门（官方 API，免费无 key）。失败返回空列表。
+
+    取 topstories 前 limit*2 个 id 再逐个取 item，按得分过滤排序——
+    topstories 本身已按热度排序，过滤后仍保序。
+    """
+    try:
+        ids = requests.get(f"{HN_API}/topstories.json", timeout=15).json() or []
+        out = []
+        for i in ids[:limit * 2]:
+            it = requests.get(f"{HN_API}/item/{i}.json", timeout=15).json() or {}
+            title, score, url = it.get("title"), it.get("score") or 0, it.get("url") or ""
+            if title and score >= HN_MIN_SCORE:
+                out.append({"title": safe_text(title, 200).strip(),
+                            "url": url, "score": score})
+            if len(out) >= limit:
+                break
+        return out
+    except Exception as e:
+        log(f"HN 热门获取失败：{type(e).__name__}", level="WARN")
+        return []
+
+
+def format_tech_news(pairs: list[dict]) -> str:
+    """格式化科技热点节。纯函数（pairs = [{title, zh, url}]），selftest 可离线测。
+
+    zh 为空（AI 翻译失败）就显示英文标题原文——降级不阻断。
+    """
+    if not pairs:
+        return ""
+    lines = []
+    for i, p in enumerate(pairs[:HN_STORY_COUNT], 1):
+        head = p.get("zh") or p.get("title") or ""
+        lines.append(f"{i}. {head}")
+        if p.get("url"):
+            lines.append(f"   ↳ {p['url']}")
+        if p.get("zh") and p.get("title"):
+            lines.append(f"   （原文：{p['title']}）")
+    return "\n".join(lines)
+
+
+def tech_news() -> str:
+    """傍晚档科技热点：HN 热门前 3 条 + AI 中文一句话摘要。失败返回空串，不阻断推送。
+
+    AI 只做翻译摘要（英文标题是事实输入），提示词明确不许编造细节。
+    """
+    stories = hn_top()
+    if not stories:
+        return ""
+    pairs = [{"title": s["title"], "url": s["url"], "zh": ""} for s in stories[:HN_STORY_COUNT]]
+    try:
+        from ai_client import AIClient
+        client = AIClient(timeout=90)
+        prompt = (
+            "把下面每条英文科技新闻标题翻译成中文，并用一句话（30 字以内）说明"
+            "它为什么值得关注。只基于标题本身的信息，不许编造细节。"
+            "只输出 JSON 数组：[{\"index\": 0, \"zh\": \"中文摘要\"}, …]，"
+            "长度必须与输入条数一致。\n\n" +
+            "\n".join(f"{i}. {p['title']}" for i, p in enumerate(pairs)))
+        data = client.chat_json([{"role": "user", "content": prompt}],
+                                temperature=0.2, max_tokens=2000)
+        if isinstance(data, list):
+            by_index = {int(d.get("index", -1)): d for d in data
+                        if isinstance(d, dict)}
+            for j, p in enumerate(pairs):
+                d = by_index.get(j)
+                if d and safe_text(d.get("zh"), 80).strip():
+                    p["zh"] = safe_text(d.get("zh"), 80).strip()
+    except Exception as e:
+        log(f"科技热点翻译失败：{type(e).__name__}，降级为英文原文", level="WARN")
+    out = format_tech_news(pairs)
+    if out:
+        log(f"[tech] 科技热点 {len(pairs)} 条（AI 摘要 "
+            f"{sum(1 for p in pairs if p['zh'])}/{len(pairs)}）")
+    return out
+
+
 def urgent6_pick(now: datetime, ledger: dict, tasks: list | None = None) -> tuple[str, dict]:
     """6 小时紧急截止提醒（用户 2026-11-14 授权的独立通道）。
 
@@ -238,7 +321,8 @@ def diary_facts(kind: str, today: date) -> str:
     quotes_today = [q for q in quotes if q.get("first_seen") == iso]
 
     lines = [f"今天是 {iso} {WEEKDAY_CN[today.weekday()]}。"]
-    if quotes_today:
+    # 今日名言只在晚（night）档——三路不重复原则（v1.5.19 起 dusk 也排除）
+    if kind == "night" and quotes_today:
         lines.append("今天从你日记里摘出来的话：")
         for q in quotes_today[:3]:
             lines.append(f"- 「{q.get('text')}」")
@@ -264,7 +348,7 @@ def _actionable_sorted(now: datetime, tasks: list | None = None) -> list[dict]:
     return sort_by_deadline(kept)
 
 
-def info_block(kind: str, now: datetime, hit: str) -> str:
+def info_block(kind: str, now: datetime, hit: str, tech_provider=None) -> str:
     """确定性清单，拼在 AI prose 后面。**不经过 AI**，保证用户点名的内容一条不漏。
 
     分工（用户 2026-11-14：「作业部分可以重复」+ 三时段增值）：
@@ -308,6 +392,25 @@ def info_block(kind: str, now: datetime, hit: str) -> str:
         recall = quote_recall(now.date())
         if recall:
             parts.append("📖 名言回顾（你日记里的话）\n" + recall)
+    elif kind == "dusk":
+        # v1.5.19 傍晚冲刺：今天 24:00 前截止的作业（全天最后一次「还来得及」）
+        # + HN 科技热点（本档独有）。不含英语/名言回顾（午安专属）与天气（晚安专属）。
+        kept = _actionable_sorted(now)
+        day_end = now.replace(hour=23, minute=59, second=59)
+        today = [t for t in kept
+                 if t.get("deadline")
+                 and now <= (parse_datetime(t["deadline"]) or now) <= day_end]
+        if today:
+            lines = [f"🔥 今天 24:00 前截止还没交的 {len(today)} 条："]
+            for t in today[:3]:
+                lines += _task_line(t)
+            if len(today) > 3:
+                lines.append(f"（还有 {len(today) - 3} 条，全量在 README）")
+            parts.append("\n".join(lines))
+        # tech_provider 可注入（selftest 离线确定性）；缺省联 HN+AI 翻译
+        tn = (tech_provider or tech_news)()
+        if tn:
+            parts.append("📰 今日科技热点（Hacker News）\n" + tn)
     else:
         kept = _actionable_sorted(now)
         soon = [t for t in kept
@@ -349,6 +452,7 @@ def fallback_message(kind: str, facts: str, hit: str) -> str:
     head = {
         "morning": "早。哼，别以为我不说话你就能赖床。今天的事都在下面，自己看。",
         "noon": "中午了。吃饭没？别又拿零食糊弄自己。下午该动的就动，别等我晚上再骂你。",
+        "dusk": "傍晚了。今天还剩几小时，来得及的事现在动手，别等我晚上来数落你。",
         "night": "今天就这样了。做完的算你的，没做的明天别想赖掉。啧，我可不是在担心你。",
     }[kind]
     parts = [head, "", facts]

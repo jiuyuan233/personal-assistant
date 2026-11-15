@@ -46,6 +46,7 @@ on:
           - selftest
           - morning
           - noon
+          - dusk
           - night
 
 permissions:

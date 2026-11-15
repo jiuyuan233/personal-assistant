@@ -42,12 +42,12 @@ COLLECT_MODES = ("diary", "study", "notice", "schedule")
 TICK_INTERVALS = {"study": 60, "diary": 120, "notice": 360}
 TICK_SLACK_MIN = 5
 # 飞书三时段（北京时间）。错过整点后在补发窗口内仍发，超过就不发了。
-PUSH_HOURS = {"morning": 7, "noon": 12, "night": 22}
+PUSH_HOURS = {"morning": 7, "noon": 12, "dusk": 18, "night": 22}
 # 补发窗口按时段给，不能全局一个数：实测 GitHub 两次 schedule 触发间隔达 280 分钟
 # （2026-11-13T20:20Z → 11-14T01:00Z），全局 3 小时会让整个窗口落在间隔里、推送被静默丢掉。
 # morning 5h 正好补到 noon 时段；noon 5h 到 17:00 仍是下午；night 2h 不吵醒用户。
 # target 取「今天的整点」，所以 night 实际只覆盖 22:00–24:00，跨零点不补。
-PUSH_CATCHUP_HOURS = {"morning": 5, "noon": 5, "night": 2}
+PUSH_CATCHUP_HOURS = {"morning": 5, "noon": 5, "dusk": 2, "night": 2}
 RUNTIME_PATH = DATA_DIR / "runtime.json"
 
 
@@ -235,6 +235,8 @@ def do_probe() -> bool:
         ("每日英语", "https://open.iciba.com/dsapi/"),
         ("明日天气", "https://api.open-meteo.com/v1/forecast?latitude=33.77&longitude=113.19"
                      "&daily=temperature_2m_max&timezone=Asia/Shanghai&forecast_days=1"),
+        # v1.5.19 傍晚档科技热点：Hacker News 官方 API（免费无 key）
+        ("科技热点", "https://hacker-news.firebaseio.com/v0/topstories.json"),
     ]
     ua = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
           "(KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36")
@@ -1089,6 +1091,20 @@ def do_selftest() -> bool:
     check("看板有立即更新按钮（dispatch tick）",
           "refreshBtn" in _idx and "triggerRefresh" in _appjs
           and "assistant.yml/dispatches" in _appjs)
+    # v1.5.19 傍晚档科技热点：格式化是纯函数（离线可测），hn_top/AI 翻译是联网不测
+    tn_fmt = dp.format_tech_news([
+        {"title": "OpenAI ships GPT-5", "zh": "OpenAI 发布 GPT-5，值得看模型评测", "url": "https://example.com/1"},
+        {"title": "Rust 2.0 released", "zh": "", "url": ""},
+    ])
+    check("科技热点格式化：中文摘要在前+原文兜底+空对不出现",
+          "OpenAI 发布 GPT-5" in tn_fmt and "OpenAI ships GPT-5" in tn_fmt
+          and "Rust 2.0" in tn_fmt and "（原文：" in tn_fmt, tn_fmt[:120])
+    # dusk 的科技热点 provider 可注入：selftest 离线确定性（不真的联 HN）
+    blk_dusk = dp.info_block("dusk", now, "", tech_provider=lambda: "1. 合成热点\n   ↳ https://example.com/t")
+    check("傍晚档含科技热点节（provider 注入）", "今日科技热点" in blk_dusk and "合成热点" in blk_dusk)
+    check("科技热点节只出现在傍晚档",
+          "科技热点" not in dp.info_block("morning", now, "")
+          and "科技热点" not in dp.info_block("night", now, ""))
 
     # §5.3 嵌套加粗：**第 **10** 周** 在 Markdown 里渲染成字面星号
     _, _, sched_detail = rr.render_schedule(now)
@@ -1126,12 +1142,19 @@ def do_selftest() -> bool:
     check("早报补发止于 noon 时段", due_pushes({}, base.replace(hour=13)) == ["noon"])
     check("中午发问好", due_pushes(sent_m, base.replace(hour=12)) == ["noon"])
     check("中午错过 5 小时仍补发", due_pushes(sent_m, base.replace(hour=17)) == ["noon"])
-    check("中午错过 6 小时不再补发", due_pushes(sent_m, base.replace(hour=18)) == [])
+    check("中午错过 6 小时不再补发（18 点起是傍晚档的地盘）",
+          "noon" not in due_pushes(sent_m, base.replace(hour=18)))
+    check("傍晚档不与午/晚重复", due_pushes({}, base.replace(hour=19)) == ["dusk"])
     check("晚上发总结", due_pushes(sent_mn, base.replace(hour=22)) == ["night"])
     check("夜间总结补到当天 23:59", due_pushes(sent_mn, base.replace(hour=23, minute=59)) == ["night"])
     check("凌晨不补发昨晚的总结",
           due_pushes(sent_mn, (base + timedelta(days=1)).replace(hour=0, minute=30)) == [])
     check("同一天不重复发", due_pushes(sent_m, base.replace(hour=7)) == [])
+    # v1.5.19 傍晚冲刺档（用户新增）：18:30 前后触发，补发到 20:30，不挤晚间档
+    check("傍晚 18 点发冲刺档", due_pushes({}, base.replace(hour=18)) == ["dusk"])
+    check("傍晚档补发到 20 点", due_pushes({}, base.replace(hour=20)) == ["dusk"])
+    check("傍晚档 21 点不再补发（不挤晚间档）", due_pushes({}, base.replace(hour=21)) == [])
+    check("四个时段齐全", set(dp.KINDS) == {"morning", "noon", "dusk", "night"}, str(dp.KINDS))
 
     # §2.2 私人路径黑名单：值来自 Secret，判定按路径前缀，已入库的也要清掉
     check("黑名单按前缀命中", dc.is_excluded("Tasks/私人/长期计划.md", ["Tasks/私人"]))
@@ -1259,6 +1282,7 @@ HANDLERS = {
     "selftest": do_selftest,
     "morning": lambda: do_push("morning"),
     "noon": lambda: do_push("noon"),
+    "dusk": lambda: do_push("dusk"),
     "night": lambda: do_push("night"),
 }
 
