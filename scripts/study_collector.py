@@ -904,8 +904,8 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
                         if hits_a >= 12:
                             break
                     # v1.5.22 核心：随堂练习行的完整 HTML 结构（含 onclick/标题/状态/时间）
-                    for m in re.finditer(r".{0,100}aria-label=\"随堂练习\".{0,1200}", resp_act):
-                        log(f"[diag]   随堂练习行片段（宽）：{_shape(m.group(0))[:1100]}")
+                    for m in re.finditer(r".{0,100}aria-label=\"随堂练习\".{0,1400}", resp_act, re.S):
+                        log(f"[diag]   随堂练习行片段（宽）：{_shape(m.group(0))[:1300]}")
                         break
                     for m in re.finditer(r"onclick=\"(\w+)\(", resp_act):
                         log(f"[diag]   onclick 函数：{m.group(1)}")
