@@ -903,8 +903,12 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
                         hits_a += 1
                         if hits_a >= 12:
                             break
-                    for m in re.finditer(r".{0,200}知识总结.{0,300}", resp_act):
-                        log(f"[diag]   知识总结片段：{_shape(m.group(0))[:420]}")
+                    # v1.5.22 核心：随堂练习行的完整 HTML 结构（含 onclick/标题/状态）
+                    for m in re.finditer(r".{0,200}aria-label=\"随堂练习\".{0,500}", resp_act):
+                        log(f"[diag]   随堂练习行片段：{_shape(m.group(0))[:560]}")
+                        break
+                    for m in re.finditer(r"onclick=\"(\w+)\(", resp_act):
+                        log(f"[diag]   onclick 函数：{m.group(1)}")
                         break
             except Exception as e:
                 log(f"[diag] stuActiveList 失败：{type(e).__name__}", level="WARN")
