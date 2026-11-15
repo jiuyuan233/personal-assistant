@@ -1,6 +1,5 @@
 {
-  "last_attempt": "2026-11-16T00:12:00+08:00",
-  "last_success": "2026-11-16T00:12:00+08:00",
+  "last_success": "2026-11-16T00:20:44+08:00",
   "ok": true,
   "status": "ok",
   "courses": 14,
@@ -11,5 +10,7 @@
   "unknown_deadline": 0,
   "anomalies": [],
   "urgent_sig": "",
-  "urgent_count": 0
+  "urgent_count": 0,
+  "quiz_cursor": 2,
+  "last_attempt": "2026-11-16T00:20:44+08:00"
 }
