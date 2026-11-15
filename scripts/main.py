@@ -575,9 +575,18 @@ def do_selftest() -> bool:
           "作业u1" in msg and "作业u2" not in msg and "作业u3" not in msg and "作业u4" not in msg)
     msg2, led2 = dp.urgent6_pick(u_now, led, [
         _mk_u("u1", 3), _mk_u("u5", 1)])
-    check("已提醒过的作业不再提醒（每条只提醒一次）",
-          "作业u1" not in msg2 and "作业u5" in msg2 and "u1" in led2 and "u5" in led2)
-    check("urgent6 断言不看 deadline 字段漂移（签名去重在 urgent_alerts，这里按 id 记账）",
+    check("已提醒过的作业不再提醒（同一截止时间只提醒一次）",
+          "作业u1" not in msg2 and "作业u5" in msg2
+          and any(k.startswith("u1@") for k in led2) and any(k.startswith("u5@") for k in led2))
+    # v1.5.12 修的漏洞：老师把截止时间往后改，同一作业进入新 6h 窗口必须重新提醒
+    msg3, _led3 = dp.urgent6_pick(u_now, led2, [_mk_u("u1", 5)])
+    check("截止时间被改（延期）后重新提醒",
+          "作业u1" in msg3, msg3[:80])
+    msg0, led0 = dp.urgent6_pick(u_now, {"old@2026-01-01T00:00:00+08:00": "2026-01-01"},
+                                 [_mk_u("u9", 2)])
+    check("超过 30 天的旧账自动清理（账本不无限膨胀）",
+          "old@2026-01-01T00:00:00+08:00" not in led0 and "作业u9" in msg0)
+    check("urgent6 断言不看 deadline 字段漂移（签名去重在 urgent_alerts，这里按 id@deadline 记账）",
           isinstance(led2, dict))
 
     # 公告时效过滤（用户 2026-11-14：「时间都截至了还给我发，改掉」）

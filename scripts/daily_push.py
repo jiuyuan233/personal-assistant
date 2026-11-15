@@ -183,9 +183,13 @@ def urgent6_pick(now: datetime, ledger: dict, tasks: list | None = None) -> tupl
     """6 小时紧急截止提醒（用户 2026-11-14 授权的独立通道）。
 
     - 只挑「待完成且未逾期、剩余 < URGENT_HOURS」的作业（复用 README 同口径 actionable）；
-    - 记账 ledger = {task_id: 提醒日期}，**每条作业只提醒一次**，不被三时段的
-      「每天一次」规则限制，也不占用它们的清单名额；
-    - 返回 (通知文案, 新记账)。没有要提醒的就返回 ("", 原记账)。
+    - 记账 ledger = {f"{task_id}@{deadline}": 提醒日期}，**同一截止时间只提醒一次**，
+      不被三时段的「每天一次」规则限制，也不占用它们的清单名额；
+      键里带 deadline 是 v1.5.12 修的漏洞：老师把截止时间往后改（延期）时，
+      同一 task_id 进入新的 6h 窗口必须**重新提醒一次**——旧键只记 id 会把它吞掉；
+    - ledger 里提醒日期超过 30 天的旧记录顺手清掉（tasks.json 本身有淘汰，
+      不清的话账本只增不减，慢性膨胀）；
+    - 返回 (通知文案, 新记账)。没有要提醒的就返回 ("", 清理后的记账)。
     tasks 可注入（selftest 离线测），缺省读 data/study/tasks.json。
     """
     if tasks is None:
@@ -194,28 +198,31 @@ def urgent6_pick(now: datetime, ledger: dict, tasks: list | None = None) -> tupl
     kept, _ = rr.actionable(tasks, now)
     kept = sort_by_deadline(kept)
     iso = now.date().isoformat()
+    # 清理 30 天前的旧账：值是提醒日期，早就不可能再有同一个 6h 窗口
+    cutoff = (now - timedelta(days=30)).date().isoformat()
+    ledger = {k: v for k, v in ledger.items() if isinstance(v, str) and v >= cutoff}
     hits = []
     for t in kept:
-        if t.get("id") in ledger:
+        key = f"{t.get('id')}@{t.get('deadline')}"
+        if key in ledger:
             continue
         dl = parse_datetime(t.get("deadline"))
         if not dl:
             continue
         remain_h = (dl - now).total_seconds() / 3600
         if 0 < remain_h <= URGENT_HOURS:
-            hits.append((t, remain_h))
+            hits.append((t, remain_h, key))
     if not hits:
         return "", ledger
     hits.sort(key=lambda x: x[1])
-    new_ledger = dict(ledger)
     lines = [f"⏰ 紧急：{len(hits)} 条作业 {URGENT_HOURS} 小时内截止，还没交："]
-    for t, remain_h in hits:
+    for t, remain_h, _key in hits:
         m = max(1, int(remain_h * 60))
         lines.append(f"- {t.get('course')} · {t.get('title')} · "
                      f"剩约 {m // 60} 小时 {m % 60} 分钟")
         if t.get("url"):
             lines.append(f"  ↳ {t['url']}")
-    return "\n".join(lines), {**new_ledger, **{t.get("id"): iso for t, _ in hits}}
+    return "\n".join(lines), {**ledger, **{key: iso for _t, _r, key in hits}}
 
 
 def diary_facts(kind: str, today: date) -> str:
