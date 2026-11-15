@@ -642,6 +642,30 @@ def run() -> dict:
                 for r in qb.extract_quiz_rows(res["dom_text"])[:10]:
                     log(f"[quiz]   行：{r['line'][:120]}")
                 log(f"[quiz]   frame 数：{res.get('frame_count', '未知')}")
+                # v1.5.22 收官：随堂活动列表（stuActiveList，Vue 渲染）——用渲染后
+                # 页面 URL 里的 enc 构造地址，Playwright 打开拿任务行并**收录**
+                try:
+                    time.sleep(2)
+                    from urllib.parse import parse_qs as _pqs, urlparse as _ups
+                    _enc_v = (_pqs(_ups(res.get("final_url") or "").query)
+                              .get("enc") or [""])[0]
+                    active_url = (f"https://mobilelearn.huuc.edu.cn/page/active/stuActiveList"
+                                  f"?courseid={c['course_id']}&clazzid={c['class_id']}"
+                                  f"&cpi={c['cpi']}&ut=s&t={int(time.time() * 1000)}"
+                                  f"&stuenc={_enc_v}")
+                    res_a = qb.collect_active_list(active_url, q_cookies, UA)
+                    if not res_a.get("ok"):
+                        log(f"[quiz] {c.get('name')} 随堂列表失败：{res_a.get('error', '')[:120]}",
+                            level="WARN")
+                    else:
+                        text_a = res_a.get("text") or ""
+                        rows_a = qb.extract_quiz_rows(text_a)
+                        log(f"[quiz] {c.get('name')} 随堂列表渲染 {len(text_a)} 字 | "
+                            f"任务行 {len(rows_a)} 条")
+                        for r in rows_a[:10]:
+                            log(f"[quiz]   随堂行：{r['line'][:120]}")
+                except Exception as e:
+                    log(f"[quiz] 随堂列表异常：{exc_brief(e)}", level="WARN")
                 for fu in res.get("frame_urls") or []:
                     log(f"[quiz]   frame URL：{safe_text(fu, 150)}")
                 for fr in res.get("frames") or []:
@@ -807,28 +831,6 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
                             seen2.add(u)
                             log(f"[diag]   高数入口：{u}")
                     # v1.5.22 收官：Playwright 打开 stuActiveList（Vue 渲染）拿任务行——
-                    # enc 从 302 链最终 URL 提取（courseId/classId/cpi 均课程级可构造）
-                    try:
-                        time.sleep(2)
-                        from urllib.parse import parse_qs as _pqs, urlparse as _ups
-                        _enc_v = (_pqs(_ups(cur).query).get("enc") or [""])[0]
-                        active_url = (f"https://mobilelearn.huuc.edu.cn/page/active/stuActiveList"
-                                      f"?courseid={c['course_id']}&clazzid={c['class_id']}"
-                                      f"&cpi={c['cpi']}&ut=s&t={int(time.time() * 1000)}"
-                                      f"&stuenc={_enc_v}")
-                        res_a = qb.collect_active_list(active_url, q_cookies, UA)
-                        if not res_a.get("ok"):
-                            log(f"[quiz] {c.get('name')} 随堂列表失败：{res_a.get('error', '')[:120]}",
-                                level="WARN")
-                        else:
-                            text_a = res_a.get("text") or ""
-                            rows_a = qb.extract_quiz_rows(text_a)
-                            log(f"[quiz] {c.get('name')} 随堂列表渲染 {len(text_a)} 字 | "
-                                f"任务行 {len(rows_a)} 条")
-                            for r in rows_a[:10]:
-                                log(f"[quiz]   随堂行：{r['line'][:120]}")
-                    except Exception as e:
-                        log(f"[quiz] 随堂列表异常：{exc_brief(e)}", level="WARN")
                     # v1.5.21 核心：tab href /mooc2-ans/coursedata/stu-datalist 无 query——
                     # 参数要么沿用课程页 query，要么在 contentLoader.js 里拼
                     time.sleep(2)

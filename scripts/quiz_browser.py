@@ -99,6 +99,7 @@ def collect_course_page(course: dict, stu_url: str, cookies: list[dict],
             result["frames"] = frames_out
             result["frame_count"] = len(page.frames)
             result["frame_urls"] = [f.url[:150] for f in page.frames]
+            result["final_url"] = page.url
             result.update({"ok": True, "xhr": xhr_seen[:25], "dom_text": dom_text,
                            "html_len": html_len})
             ctx.close()
