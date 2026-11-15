@@ -39,8 +39,9 @@ TASKS_PATH = STUDY_DIR / "tasks.json"
 COURSES_PATH = STUDY_DIR / "courses.json"
 META_PATH = STUDY_DIR / "meta.json"
 
+# UA 用用户真实浏览器指纹（Chrome/157，用户 2026-11-15 提供并要求）——降低反爬识别面
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36")
+      "(KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36")
 AES_KEY = b"u2oh6Vu^HWe4_AES"
 
 PENDING = {"待做", "未做", "待提交", "未提交", "未交", "待完成", "进行中", "待互评",
