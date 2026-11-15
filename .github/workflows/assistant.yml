@@ -50,6 +50,9 @@ on:
 
 permissions:
   contents: write
+  # v1.5.17 接力链需要：run 结尾用 GITHUB_TOKEN dispatch 接力器（relay.yml）。
+  # workflow_dispatch 是 GITHUB_TOKEN 可触发新 run 的官方例外事件，但需要 actions:write。
+  actions: write
 
 # 全仓库只有一个并发组：同一时刻只跑一个，排队而不是取消（取消会丢掉采集结果）。
 # 拆成 push / collect 两组反而会让采集和渲染同时改 README，rebase 必冲突。
