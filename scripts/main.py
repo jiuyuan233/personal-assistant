@@ -655,8 +655,9 @@ def do_selftest() -> bool:
     check("早报公告行带开始时间（即发布日期）",
           bool(_re.search(r"开始 \d{4}-\d{2}-\d{2}", blk)) or "开始时间未知" in blk, blk[:200])
     check("早报清单含一言", "今日一言" in blk and "测试一言" in blk)
-    check("三个时段的清单都不带课表",
-          all("课表" not in dp.info_block(k, now, "") and "上课" not in dp.info_block(k, now, "")
+    check("四个时段的清单都不带课表",
+          all("课表" not in dp.info_block(k, now, "", tech_provider=lambda: "")
+              and "上课" not in dp.info_block(k, now, "", tech_provider=lambda: "")
               for k in dp.KINDS))
     merged_fb = dp.fallback_message("morning", facts, "") + "\n\n" + blk
     check("降级路径里一言只出现一次", merged_fb.count("今日一言") == 1,

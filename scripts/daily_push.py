@@ -253,6 +253,9 @@ def tech_news() -> str:
                 d = by_index.get(j)
                 if d and safe_text(d.get("zh"), 80).strip():
                     p["zh"] = safe_text(d.get("zh"), 80).strip()
+        else:
+            # 静默跳过会让「AI 摘要 0/3」无迹可循（v1.5.19 首跑实测）——必须留痕
+            log(f"科技热点翻译返回异常结构：{safe_text(repr(data)[:200], 200)}", level="WARN")
     except Exception as e:
         log(f"科技热点翻译失败：{type(e).__name__}，降级为英文原文", level="WARN")
     out = format_tech_news(pairs)
