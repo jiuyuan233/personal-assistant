@@ -903,10 +903,11 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
                         hits_a += 1
                         if hits_a >= 12:
                             break
-                    # v1.5.22 核心：随堂练习行的完整 HTML 结构（含 onclick/标题/状态/时间）
-                    for m in re.finditer(r".{0,100}aria-label=\"随堂练习\".{0,1400}", resp_act, re.S):
-                        log(f"[diag]   随堂练习行片段（宽）：{_shape(m.group(0))[:1300]}")
-                        break
+                    # v1.5.22 核心：随堂练习行的完整 HTML 结构——按 aria-label 分段取上下文
+                    _segs = resp_act.split('aria-label="随堂练习"')
+                    for _si, _seg in enumerate(_segs[1:3], 1):
+                        log(f"[diag]   随堂练习段 {_si}（前 500B）：{_shape(_seg[:500])}")
+                        log(f"[diag]   随堂练习段 {_si}（后 300B）：{_shape(_seg[-300:])}")
                     for m in re.finditer(r"onclick=\"(\w+)\(", resp_act):
                         log(f"[diag]   onclick 函数：{m.group(1)}")
                         break
