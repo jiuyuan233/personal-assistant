@@ -641,6 +641,8 @@ def run() -> dict:
                 # 安全：只 dump 任务相关行（页面菜单含用户姓名，全文进公开日志=泄露）
                 for r in qb.extract_quiz_rows(res["dom_text"])[:10]:
                     log(f"[quiz]   行：{r['line'][:120]}")
+                fr_urls = [f.url[:120] for f in getattr(qb_last, "frames", [])] if False else []
+                log(f"[quiz]   frame 数：{res.get('frame_count', '未知')}")
                 for fr in res.get("frames") or []:
                     ft = fr.get("text") or ""
                     log(f"[quiz]   frame {fr.get('url', '')[:100]} len={fr.get('len')}")

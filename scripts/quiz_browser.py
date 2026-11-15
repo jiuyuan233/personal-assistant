@@ -97,6 +97,8 @@ def collect_course_page(course: dict, stu_url: str, cookies: list[dict],
             except Exception:
                 pass
             result["frames"] = frames_out
+            result["frame_count"] = len(page.frames)
+            result["frame_urls"] = [f.url[:150] for f in page.frames]
             result.update({"ok": True, "xhr": xhr_seen[:25], "dom_text": dom_text,
                            "html_len": html_len})
             ctx.close()
