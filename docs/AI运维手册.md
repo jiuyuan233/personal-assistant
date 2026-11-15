@@ -884,7 +884,7 @@ probe 15/17 目标可达**都已在真实 runner 上验证（证据见 CHANGELOG
 - **别因为一天数据难看就急着上重手段**（外部调度器 / self-hosted runner）——先让错峰跑几天；
 - **别再加 cron 条数**。8 条 → 1 条正是为了绕开节流，加回去是倒退，且违反 AGENT.md。
 
-**外部调度器（✅ 已接入，2026-11-15）**：cron-job.org 上建了 3 条 job
+**外部调度器（✅ 已接入并端到端验证，2026-11-15）**：cron-job.org 上建了 3 条 job
 （`pa-morning` 8866928 / `pa-noon` 8866929 / `pa-night` 8866930，时区 Asia/Shanghai，
 每天 07:05 / 12:05 / 22:05，POST `tick` 到 dispatch API）。**接入全程用 cron-job.org
 的 API 完成**（用户提供了 API key），下面把 Web UI 步骤和 **API 的三个坑**都留档：
@@ -897,8 +897,9 @@ probe 15/17 目标可达**都已在真实 runner 上验证（证据见 CHANGELOG
   写成 `[{"key":…,"value":…}]` 会 500；body 是**字符串**（JSON 序列化后的）；
 - 创建时 job 的名字字段是 **`title`**（`name` 会被静默忽略，title 留空）；
 - `schedule.timezone: "Asia/Shanghai"` 直接生效，hours/minutes 各给一个值即每天一次；
-- 立即触发一次的 API 端点（`/jobs/{id}/run`）在当前 API 版本 404，**验证就用等下一次整点触发**，
-  或者看 job 的 `nextExecution`（epoch 秒，按 UTC+8 换算核对）；
+- 立即触发一次的 API 端点（`/jobs/{id}/run`）在当前 API 版本 404，**验证就等下一次整点触发**，
+  看 job 的 `lastExecution`（epoch 秒，按 UTC+8 换算）与 GitHub Actions 列表是否出现对应 run；
+  首验实录：pa-noon 12:05:13 触发 → GitHub 04:05:15Z run success；
 - API key 与 PAT 只存在于 cron-job.org 服务端和配置请求里，**不写进仓库任何文件**。
 
 ### Web UI 版步骤（人工重建时照做）
