@@ -95,9 +95,9 @@ def notice_facts() -> tuple[str, list[dict]]:
 
     时效过滤（用户 2026-11-14：「时间都截至了还给我发」）：已过截止或无截止但
     发布超 90 天的不再推送。唯一判定在 `utils.notice_stale()`，与 README 共用。
-    开始时间（用户 2026-11-15）：每条明确标注发布日期 —— 公告正文里几乎从不写
-    「活动从哪天开始」，发布日就是学生能拿到的最早时间锚点，README 公告表的
-    「日期」列同源（publish_date），口径一致。
+    开始时间（用户 2026-11-15：「就把发布时间当作开始时间」）：每条直接以发布日期
+    作为开始时间标注 —— 公告正文里几乎从不写「活动从哪天开始」，发布日就是
+    学生能拿到的最早时间锚点，README 公告表的「日期」列同源（publish_date）。
     """
     from utils import notice_stale
     items = load_list(DATA_DIR / "notice" / "notices.json")
@@ -107,7 +107,7 @@ def notice_facts() -> tuple[str, list[dict]]:
     hot.sort(key=lambda n: -(n.get("score") or 0))
     lines = [f"值得关注的公告 {len(hot)} 条（相关度 {NOTICE_MIN_SCORE} 分以上、仍在有效期内）。"]
     for n in hot[:MORNING_NOTICE_LIMIT]:
-        start = f"开始（发布）{n['publish_date']}" if n.get("publish_date") else "开始时间未知"
+        start = f"开始 {n['publish_date']}" if n.get("publish_date") else "开始时间未知"
         due = f"截止 {n['deadline']}" if n.get("deadline") else "暂无截止信息"
         why = n.get("reason") or n.get("category") or ""
         lines.append(f"- {n.get('title')} · {n.get('source')} · {start} · {due}"

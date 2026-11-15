@@ -628,9 +628,9 @@ def do_selftest() -> bool:
     blk = dp.info_block("morning", now, "测试一言（来源）")
     check("早报清单含待完成作业", "待完成作业" in blk)
     check("早报清单含值得关注的公告", "值得关注的公告" in blk)
-    # 用户 2026-11-15：公告要明确开始时间（发布日期）；缺日期的也要明说「未知」
-    check("早报公告行带开始（发布）日期",
-          "开始（发布）" in blk or "开始时间未知" in blk, blk[:200])
+    # 用户 2026-11-15：发布时间直接当开始时间；缺日期的也要明说「未知」
+    check("早报公告行带开始时间（即发布日期）",
+          bool(_re.search(r"开始 \d{4}-\d{2}-\d{2}", blk)) or "开始时间未知" in blk, blk[:200])
     check("早报清单含一言", "今日一言" in blk and "测试一言" in blk)
     check("三个时段的清单都不带课表",
           all("课表" not in dp.info_block(k, now, "") and "上课" not in dp.info_block(k, now, "")
