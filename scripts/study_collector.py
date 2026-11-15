@@ -741,10 +741,11 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
                     break
                 log(f"[diag] 高数 302 链：{' → '.join(hops[:3])}")
                 if page:
+                    js_n = len(re.findall(r'src="([^"]*\.js)', page))
                     log(f"[diag]   真实课程页 {len(page)}B | knowledge×{page.count('knowledge')} "
-                        f"随堂×{page.count('随堂')} js×{len(re.findall(r'src=\"([^\"]*\\.js)', page))}")
+                        f"随堂×{page.count('随堂')} js×{js_n}")
                     seen2: set[str] = set()
-                    for m in re.finditer(r"""(?:src|href|data|url)=["']([^"']*(?:knowledge|worklist|quiz|datalist|chapter|module|\\.js)[^"']*)["']""", page):
+                    for m in re.finditer(r"""(?:src|href|data|url)=["']([^"']*(?:knowledge|worklist|quiz|datalist|chapter|module|\.js)[^"']*)["']""", page):
                         u = _shape(m.group(1))[:200]
                         if u not in seen2:
                             seen2.add(u)
