@@ -751,27 +751,26 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
                         if u not in seen2:
                             seen2.add(u)
                             log(f"[diag]   高数入口：{u}")
-                    # v1.5.21 核心：stu-datalist 是课程数据列表接口（含章节随堂作业）——
-                    # dump 页面里的调用上下文拿全参数，再直接请求验证
-                    for m in re.finditer(r".{100}stu-datalist.{200}", page):
-                        log(f"[diag]   datalist 上下文：{_shape(m.group(0))[:280]}")
-                    from urllib.parse import urlparse as _up, parse_qs as _pq
-                    _q = _pq(_up(cur).query)
-                    _enc = (_q.get("enc") or [""])[0]
-                    for _base in ("https://mooc1.huuc.edu.cn/mooc2-ans/coursedata/stu-datalist",
-                                  "https://mooc2-ans.huuc.edu.cn/mooc2-ans/coursedata/stu-datalist"):
+                    # v1.5.21 核心：stu-datalist 的参数由 course-stu.js 拼装——dump 该 JS
+                    # 里 datalist 相关的调用逻辑（打码），拿全参数再请求
+                    js_src = None
+                    for m in re.finditer(r'src="([^"]*course-stu\.js[^"]*)"', page):
+                        js_src = m.group(1)
+                    if js_src:
+                        js_url = _uj(cur, js_src) if js_src.startswith("/") else js_src
                         time.sleep(2)
-                        dl_url = (f"{_base}?courseId={c['course_id']}&clazzId={c['class_id']}"
-                                  f"&enc={_enc}&ut=s&view=2")
-                        resp_dl = cx.get(dl_url)
-                        size = len(resp_dl or "")
-                        log(f"[diag]   datalist {_up(_base).netloc} → {size}B")
-                        if resp_dl and size > 1000:
-                            log(f"[diag]   datalist 随堂×{resp_dl.count('随堂')} "
-                                f"知识总结×{resp_dl.count('知识总结')} "
-                                f"test×{resp_dl.count('test')} exam×{resp_dl.count('exam')}")
-                            log(f"[diag]   datalist 前 500B：{_shape(clean_html_text(resp_dl[:500]))[:400]}")
-                            break
+                        js_text = cx.get(js_url)
+                        if js_text:
+                            log(f"[diag]   course-stu.js {len(js_text)}B | "
+                                f"datalist×{js_text.count('stu-datalist')}")
+                            hits_js = 0
+                            for m in re.finditer(r".{120}stu-datalist.{240}", js_text):
+                                log(f"[diag]   JS datalist 调用：{_shape(m.group(0))[:320]}")
+                                hits_js += 1
+                                if hits_js >= 3:
+                                    break
+                        else:
+                            log("[diag]   course-stu.js 获取失败", level="WARN")
             except Exception as e:
                 log(f"[diag] 高数 302 链失败：{type(e).__name__}", level="WARN")
             time.sleep(3)
