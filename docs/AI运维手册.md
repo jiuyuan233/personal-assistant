@@ -884,24 +884,52 @@ probe 15/17 目标可达**都已在真实 runner 上验证（证据见 CHANGELOG
 - **别因为一天数据难看就急着上重手段**（外部调度器 / self-hosted runner）——先让错峰跑几天；
 - **别再加 cron 条数**。8 条 → 1 条正是为了绕开节流，加回去是倒退，且违反 AGENT.md。
 
-**备选方案（仅在错峰观察后确认长期低投递、且用户点头时才启动）**：
-外部调度器定时 `workflow_dispatch`（要把 PAT 交给第三方），或 self-hosted runner。
-runbook 留档如下，未经用户授权不要开工：
+**外部调度器（用户 2026-11-15 已决定执行，走 cron-job.org）**。
+**注册环节只能用户本人完成**（要邮箱验证），AI 不得代办。接好后此表状态改「已接入」：
 
-**路线 ①：外部调度器（免费、无服务器，推荐 cron-job.org）**
-1. 让用户建一个 **fine-grained PAT**：Settings → Developer settings → Fine-grained tokens，
-   Repository access 只勾 `personal-assistant`，Permissions 只给 **Actions: Read and write**。
-   **这个 PAT 泄露面只有「能触发这一个仓库的 workflow」**，比 classic PAT 小得多；
-2. 把 PAT 填进 cron-job.org（或同类服务）的请求头，配 3 条任务（北京时间）：
-   `07:05` / `12:05` / `22:05` 各一次，
-   `POST https://api.github.com/repos/jiuyuan233/personal-assistant/actions/workflows/assistant.yml/dispatches`，
-   header `Authorization: Bearer <PAT>` + `Accept: application/vnd.github+json`，
-   body `{"ref":"main","inputs":{"mode":"tick"}}`（用 `tick` 而不是 `morning/night` —— tick 自己会判断该发什么，还能顺带采集。
-   **三个时刻都必须落在对应补发窗口内**：morning `[07:00,12:00]`、noon `[12:00,17:00]`、night `[22:00,24:00]`，早于窗口开头的那一轮什么都不发）；
-3. 外部触发与 GitHub schedule 并存没有冲突：`pushed[kind]` 按日期记账，一天最多一条，谁先触发谁发。
-4. **验收**：连续两天早/中/晚各收到一条，且 GitHub Actions 列表里能看到对应的 workflow_dispatch run。
+**第 1 步：建 fine-grained PAT（约 3 分钟，二选一）**
+- **正确路径**：github.com 右上头像 → Settings → Developer settings（最底部）→
+  Personal access tokens → **Fine-grained tokens** → Generate new token。
+  Token name `personal-assistant-cron`；Expiration 90 天或 1 年；Resource owner `jiuyuan233`；
+  Repository access → Only select repositories → 勾 `personal-assistant`；
+  Permissions → Repository permissions → **Actions: Read and write**；
+  其他一律不勾。Generate 后复制 `github_pat_` 开头的值（只显示一次）。
+- **快速路径**（不推荐但能用）：现有一个 classic PAT（`ghp_` 开头）也能调 dispatch API，
+  但它是全仓库全权限，交给第三方泄露面大。用它就跳过本步。
+- ⚠️ PAT 只粘进 cron-job.org 的请求头里，**不要发进聊天、不要写进任何文件**。
 
-**路线 ②：self-hosted runner**（国内常开机器，顺带解决海外 IP 问题）：
+**第 2 步：注册 cron-job.org（约 2 分钟）**
+1. 打开 `https://cron-job.org/signup`，邮箱 + 密码注册，去邮箱点验证链接；
+2. 登录后右上头像 → Settings → **Timezone 改成 `Asia/Shanghai`**（不改的话下面所有时刻差 8 小时）。
+
+**第 3 步：建 3 条 cron job（每条约 1 分钟）**
+依次建 `pa-morning` / `pa-noon` / `pa-night` 三条，配置完全相同只差时刻：
+1. Dashboard → **CREATE CRONJOB**；
+2. Title：`pa-morning`（另外两条对应改名）；URL：
+   `https://api.github.com/repos/jiuyuan233/personal-assistant/actions/workflows/assistant.yml/dispatches`
+3. **Advanced** 标签页：
+   - Request method：**POST**（默认 GET 不行，dispatch 必须是 POST）
+   - Request body：`{"ref":"main","inputs":{"mode":"tick"}}`
+     （用 `tick` 而不是 `morning/night`——tick 自己会判断该发什么，还能顺带采集；
+     三个时刻都必须落在对应补发窗口内：morning `[07:00,12:00]`、noon `[12:00,17:00]`、
+     night `[22:00,24:00]`，早于窗口开头的那一轮什么都不发）
+   - Request headers 加两条：
+     `Authorization: Bearer <你的 PAT>`（Bearer 后有个空格，直接粘贴 PAT）
+     `Accept: application/vnd.github+json`
+4. **Schedule** 标签页：三条分别是每天 **07:05** / **12:05** / **22:05**（时区已改则是本地时间）；
+5. Save。三条都建完后，在列表里各点一次 **Test run** 立即验证。
+
+**第 4 步：验收（接入当天做）**
+- cron-job.org 面板该 job 的 History 显示绿色 + HTTP 204；
+- GitHub 仓库 Actions 列表在对应时刻出现 workflow_dispatch run 且 success；
+- 用户飞书在 07:05 / 12:05 / 22:05 收到三时段推送（时间线从「错峰观察」变成基本准点）。
+- **注意**：接好后错峰 cron（`7-59/20`）保留不动——两者并存无冲突（`pushed[kind]`
+  按日期记账，谁先触发谁发，另一路自动跳过），外部定时器挂了 GitHub schedule 仍是兜底。
+
+**PAT 轮换**：fine-grained PAT 到期（90 天/1 年）前在 GitHub 上 Regenerate，
+然后把新值更新到 cron-job.org 的三条 job 请求头里（其他什么都不用动）。
+
+**路线 ②：self-hosted runner**（国内常开机器，顺带解决海外 IP 问题，未采用）：
 照 [DEV_GUIDE 4.3](../DEV_GUIDE.md) 的步骤装 runner，`runs-on: self-hosted`。
 **公开仓库挂 self-hosted runner 有安全风险（任何人提 PR 都能在你机器上跑代码）**，
 做之前先读 DEV_GUIDE 那一节的完整警告。
