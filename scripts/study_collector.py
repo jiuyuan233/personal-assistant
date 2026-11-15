@@ -704,6 +704,25 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
         for r in rows:
             if r["state"] == "pending" and not r.get("deadline"):
                 problems.append({"course": c.get("name"), "chunk": None, "row": r})
+        # v1.5.21 用户报「随堂作业没收录」：老师把作业/测验挂在**课程章节页**里，
+        # 不在作业/考试 tab。抓课程学习页 dump 全部入口链接形状（数字打码），
+        # 找到随堂作业的列表入口——不许猜 URL。
+        stu_url = (f"{cfg.get('stu_page', 'https://mooc2-ans.huuc.edu.cn/mooc2-ans/mycourse/stu')}"
+                   f"?courseid={c['course_id']}&clazzid={c['class_id']}&cpi={c['cpi']}"
+                   f"&enc={tokens.get('enc', '')}&pageHeader=0&v=2&hideHead=0")
+        shtml = cx.get(stu_url)
+        if shtml and not is_tip_page(shtml):
+            log(f"[diag] {c.get('name')} 课程页 {len(shtml)} 字节 | "
+                f"knowledge×{shtml.count('knowledge')} chapter×{shtml.count('chapter')} "
+                f"随堂×{shtml.count('随堂')}")
+            seen: set[str] = set()
+            for m in re.finditer(r"""(?:href|src|data|url)=["']([^"']*(?:knowledge|worklist|examlist|quiz|chapter|module|datalist)[^"']*)["']""", shtml):
+                u = _shape(m.group(1))[:180]
+                if u not in seen:
+                    seen.add(u)
+                    log(f"[diag]   入口：{u}")
+        else:
+            log(f"[diag] {c.get('name')} 课程页不可用（{len(shtml or '')} 字节）")
         ehtml = cx.exam_html(c, tokens)
         if ehtml and not is_tip_page(ehtml):
             for r in parse_exam_rows(ehtml, c, now):
