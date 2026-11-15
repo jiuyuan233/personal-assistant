@@ -754,8 +754,9 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
                     # v1.5.21 核心：tab href /mooc2-ans/coursedata/stu-datalist 无 query——
                     # 参数要么沿用课程页 query，要么在 contentLoader.js 里拼
                     time.sleep(2)
+                    from urllib.parse import urlparse as _up2
                     dl_url2 = (f"https://mooc2-ans.huuc.edu.cn/mooc2-ans/coursedata/stu-datalist"
-                               f"?{_up(cur).query}")
+                               f"?{_up2(cur).query}")
                     resp_dl2 = cx.get(dl_url2)
                     size2 = len(resp_dl2 or "")
                     log(f"[diag]   datalist+课程页同query → {size2}B")
