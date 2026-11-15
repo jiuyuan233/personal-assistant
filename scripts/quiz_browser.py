@@ -82,6 +82,21 @@ def collect_course_page(course: dict, stu_url: str, cookies: list[dict],
             dom_text = safe_text(page.evaluate(
                 "() => document.body ? document.body.innerText : ''"), 12000)
             html_len = page.evaluate("() => document.documentElement.outerHTML.length")
+            # 学习通 tab 内容嵌在 iframe 里（外层 evaluate 拿不到）——遍历全部 frame
+            frames_out: list[dict] = []
+            try:
+                for fr in page.frames:
+                    try:
+                        ft = fr.evaluate("() => document.body ? document.body.innerText : ''")
+                        if ft and len(ft.strip()) > 200:
+                            frames_out.append({"url": fr.url[:180],
+                                               "len": len(ft),
+                                               "text": safe_text(ft, 8000)})
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+            result["frames"] = frames_out
             result.update({"ok": True, "xhr": xhr_seen[:25], "dom_text": dom_text,
                            "html_len": html_len})
             ctx.close()
