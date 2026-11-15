@@ -80,9 +80,10 @@
 | 7 | 提交数据到仓库（`git pull --rebase` + push，不 force） | `assistant.yml`「提交数据」步 |
 | 8 | 发飞书：三时段卡片照发；**常规成功静默**（用户原话「正常运行的不用给我汇报」）；失败/紧急才报 | `scripts/notify_feishu.js` |
 
-**触发来源有三路**（2026-11-15 起）：GitHub 自己的错峰 cron（`7-59/20`，兜底）+
-**cron-job.org 外部定时器**（`pa-morning/noon/night` 每天 07:05/12:05/22:05，主路，
-解决 schedule 投递不稳）。两路并存无冲突：`pushed[kind]` 按日期记账，谁先触发谁发。
+**触发来源有三路**（2026-11-15 起）：**仓库内接力链**（relay.yml 自续链，每 ~20 分钟一轮，
+v1.5.17，仓库自持不外包）+ **cron-job.org 外部定时器**（`pa-morning/noon/night` 每天
+07:05/12:05/22:05，准点主力）+ GitHub 自己的错峰 cron（`7-59/20`，兜底）。
+三路并存无冲突：`pushed[kind]` 按日期记账，谁先触发谁发，**绝不重复推送**。
 
 凌晨 00:00–06:00 窗口内它还会把挖出来的计划写回日记复选框（`scripts/diary_writeback.py`，
 窗口在 `data/sources.json`，白天一次都不提交）。
