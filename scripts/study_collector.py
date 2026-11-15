@@ -679,6 +679,20 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
             for r in parse_exam_rows(ehtml, c, now):
                 if r["state"] == "pending" and not r.get("deadline"):
                     problems.append({"course": c.get("name"), "chunk": None, "row": r})
+            # v1.5.16 用户报「考试没收录」：逐行对比 EXAM_ONCLICK_RE 匹配情况——
+            # 没匹配上的行（待考/考试码类考试）原样 dump（数字打码、标题掩码），不许猜形状
+            li_marks = list(re.finditer(r"<li\b[^>]*>.*?</li>", ehtml, re.S | re.I))
+            matched = sum(1 for li in li_marks if EXAM_ONCLICK_RE.search(li.group(0)))
+            log(f"[diag] {c.get('name')} 考试列表：{len(li_marks)} 行，onclick 匹配 {matched} 行")
+            for li in li_marks:
+                chunk = li.group(0)
+                if EXAM_ONCLICK_RE.search(chunk):
+                    continue
+                flat = re.sub(r"\s+", " ", chunk)
+                if len(flat) < 40:
+                    continue
+                log(f"[diag] 考试行无 onclick 匹配（{len(flat)} 字节）：")
+                log(f"[diag]     {_shape(_mask_title(flat))[:600]}")
             # §3.7 单场考试深链：把 JS 函数体打出来看它到底跳哪个 URL，不许猜
             flat_e = re.sub(r"\s+", " ", ehtml)
             for fm in re.finditer(r"function\s+(viewExamAnswer|enterExam|goExam|toExam)\s*\([^)]*\)\s*\{.{0,600}", flat_e):
