@@ -751,26 +751,35 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
                         if u not in seen2:
                             seen2.add(u)
                             log(f"[diag]   高数入口：{u}")
-                    # v1.5.21 核心：stu-datalist 的参数由 course-stu.js 拼装——dump 该 JS
-                    # 里 datalist 相关的调用逻辑（打码），拿全参数再请求
-                    js_src = None
-                    for m in re.finditer(r'src="([^"]*course-stu\.js[^"]*)"', page):
-                        js_src = m.group(1)
-                    if js_src:
-                        js_url = _uj(cur, js_src) if js_src.startswith("/") else js_src
+                    # v1.5.21 核心：tab href /mooc2-ans/coursedata/stu-datalist 无 query——
+                    # 参数要么沿用课程页 query，要么在 contentLoader.js 里拼
+                    time.sleep(2)
+                    dl_url2 = (f"https://mooc2-ans.huuc.edu.cn/mooc2-ans/coursedata/stu-datalist"
+                               f"?{_up(cur).query}")
+                    resp_dl2 = cx.get(dl_url2)
+                    size2 = len(resp_dl2 or "")
+                    log(f"[diag]   datalist+课程页同query → {size2}B")
+                    if size2 > 1000:
+                        log(f"[diag]   随堂×{resp_dl2.count('随堂')} "
+                            f"知识总结×{resp_dl2.count('知识总结')} "
+                            f"test×{resp_dl2.count('test')}")
+                        log(f"[diag]   前 500B：{_shape(clean_html_text(resp_dl2[:500]))[:400]}")
+                    for jsname in ("contentLoader.js", "course-stu.js"):
+                        js_m = re.search(r'src="([^"]*' + jsname + r'[^"]*)"', page)
+                        if not js_m:
+                            continue
+                        js_u = _uj(cur, js_m.group(1))
                         time.sleep(2)
-                        js_text = cx.get(js_url)
-                        if js_text:
-                            log(f"[diag]   course-stu.js {len(js_text)}B | "
-                                f"datalist×{js_text.count('stu-datalist')}")
-                            hits_js = 0
-                            for m in re.finditer(r".{120}stu-datalist.{240}", js_text):
-                                log(f"[diag]   JS datalist 调用：{_shape(m.group(0))[:320]}")
-                                hits_js += 1
-                                if hits_js >= 3:
-                                    break
-                        else:
-                            log("[diag]   course-stu.js 获取失败", level="WARN")
+                        jt = cx.get(js_u)
+                        if not jt:
+                            continue
+                        log(f"[diag]   {jsname} {len(jt)}B | datalist×{jt.count('datalist')}")
+                        hits_js = 0
+                        for m in re.finditer(r".{120}datalist.{240}", jt):
+                            log(f"[diag]   {jsname} datalist 片段：{_shape(m.group(0))[:300]}")
+                            hits_js += 1
+                            if hits_js >= 3:
+                                break
             except Exception as e:
                 log(f"[diag] 高数 302 链失败：{type(e).__name__}", level="WARN")
             time.sleep(3)
