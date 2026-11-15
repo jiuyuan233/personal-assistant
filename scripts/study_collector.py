@@ -642,6 +642,8 @@ def run() -> dict:
                 for r in qb.extract_quiz_rows(res["dom_text"])[:10]:
                     log(f"[quiz]   行：{r['line'][:120]}")
                 log(f"[quiz]   frame 数：{res.get('frame_count', '未知')}")
+                for fu in res.get("frame_urls") or []:
+                    log(f"[quiz]   frame URL：{safe_text(fu, 150)}")
                 for fr in res.get("frames") or []:
                     ft = fr.get("text") or ""
                     log(f"[quiz]   frame {fr.get('url', '')[:100]} len={fr.get('len')}")
