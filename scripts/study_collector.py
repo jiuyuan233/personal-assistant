@@ -639,6 +639,19 @@ def run() -> dict:
                 # 安全：只 dump 任务相关行（页面菜单含用户姓名，全文进公开日志=泄露）
                 for r in qb.extract_quiz_rows(res["dom_text"])[:10]:
                     log(f"[quiz]   行：{r['line'][:120]}")
+                for fr in res.get("frames") or []:
+                    ft = fr.get("text") or ""
+                    log(f"[quiz]   frame {fr.get('url', '')[:100]} len={fr.get('len')}")
+                    hits_f = 0
+                    for line in ft.splitlines():
+                        s = line.strip()
+                        if len(s) > 6 and any(w in s for w in ("待做", "未交", "测试", "测验",
+                                                               "考试", "作业", "随堂", "知识总结",
+                                                               "已完成", "任务")):
+                            log(f"[quiz]     {safe_text(s, 140)}")
+                            hits_f += 1
+                            if hits_f >= 15:
+                                break
             new_cursor = (cursor + len(picks)) % max(1, len(courses))
             meta_now = load_json(META_PATH) or {}
             meta_now["quiz_cursor"] = new_cursor
