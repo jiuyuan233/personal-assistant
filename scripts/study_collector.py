@@ -628,17 +628,17 @@ def run() -> dict:
                 mid_url = (f"https://mooc1.huuc.edu.cn/visit/stucoursemiddle"
                            f"?courseid={c['course_id']}&clazzid={c['class_id']}&cpi={c['cpi']}"
                            f"&ismooc2={c.get('ismooc2', '1')}")
-                res = qb.collect_course_page(c, mid_url, q_cookies, UA)
+                res = qb.collect_course_page(c, mid_url, q_cookies, UA, click_tab="任务")
                 if not res.get("ok"):
                     log(f"[quiz] {c.get('name')} 失败：{res.get('error', '')[:120]}", level="WARN")
                     continue
-                log(f"[quiz] {c.get('name')} 课程页 {res['html_len']}B | XHR {len(res['xhr'])} 条")
+                log(f"[quiz] {c.get('name')} 课程页 {res['html_len']}B | XHR {len(res['xhr'])} 条"
+                    + (f" | tab_error: {res.get('tab_error', '')[:60]}" if res.get("tab_error") else ""))
                 for u in res["xhr"][:8]:
                     log(f"[quiz]   XHR：{safe_text(u, 200)}")
-                for r in qb.extract_quiz_rows(res["dom_text"])[:8]:
+                # 安全：只 dump 任务相关行（页面菜单含用户姓名，全文进公开日志=泄露）
+                for r in qb.extract_quiz_rows(res["dom_text"])[:10]:
                     log(f"[quiz]   行：{r['line'][:120]}")
-                # 渲染后 DOM 文本 dump（打码）——第一版迭代用，确认随堂作业的呈现位置
-                log(f"[quiz]   DOM 文本前 1200 字：{_shape(clean_html_text(res['dom_text'][:1200]))}")
             new_cursor = (cursor + len(picks)) % max(1, len(courses))
             meta_now = load_json(META_PATH) or {}
             meta_now["quiz_cursor"] = new_cursor

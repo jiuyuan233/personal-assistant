@@ -33,9 +33,13 @@ def cookies_from_session(session) -> list[dict]:
 
 
 def collect_course_page(course: dict, stu_url: str, cookies: list[dict],
-                        ua: str) -> dict:
+                        ua: str, click_tab: str | None = None) -> dict:
     """无头浏览器打开课程页（JS 渲染），返回诊断与渲染结果。
 
+    click_tab 非空时点击该 tab（如「任务」）再取渲染文本——v1.5.22 第二版：
+    课程页 tab 内容点击后才加载，「任务」tab 最可能含随堂作业。
+    **安全**：返回的 dom_text 只含页面文本；调用方 dump 时必须只打任务相关行
+    （页面菜单含用户姓名，全文进公开日志=泄露，v1.5.22 实测并删过 run）。
     返回 {"ok": bool, "xhr": [...], "dom_text": "...", "html_len": int, "error": str}
     任何失败都不抛异常（主采集保护）。
     """
@@ -68,8 +72,15 @@ def collect_course_page(course: dict, stu_url: str, cookies: list[dict],
                 pass
             page.wait_for_timeout(2000)
 
+            if click_tab:
+                try:
+                    page.get_by_text(click_tab, exact=True).first.click()
+                    page.wait_for_timeout(7000)
+                except Exception as e:
+                    result["tab_error"] = f"{type(e).__name__}: {safe_text(str(e), 120)}"
+
             dom_text = safe_text(page.evaluate(
-                "() => document.body ? document.body.innerText : ''"), 6000)
+                "() => document.body ? document.body.innerText : ''"), 12000)
             html_len = page.evaluate("() => document.documentElement.outerHTML.length")
             result.update({"ok": True, "xhr": xhr_seen[:25], "dom_text": dom_text,
                            "html_len": html_len})
