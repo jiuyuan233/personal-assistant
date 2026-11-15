@@ -878,6 +878,7 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
             try:
                 from urllib.parse import urlparse as _up2
                 _enc302 = ""
+                from urllib.parse import parse_qs as _pq
                 try:
                     _enc302 = (_pq(_up2(cur).query).get("enc") or [""])[0]
                 except Exception:
