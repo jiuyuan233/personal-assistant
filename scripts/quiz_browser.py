@@ -108,6 +108,32 @@ def collect_course_page(course: dict, stu_url: str, cookies: list[dict],
     return result
 
 
+def collect_active_list(active_url: str, cookies: list[dict], ua: str) -> dict:
+    """无头浏览器打开随堂活动列表页（Vue 渲染），返回渲染后文本。
+
+    页面是 Vue 客户端渲染（v1.5.22 实测：HTML 里只有模板无数据），
+    必须执行 JS 后才能看到任务行。任何失败都不抛异常。
+    """
+    result: dict = {"ok": False, "text": "", "error": ""}
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            ctx = browser.new_context(user_agent=ua)
+            if cookies:
+                ctx.add_cookies(cookies)
+            page = ctx.new_page()
+            page.goto(active_url, wait_until="domcontentloaded", timeout=60000)
+            page.wait_for_timeout(8000)
+            text = page.evaluate("() => document.body ? document.body.innerText : ''") or ""
+            result.update({"ok": True, "text": safe_text(text, 20000)})
+            ctx.close()
+            browser.close()
+    except Exception as e:
+        result["error"] = f"{type(e).__name__}: {safe_text(str(e), 200)}"
+    return result
+
+
 def extract_quiz_rows(dom_text: str) -> list[dict]:
     """从渲染后的页面文本里提取随堂任务行。纯函数（DOM innerText），selftest 可测。
 
