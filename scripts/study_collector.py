@@ -765,6 +765,26 @@ def diagnose(max_courses: int = 40, max_dump: int = 4) -> dict:
                             f"知识总结×{resp_dl2.count('知识总结')} "
                             f"test×{resp_dl2.count('test')}")
                         log(f"[diag]   前 500B：{_shape(clean_html_text(resp_dl2[:500]))[:400]}")
+                        # v1.5.21：逐行 dump 含关键词的内容行（打码）+ 知识总结的 HTML 片段
+                        hits_d = 0
+                        for m in re.finditer(r"[^\n<>]{0,30}(?:随堂|知识总结|test)[^\n<]{0,90}", resp_dl2):
+                            s = _shape(clean_html_text(m.group(0))).strip()
+                            if len(s) > 12:
+                                log(f"[diag]   内容行：{s}")
+                            hits_d += 1
+                            if hits_d >= 15:
+                                break
+                        for m in re.finditer(r".{0,260}知识总结.{0,340}", resp_dl2):
+                            log(f"[diag]   知识总结 HTML 片段：{_shape(m.group(0))[:500]}")
+                            break
+                        hits_d = 0
+                        for m in re.finditer(r"<tr\b.*?</tr>", resp_dl2, re.S):
+                            tr = _shape(_mask_title(re.sub(r"\s+", " ", m.group(0)))[:360])
+                            if "test" in tr or "随堂" in tr or "知识总结" in tr:
+                                log(f"[diag]   tr 行：{tr}")
+                                hits_d += 1
+                                if hits_d >= 8:
+                                    break
                     for jsname in ("contentLoader.js", "course-stu.js"):
                         js_m = re.search(r'src="([^"]*' + jsname + r'[^"]*)"', page)
                         if not js_m:
