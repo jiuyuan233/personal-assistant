@@ -885,25 +885,35 @@ probe 15/17 目标可达**都已在真实 runner 上验证（证据见 CHANGELOG
 - **别因为一天数据难看就急着上重手段**（外部调度器 / self-hosted runner）——先让错峰跑几天；
 - **别再加 cron 条数**。8 条 → 1 条正是为了绕开节流，加回去是倒退，且违反 AGENT.md。
 
-**外部调度器 cron-job.org（⚠️ 已停用，2026-11-15 用户定调「不能依赖外部的定时」）**：
-曾接入并端到端验证（3 条 job 每天触发 3 次，pa-noon 真机成功一次），当日因 API 日配额
-限流无法删除 job（后台删除任务执行中）——**在 job 删除前它们仍会触发，但无害**
-（pushed 记账防重，重复 tick 幂等）。API 用法留档如下，供未来参考：
-（`pa-morning` 8866928 / `pa-noon` 8866929 / `pa-night` 8866930，时区 Asia/Shanghai，
-每天 07:05 / 12:05 / 22:05，POST `tick` 到 dispatch API）。**接入全程用 cron-job.org
-的 API 完成**（用户提供了 API key），下面把 Web UI 步骤和 **API 的三个坑**都留档：
+**外部调度器 cron-job.org（✅ 已重新启用，2026-11-16 用户拍板「优先 cron-job.org 准时推送，
+GitHub 自带定时兜底，两种方式不能重复发」）**：
+四条 job（`pa-morning` 8873915 / `pa-noon` 8873916 / `pa-dusk` 8873918 / `pa-night` 8873919，
+时区 Asia/Shanghai，每天 **07:05 / 12:05 / 18:05 / 22:05**，POST `tick` 到 dispatch API，
+2026-11-16 经 API 创建并核对）。四个时刻都落在对应补发窗口内（morning [07:00,12:00] /
+noon [12:00,17:00] / dusk [18:00,20:00] / night [22:00,24:00]）。**防重复发靠
+`runtime.pushed[kind]` 按日期记账**：cron-job 触发的 tick 先发先记账，接力链/错峰
+cron 后到的自动跳过（`main.do_push` 还有一层兜底：今天发过的直接跳过）。
+（历史注记：2026-11-15 曾因「不能依赖外部定时」停用并删除旧 3 条 job，同日用户
+误删事故与重建见 不足与风险 §0.5；2026-11-16 用户重新拍板启用，本节为现行状态。）
 
 ### API 接入细节（照抄即用，别再踩）
 
 - 基址 `https://api.cron-job.org`，头 `Authorization: Bearer <API key>`；
-- **创建用 `PUT /jobs`**（不是 POST——POST 会 404）；**更新用 `PATCH /jobs/{id}`**；删除 DELETE；
+- **创建用 `PUT /jobs`（必须包一层 `{"job": {...}}`，平铺结构直接 400 空 body）**；
+  **更新用 `PATCH /jobs/{id}`**；删除 `DELETE /jobs/{id}`；
+- **`requestMethod` 是 job 顶层的整数**（GET=0，POST=1，HEAD=3）——不是
+  extendedData 里的字符串（v1.6.0 首次接入就栽在这两个 shape 坑上，400 无错误体）；
 - **headers 的格式是对象不是数组**：`"extendedData": {"headers": {"Authorization": "Bearer …", …}, "body": "…"}`——
   写成 `[{"key":…,"value":…}]` 会 500；body 是**字符串**（JSON 序列化后的）；
+- **限流 1 次/秒、5 次/分钟**（连发必 429；批量创建要隔 ~15 秒）；
 - 创建时 job 的名字字段是 **`title`**（`name` 会被静默忽略，title 留空）；
-- `schedule.timezone: "Asia/Shanghai"` 直接生效，hours/minutes 各给一个值即每天一次；
+- `schedule.timezone: "Asia/Shanghai"` 直接生效，hours/minutes 各给一个值即每天一次，
+  mdays/months/wdays 给 `["*"]`（schedule 里没有 years 字段）；
 - 立即触发一次的 API 端点（`/jobs/{id}/run`）在当前 API 版本 404，**验证就等下一次整点触发**，
   看 job 的 `lastExecution`（epoch 秒，按 UTC+8 换算）与 GitHub Actions 列表是否出现对应 run；
   首验实录：pa-noon 12:05:13 触发 → GitHub 04:05:15Z run success；
+- schema 权威来源：开源仓库 pschlan/cron-job.org 的 `api/apimethods/CreateJob.php`
+  与 `api/resources/Job.php`（校验逻辑都在里面，别猜）；
 - API key 与 PAT 只存在于 cron-job.org 服务端和配置请求里，**不写进仓库任何文件**。
 
 ### Web UI 版步骤（人工重建时照做）
