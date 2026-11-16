@@ -190,6 +190,7 @@ const PUSH_HEADER = {
     dusk:    { emoji: '🌆', name: '傍晚冲刺', color: 'purple' },
     night:   { emoji: '🌙', name: '晚安', color: 'indigo' },
     urgent:  { emoji: '⏰', name: '紧急截止提醒', color: 'red' },
+    newtask: { emoji: '🆕', name: '新作业发布', color: 'blue' },
 };
 
 function imageNote() {

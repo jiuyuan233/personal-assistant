@@ -157,6 +157,23 @@ def do_tick() -> bool:
         log(f"[tick] 紧急提醒检查异常：{exc_brief(e)}", level="ERROR")
         results["urgent6"] = False
 
+    # 新作业发布提醒（用户 2026-11-16：「首次检测到有新的作业发布的时候给我发
+    # 一个消息，这个独立与其他的消息」）：第三条独立通道，每条任务只通知一次
+    # （runtime.notified_new 记账 task_id → 日期）。写 /tmp/push-new.txt，workflow
+    # 的飞书步骤看到就发（与 urgent 同款独立 if，常规成功静默轮也必达）。
+    # study 没跑的轮次不会有新 first_seen；挑选只读 tasks.json，代价可忽略。
+    # NEW_SINCE 之前发现的存量不追溯——上线当天数据里已有的任务不当「新发布」。
+    try:
+        msg_new, new_ledger2 = dp.new_task_pick(now, rt.get("notified_new") or {})
+        if msg_new:
+            dp.NEW_MESSAGE_PATH.write_text(msg_new, encoding="utf-8")
+            results["newtask"] = True
+            log(f"[newtask] {msg_new.splitlines()[0]}")
+        rt["notified_new"] = new_ledger2
+    except Exception as e:
+        log(f"[tick] 新作业提醒检查异常：{exc_brief(e)}", level="ERROR")
+        results["newtask"] = False
+
     try:
         results["finalize"] = do_finalize()
     except Exception as e:
@@ -603,6 +620,62 @@ def do_selftest() -> bool:
     check("urgent6 断言不看 deadline 字段漂移（签名去重在 urgent_alerts，这里按 id@deadline 记账）",
           isinstance(led2, dict))
 
+    # 新作业发布提醒（用户 2026-11-16）：第三条独立通道。纯函数，离线可测。
+    # 用固定 now（NEW_SINCE 之后）保证确定性，不跟运行日期漂移。
+    n_now = datetime(2026, 11, 16, 18, 0, tzinfo=BJ_TZ)
+    def _mk_n(tid: str, fs_hour: float, state: str = "pending",
+              deadline: str | None = "2026-11-20T10:00:00+08:00") -> dict:
+        fs = n_now - _td(hours=fs_hour)
+        return {"id": tid, "course": "测试课", "title": f"作业{tid}", "state": state,
+                "label": "随堂", "deadline": deadline,
+                "url": f"https://example.com/{tid}",
+                "first_seen": fs.isoformat(timespec="seconds")}
+    n_msg, n_led = dp.new_task_pick(n_now, {}, [
+        _mk_n("n1", 0.5),                                   # 上线后 30 分钟 → 新
+        _mk_n("n2", 0.5, state="done"),                    # 已完成 → 噪音
+        _mk_n("n3", 1.5),                                   # 上线后 90 分钟 → 新
+        {"id": "n4", "state": "pending", "title": "旧任务",
+         "first_seen": "2026-11-16T13:23:00+08:00"},        # NEW_SINCE 之前 → 存量不追溯
+    ])
+    check("新作业只挑上线后首次发现的待完成（done/存量不选）",
+          "作业n1" in n_msg and "作业n3" in n_msg
+          and "作业n2" not in n_msg and "旧任务" not in n_msg, n_msg[:120])
+    check("新作业消息带课程/标签/截止/链接",
+          "测试课 · 作业n1 · 随堂" in n_msg and "截止 11-20 10:00" in n_msg
+          and "https://example.com/n1" in n_msg, n_msg[:160])
+    check("新作业记账按 task_id（每条只通知一次）",
+          n_led.get("n1") == "2026-11-16" and n_led.get("n3") == "2026-11-16"
+          and "n2" not in n_led, str(n_led))
+    n_msg2, n_led2 = dp.new_task_pick(n_now, n_led, [
+        _mk_n("n1", 0.5), _mk_n("n5", 0.2)])
+    check("已通知过的新作业不再通知（记账去重）",
+          "作业n1" not in n_msg2 and "作业n5" in n_msg2, n_msg2[:80])
+    # 48h 窗口要用「上线多天后的 now」才能触发（上线当天的历史不足以超窗）
+    n_late = datetime(2026, 11, 20, 12, 0, tzinfo=BJ_TZ)
+    # 48h 窗口要用「上线多天后的 now」才能触发（上线当天的历史不足以超窗）。
+    # fs 手写内联：_mk_n 的时间基点是 n_now，这里必须相对 n_late 算。
+    n_msg3, _ = dp.new_task_pick(n_late, {}, [
+        {"id": "n6", "state": "pending", "title": "作业n6",
+         "first_seen": "2026-11-17T12:00:00+08:00"},          # n_late 前 3 天 → 超窗口
+        {"id": "n7", "state": "pending", "title": "作业n7",
+         "first_seen": "2026-11-19T20:00:00+08:00"},          # n_late 前 16h → 窗口内
+    ])
+    check("首次发现超过 48h 不再当「新」（停摆补报上限）",
+          "作业n6" not in n_msg3 and "作业n7" in n_msg3, n_msg3[:80])
+    n_msg4, n_led4 = dp.new_task_pick(
+        n_now, {"old": "2025-10-01"}, [_mk_n("n9", 1)])
+    check("新作业账本 30 天旧账自动清理", "old" not in n_led4 and "作业n9" in n_msg4)
+    n_msg5, _ = dp.new_task_pick(n_now, {}, [_mk_n("n8", 1, deadline=None)])
+    check("无截止的新作业如实标「截止未知」", "截止未知" in n_msg5, n_msg5[:80])
+    n_msg6, _ = dp.new_task_pick(n_now, {},
+                                 [_mk_n(f"m{i}", 1) for i in range(10)])
+    check("新作业超过 8 条截断并计数（另有 N 条）",
+          "另有 2 条" in n_msg6 and "m8" not in n_msg6 and "m9" not in n_msg6,
+          n_msg6[:60])
+    check("新作业通道接线在 do_tick 与飞书步骤",
+          "new_task_pick" in inspect.getsource(do_tick)
+          and "newtask" in inspect.getsource(do_tick))
+
     # 公告时效过滤（用户 2026-11-14：「时间都截至了还给我发，改掉」）
     from utils import notice_stale as _stale
     check("公告截止已过 → 过时效",
@@ -861,10 +934,17 @@ def do_selftest() -> bool:
     check("推送时段传给飞书脚本（决定卡片标题）",
           "NOTIFY_KIND: ${{ steps.mode.outputs.mode }}" in yml)
     check("每轮清掉上一轮的文案与图片残留",
-          "rm -f /tmp/push-message.txt /tmp/push-image.json /tmp/push-urgent.txt" in yml)
+          "rm -f /tmp/push-message.txt /tmp/push-image.json /tmp/push-urgent.txt" in yml
+          and "/tmp/push-new.txt" in yml)
     # 紧急提醒与三时段同轮时两条都必须发出（elif 会吞掉 urgent 且记账已写=永久丢失）
     check("紧急提醒走独立 if 分支（elif 会吞掉它）",
           "if [ -s /tmp/push-urgent.txt ]" in yml and "elif [ -s /tmp/push-urgent.txt ]" not in yml)
+    # v1.6.2 新作业发布提醒：第三条独立通道，同轮互不挤占（elif 会吞掉新作业且记账已写=永久丢）
+    check("新作业提醒也走独立 if 分支且清残留",
+          "if [ -s /tmp/push-new.txt ]" in yml
+          and "elif [ -s /tmp/push-new.txt ]" not in yml
+          and "NOTIFY_KIND=newtask" in yml
+          and "notified_new" in inspect.getsource(do_tick))
     # v1.5.17 仓库内自续链：relay.yml 接力器（用户要求定时不能外包、仓库里也要一套）
     ryml = (rr.REPO_ROOT / ".github" / "workflows" / "relay.yml").read_text(encoding="utf-8")
     check("接力器独立并发组且 cancel-in-progress（链恒 ≤1 条）",
@@ -1360,7 +1440,7 @@ def do_selftest() -> bool:
                 "课表解析", "本周课表 SVG 已生成", "README 已生成", "任务清单",
                 "凌晨写回窗口", "不在凌晨窗口", "写回：", "低置信度丢弃", "计划归档",
                 "清理黑名单生效前入库的私人条目", "课表源文件污染修复",
-                "名言价值打分", "[urgent-same]", "[image] 选中", "[push]")
+                "名言价值打分", "[urgent-same]", "[image] 选中", "[push]", "[newtask]")
     missing = [s for s in promised if s not in src_all]
     check("运维手册承诺的日志关键字都真实存在", not missing, str(missing))
 

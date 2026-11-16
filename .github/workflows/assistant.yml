@@ -157,8 +157,8 @@ jobs:
         run: |
           set -o pipefail
           : > /tmp/task-output.log
-          # 三个文件都必须先删：上一轮的残留会让这一轮误发旧文案/旧图/旧紧急提醒。
-          rm -f /tmp/push-message.txt /tmp/push-image.json /tmp/push-urgent.txt
+          # 四个文件都必须先删：上一轮的残留会让这一轮误发旧文案/旧图/旧紧急提醒/旧新作业通知。
+          rm -f /tmp/push-message.txt /tmp/push-image.json /tmp/push-urgent.txt /tmp/push-new.txt
           python scripts/main.py "$MODE" 2>&1 | tee -a /tmp/task-output.log
 
       - name: 提交数据
@@ -227,6 +227,14 @@ jobs:
             # 即使常规成功也必达，与三时段同轮时两条都发（elif 会吞掉紧急提醒且
             # 记账已写导致永久丢失，所以是两个独立 if）。纯文本（链接可点）。
             NOTIFY_KIND=urgent node scripts/notify_feishu.js "$(cat /tmp/push-urgent.txt)"
+            sent_any=1
+          fi
+          if [ -s /tmp/push-new.txt ]; then
+            # 新作业发布提醒（用户 2026-11-16：「首次检测到有新的作业发布的
+            # 时候给我发一个消息，这个独立与其他的消息」）：第三条独立通道，
+            # 每条任务只通知一次（runtime.notified_new 记账）。同轮三时段/紧急
+            # 照发，互不挤占；纯文本（链接可点）。
+            NOTIFY_KIND=newtask node scripts/notify_feishu.js "$(cat /tmp/push-new.txt)"
             sent_any=1
           fi
           if [ "$sent_any" = 0 ]; then

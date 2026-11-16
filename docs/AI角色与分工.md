@@ -76,6 +76,7 @@
 | 3 | 采集：学习通模拟登录 → Gitee 日记（名言+计划+写回复查）→ 6 个公告站 | `scripts/*_collector.py` + `data/sources.json` |
 | 4 | 三时段推送判断（07/12/22 + 补发窗口 morning/noon 5h、night 2h） | `main.PUSH_HOURS` / `PUSH_CATCHUP_HOURS` |
 | 5 | **6 小时紧急截止提醒**（剩余 <6h 且未交的作业，同一截止时间只提醒一次） | `daily_push.URGENT_HOURS`，记账 `runtime.urgent6` |
+| 5b | **新作业发布提醒**（首次检测到新发布的作业/考试/随堂就发独立消息，每条任务只通知一次） | `daily_push.new_task_pick`，记账 `runtime.notified_new` |
 | 6 | 渲染 README / docs / 看板数据（零网络零 token） | `scripts/render_readme.py` + `*_template.md` |
 | 7 | 提交数据到仓库（`git pull --rebase` + push，不 force） | `assistant.yml`「提交数据」步 |
 | 8 | 发飞书：三时段卡片照发；**常规成功静默**（用户原话「正常运行的不用给我汇报」）；失败/紧急才报 | `scripts/notify_feishu.js` |
@@ -96,6 +97,8 @@ API 用法与现行 4 条 job 配置在运维手册「定时触发」节。）
 - 早报 = 问好 + 作业总览 + 公告总览 + 一言 + 图；午安 = 鼓励 + 新作业 + 7 天内截止 + 每日英语 + 名言回顾 + 一言 + 图；
   晚安 = 日记小结 + 48h 截止 + 本周盘点 + 明日预告 + 明早天气 + 一言 + 图。
 - **作业允许跨时段重复**（用户原话）；公告只在早报；当天新名言只在晚安、历史名言回顾只在午安。
+- **新发布的作业单独发一条**（用户 2026-11-16 原话：「首次检测到有新的作业发布的时候
+  给我发一个消息，这个独立与其他的消息」）——独立于三时段与 6h 紧急提醒，互不挤占。
 - **永不发**：课表（「课表的提醒我不用你」）、plans.json 的潜在计划（「随口写的不要发到飞书里」）。
 - 已过时效的公告不发（截止已过或发布超 90 天，`utils.notice_stale()` 是唯一判定）。
 - 人格只有一份：`scripts/prompts.py` 的 `PERSONA`（傲娇雌小鬼，损拖延不损人，硬边界写在里面）。

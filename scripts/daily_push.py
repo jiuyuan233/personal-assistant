@@ -35,6 +35,19 @@ MESSAGE_PATH = Path(os.environ.get("PUSH_MESSAGE_PATH", "/tmp/push-message.txt")
 # 每天3条的规则，直接通知我」）——独立于三时段，每条作业只提醒一次，记账在 runtime.urgent6。
 URGENT_MESSAGE_PATH = Path(os.environ.get("PUSH_URGENT_PATH", "/tmp/push-urgent.txt"))
 URGENT_HOURS = 6
+# 新作业发布提醒（用户 2026-11-16：「首次检测到有新的作业发布的时候给我发一个
+# 消息，这个独立与其他的消息」）——第三条独立通道，每条任务只通知一次，
+# 记账在 runtime.notified_new。与三时段/urgent6 互不挤占、互不依赖。
+NEW_MESSAGE_PATH = Path(os.environ.get("PUSH_NEW_PATH", "/tmp/push-new.txt"))
+# 上线时刻：这之前首次发现的存量任务**不追溯**（上线当天数据里已有 76 条任务、
+# 其中 37 条随堂是当天刚收录的，全推一遍就是轰炸）。首次真实通知发生在
+# 上线之后第一个真正新发布的任务上。
+NEW_SINCE = datetime(2026, 11, 16, 16, 0, tzinfo=BJ_TZ)
+# 首次发现超过这个小时数的不再当「新」（系统停摆恢复后的补报上限，
+# 超过的属于旧闻，README 里自己看）
+NEW_WINDOW_HOURS = 48
+NEW_MAX_PER_MSG = 8   # 单条消息最多列 8 条，其余计数并指向 README
+NEW_LEDGER_DAYS = 30  # 记账保留天数，与 urgent6 同款
 HITOKOTO_URL = "https://v1.hitokoto.cn/"
 # 免费数据源（v1.5.7 新增，用户勾选）：金山词霸每日一句、open-meteo 天气（无需 key）。
 ICIBA_URL = "https://open.iciba.com/dsapi/"
@@ -320,6 +333,54 @@ def urgent6_pick(now: datetime, ledger: dict, tasks: list | None = None) -> tupl
         if t.get("url"):
             lines.append(f"  ↳ {t['url']}")
     return "\n".join(lines), {**ledger, **{key: iso for _t, _r, key in hits}}
+
+
+def new_task_pick(now: datetime, ledger: dict, tasks: list | None = None) -> tuple[str, dict]:
+    """新作业发布提醒（用户 2026-11-16 授权的第三条独立通道）。
+
+    - 「新发布」= 任务首次出现在数据里（first_seen 是 merge 层打的，每条任务
+      整个生命周期只会打一次）且 state==pending——已完成/已逾期的旧任务是噪音；
+    - 双重闸门：NEW_SINCE 之前发现的存量不追溯（上线当天不轰炸）；
+      首次发现超过 NEW_WINDOW_HOURS 的不再当「新」（停摆恢复后的补报上限）；
+    - 记账 ledger = {task_id: 通知日期}，**每条任务只通知一次**，独立于
+      三时段的「每天一次」与 urgent6 的 6h 窗口——三条通道互不挤占；
+    - ledger 里通知日期超过 30 天的旧记录顺手清掉（tasks.json 本身有淘汰，
+      不清的话账本只增不减，慢性膨胀）；
+    - 返回 (通知文案, 新记账)。没有新任务就返回 ("", 清理后的记账)。
+    tasks 可注入（selftest 离线测），缺省读 data/study/tasks.json。
+    """
+    if tasks is None:
+        tasks = load_list(DATA_DIR / "study" / "tasks.json")
+    iso = now.date().isoformat()
+    cutoff = (now - timedelta(days=NEW_LEDGER_DAYS)).date().isoformat()
+    ledger = {k: v for k, v in ledger.items() if isinstance(v, str) and v >= cutoff}
+    hits: list[dict] = []
+    for t in tasks:
+        tid = t.get("id")
+        if not tid or tid in ledger or t.get("state") != "pending":
+            continue
+        fs = parse_datetime(t.get("first_seen"))
+        if not fs or fs < NEW_SINCE:
+            continue
+        if (now - fs).total_seconds() > NEW_WINDOW_HOURS * 3600:
+            continue
+        hits.append(t)
+    if not hits:
+        return "", ledger
+    # 新的排前面（一条消息里最新鲜的在最上方）
+    hits.sort(key=lambda t: parse_datetime(t.get("first_seen")) or now, reverse=True)
+    lines = [f"🆕 新作业发布：首次检测到 {len(hits)} 条"]
+    for t in hits[:NEW_MAX_PER_MSG]:
+        dl = parse_datetime(t.get("deadline"))
+        when = dl.strftime("%m-%d %H:%M") if dl else "截止未知"
+        label = t.get("label") or ""
+        label_part = f" · {label}" if label else ""
+        lines.append(f"- {t.get('course')} · {t.get('title')}{label_part} · 截止 {when}")
+        if t.get("url"):
+            lines.append(f"  ↳ {t['url']}")
+    if len(hits) > NEW_MAX_PER_MSG:
+        lines.append(f"（另有 {len(hits) - NEW_MAX_PER_MSG} 条未列出，见 README 任务清单）")
+    return "\n".join(lines), {**ledger, **{t["id"]: iso for t in hits}}
 
 
 def diary_facts(kind: str, today: date) -> str:
