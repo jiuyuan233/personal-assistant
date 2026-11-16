@@ -465,8 +465,13 @@ def _save_meta(now: datetime, **kw) -> dict:
     事后无法判断数据有多旧。失败时只更新 last_attempt 与失败原因。
     v1.5.22 修正：old 的其他键（如 quiz_cursor 轮换记账）也必须保留——
     之前的写法会把它们全部抹掉。
+    v1.6.4 修正：成功轮（不带 reason 的调用）要清掉上一轮的 `reason` 残留，
+    否则「失败→成功」后 meta 会同时显示 ok=True 与 reason=no_courses，
+    误导看板和读文档的人（2026-11-16 17:34 真机实证过这个混淆）。
     """
     old = load_json(META_PATH) or {}
+    if "reason" not in kw:
+        old.pop("reason", None)
     meta = {**{k: v for k, v in old.items() if k != "last_attempt"},
             "last_attempt": now.isoformat(timespec="seconds"), **kw}
     save_json(META_PATH, meta)
