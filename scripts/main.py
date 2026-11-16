@@ -913,6 +913,100 @@ def do_selftest() -> bool:
     finally:
         dw.WB_PATH = saved_wb
 
+    # 助手的记忆（用户 2026-11-16）：区块往返 + 生成逻辑 + 写回集成，全部离线注入
+    mem_blk = dw.render_memory_block("2026-11-13", "昨天你搞定了三章总结。哼。")
+    check("记忆区块独立于计划区块", dw.MEM_BLOCK_START not in dw.render_block("2026-11-14", []))
+    merged_m = dw.upsert_memory(merged, mem_blk)
+    check("记忆区块追加且区块外正文保留",
+          merged_m.count(dw.MEM_BLOCK_START) == 1 and "我自己写的话。" in merged_m
+          and "昨天你搞定了三章总结" in merged_m)
+    again_m = dw.upsert_memory(merged_m, dw.render_memory_block("2026-11-13", "换了说法"))
+    check("重复写回只替换记忆区块（计划区块不动）",
+          again_m.count(dw.MEM_BLOCK_START) == 1 and "换了说法" in again_m
+          and "昨天你搞定了三章总结" not in again_m and dw.BLOCK_START in again_m)
+    stripped_m = dc.strip_assistant_block(blk + "\n" + mem_blk + "\n- [ ] 用户自己的\n")
+    check("采集时两个助手区块都被剥离",
+          "助手待办" not in stripped_m and "助手记得" not in stripped_m
+          and "用户自己的" in stripped_m)
+
+    class FakeAI:
+        def __init__(self, text, fail=False):
+            self.text, self.fail, self.calls = text, fail, 0
+
+        def chat_text(self, messages, **kwargs):
+            self.calls += 1
+            if self.fail:
+                raise RuntimeError("fake ai down")
+            return self.text
+
+    mem_cfg = {"path": "Tasks", "daily_dir": "日", "writeback_window": "00:00-05:00"}
+    _mem_dt = datetime(2026, 11, 14, 0, 30, tzinfo=BJ_TZ)
+    saved_mem = dc.MEMORY_PATH
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            dc.MEMORY_PATH = Path(td) / "memory.json"
+            fg_m = FakeGitee({"Tasks/日/2026-11-13.md": ("充实的一天，写了好多字 " * 5, "m0")})
+            out_m = dc.ensure_day_memory(fg_m, mem_cfg, [],
+                                         now=datetime(2026, 11, 14, 12, 7, tzinfo=BJ_TZ))
+            check("记忆：窗口外不生成", out_m is None
+                  and not (dc.load_json(dc.MEMORY_PATH) or {}).get("items"))
+
+            fg_m2 = FakeGitee({"Tasks/日/2026-11-13.md":
+                               ("# 充实的一天\n\n- [x] 搞定三章总结\n- [ ] 背单词\n晚上刷了两小时题。", "m1")})
+            ai_m = FakeAI("昨天你把三章总结拿下了，还顺手把单词挂在明天。哼，别飘。")
+            out_m2 = dc.ensure_day_memory(fg_m2, mem_cfg, [], now=_mem_dt, client=ai_m)
+            check("记忆：窗口内生成 AI 版", out_m2 == ai_m.text and ai_m.calls == 1, str(out_m2))
+            led_m = (dc.load_json(dc.MEMORY_PATH) or {}).get("items") or []
+            check("记忆：账本入库（date/source/text）",
+                  len(led_m) == 1 and led_m[0]["date"] == "2026-11-13"
+                  and led_m[0]["source"] == "ai" and led_m[0]["text"] == ai_m.text)
+            out_m3 = dc.ensure_day_memory(fg_m2, mem_cfg, [], now=_mem_dt,
+                                           client=FakeAI("不该被调到"))
+            check("记忆：ai 版当天只生成一次（复用账本）", out_m3 == ai_m.text)
+
+            # 换一批场景前清空账本，避免上一步的 2026-11-13 ai 条目串场
+            dc.save_json(dc.MEMORY_PATH, {"items": []})
+
+            fg_m3 = FakeGitee({"Tasks/日/2026-11-13.md": ("短", "m2")})
+            out_m4 = dc.ensure_day_memory(fg_m3, mem_cfg, [], now=_mem_dt, client=FakeAI("x"))
+            out_m5 = dc.ensure_day_memory(FakeGitee({}), mem_cfg, [], now=_mem_dt, client=FakeAI("x"))
+            fg_m5 = FakeGitee({"Tasks/日/2026-11-13.md": ("足够长的日记内容 " * 8, "m3")})
+            out_m6 = dc.ensure_day_memory(fg_m5, mem_cfg, ["Tasks/日"], now=_mem_dt,
+                                           client=FakeAI("x"))
+            check("记忆：太短/不存在/私人路径都不生成",
+                  out_m4 is None and out_m5 is None and out_m6 is None)
+
+            dc.save_json(dc.MEMORY_PATH, {"items": []})
+            fg_m6 = FakeGitee({"Tasks/日/2026-11-13.md": ("足够长的日记内容 " * 8, "m4")})
+            out_m7 = dc.ensure_day_memory(fg_m6, mem_cfg, [], now=_mem_dt,
+                                           client=FakeAI("", fail=True))
+            check("记忆：AI 失败用离线摘要占位", out_m7 and "离线摘要" in out_m7, str(out_m7))
+            ai_m2 = FakeAI("恢复后重写的记忆。")
+            out_m8 = dc.ensure_day_memory(fg_m6, mem_cfg, [], now=_mem_dt, client=ai_m2)
+            check("记忆：offline 后 AI 恢复会重生成",
+                  out_m8 == ai_m2.text and ai_m2.calls == 1, str(out_m8))
+            check("记忆：账本 60 天自动清理",
+                  dc.memory_ledger_prune([{"date": "2026-09-01", "text": "旧"},
+                                          {"date": "2026-11-13", "text": "新"}],
+                                         datetime(2026, 11, 14, tzinfo=BJ_TZ).date())
+                  == [{"date": "2026-11-13", "text": "新"}])
+
+            fg_w = FakeGitee({"Tasks/日/2026-11-14.md": ("# 今天\n", "w1")})
+            r_w = dw.run(g=fg_w, plans=[], cfg=wb_cfg, memory="记得你昨天熬夜了。哼。",
+                         now=datetime(2026, 11, 14, 3, 7, tzinfo=BJ_TZ))
+            body_w = fg_w.files["Tasks/日/2026-11-14.md"][0]
+            check("写回：记忆段落随计划一起写入（标昨天的日期）",
+                  dw.MEM_BLOCK_START in body_w and "记得你昨天熬夜了" in body_w
+                  and "助手记得 · 2026-11-13" in body_w and r_w.get("ok"), body_w[:120])
+            fg_w2 = FakeGitee({})
+            r_w2 = dw.run(g=fg_w2, plans=[], cfg=wb_cfg, memory="只有记忆也要写。",
+                          now=datetime(2026, 11, 14, 4, 7, tzinfo=BJ_TZ))
+            check("写回：无计划无正文但有记忆也写入（新建骨架）",
+                  "只有记忆也要写" in (fg_w2.files.get("Tasks/日/2026-11-14.md") or ("",))[0]
+                  and r_w2.get("ok"))
+    finally:
+        dc.MEMORY_PATH = saved_mem
+
     yml = (rr.REPO_ROOT / ".github" / "workflows" / "assistant.yml").read_text(encoding="utf-8")
     check("只有一条 cron（多条会被 GitHub 节流丢掉）",
           yml.count("- cron:") == 1 and "'7-59/20 * * * *'" in yml, str(yml.count("- cron:")))
@@ -1283,11 +1377,14 @@ def do_selftest() -> bool:
     _appjs = (rr.REPO_ROOT / "docs" / "js" / "app.js").read_text(encoding="utf-8")
     check("看板名言也按 AI 价值排序", "(b.value || 0) - (a.value || 0)" in _appjs)
     check("看板名言显示 AI 价值分", "AI 价值 " in _appjs)
-    # 用户 2026-11-15：看板要有「立即更新」按钮（远程触发一次采集）
+    # 用户 2026-11-16：看板「立即更新」按钮**免密钥**——不再弹框要 Token。
+    # GitHub 不允许匿名 dispatch，公开页面嵌 Token 违反铁律 2（凭据只进 Secrets），
+    # 所以按钮跳转 GitHub workflow 页，用用户自己的登录态点 Run workflow。
     _idx = (rr.REPO_ROOT / "docs" / "index.html").read_text(encoding="utf-8")
-    check("看板有立即更新按钮（dispatch tick）",
+    check("看板有立即更新按钮（免密钥，跳转 GitHub Run workflow 页）",
           "refreshBtn" in _idx and "triggerRefresh" in _appjs
-          and "assistant.yml/dispatches" in _appjs)
+          and "actions/workflows/assistant.yml" in _appjs
+          and "localStorage" not in _appjs and "prompt(" not in _appjs)
     # v1.5.19 傍晚档科技热点：RSS 解析是纯函数（离线可测），抓取是联网不测
     _syn_xml = (b'<?xml version="1.0"?><rss version="2.0"><channel>'
                 b'<item><title>\xe6\x96\xb0\xe9\x97\xbb\xe4\xb8\x80</title>'
@@ -1440,7 +1537,7 @@ def do_selftest() -> bool:
                 "课表解析", "本周课表 SVG 已生成", "README 已生成", "任务清单",
                 "凌晨写回窗口", "不在凌晨窗口", "写回：", "低置信度丢弃", "计划归档",
                 "清理黑名单生效前入库的私人条目", "课表源文件污染修复",
-                "名言价值打分", "[urgent-same]", "[image] 选中", "[push]", "[newtask]")
+                "名言价值打分", "[urgent-same]", "[image] 选中", "[push]", "[newtask]", "[memory]")
     missing = [s for s in promised if s not in src_all]
     check("运维手册承诺的日志关键字都真实存在", not missing, str(missing))
 

@@ -3,22 +3,29 @@
 用户要的效果：13 号挖出来的潜在任务写进 14 号的日记，用 `- [ ]` 让他勾；
 15 号复查，勾了的算完成，没勾的滚进 15 号的日记。
 
+2026-11-16 追加（用户要求「根据日记自己生成一段话」）：同一窗口里还写一段
+**助手的记忆**（`assistant:memory` 区块，由 diary_collector.ensure_day_memory
+用昨天的日记生成）——和计划区块并列、互不干扰，也只动自己的区块。
+
 安全边界（这是往用户自己的日记仓库里写东西，必须守住）：
 - **只在凌晨窗口内写**（默认北京时间 00:00–06:00，`sources.json` 的 `writeback_window` 可改）。
   用户白天在 Obsidian 里写日记，白天写回会和他的编辑撞车。窗口外只复查勾选、绝不提交。
   **窗口宽度必须 ≥ cron 间隔（20 分钟）**，否则窗口里可能一次都不触发（审计 §4.1）。
-- 只动 `<!-- assistant:plans:start/end -->` 之间的内容，区块外的正文一个字节都不碰
-- 区块已存在就按 pid 合并，保留用户已经勾上的 [x]，不重置
+- 只动 `<!-- assistant:plans:start/end -->` 与 `<!-- assistant:memory:start/end -->`
+  两个区块内部，区块外的正文一个字节都不碰
+- 计划区块已存在就按 pid 合并，保留用户已经勾上的 [x]，不重置；
+  记忆区块整段替换（每天一条，不累积）
 - 每行尾部带 `<!-- pid:xxx -->`，Obsidian 预览里不显示，但能精确对回 plans.json
 - 文件不存在才新建，新建时用用户日记的三段式骨架
 """
 from __future__ import annotations
 
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from dedup import load_list
-from diary_collector import BLOCK_END, BLOCK_START, PLANS_PATH, Gitee
+from diary_collector import (BLOCK_END, BLOCK_START, MEM_BLOCK_END,
+                             MEM_BLOCK_START, PLANS_PATH, Gitee)
 from utils import DATA_DIR, load_json, log, now_bj, safe_text, save_json
 
 WB_PATH = DATA_DIR / "diary" / "writeback.json"
@@ -66,6 +73,15 @@ def render_block(day: str, entries: list[tuple[str, str, bool]]) -> str:
     return "\n".join(lines)
 
 
+def render_memory_block(yesterday: str, text: str) -> str:
+    """助手的记忆区块：一段自由文本（AI/离线生成），每天整段替换，不勾选、不滚动。"""
+    body = "\n".join("> " + ln for ln in (text or "").strip().splitlines())
+    lines = [MEM_BLOCK_START, f"## 💭 助手记得 · {yesterday}", "", body, "",
+              "<sub>根据你 " + yesterday + " 的日记生成，当个念想，不一定对。</sub>",
+              MEM_BLOCK_END]
+    return "\n".join(lines)
+
+
 def parse_block(text: str) -> list[tuple[str, bool]]:
     """从日记正文里读出助手区块的 (pid, 是否勾选)。没有区块返回空列表。"""
     start = (text or "").find(BLOCK_START)
@@ -83,6 +99,17 @@ def upsert_block(text: str, block: str) -> str:
     end = text.find(BLOCK_END)
     if start >= 0 and end > start:
         return text[:start] + block + text[end + len(BLOCK_END):]
+    sep = "" if not text or text.endswith("\n") else "\n"
+    return text + sep + "\n" + block + "\n"
+
+
+def upsert_memory(text: str, block: str) -> str:
+    """记忆区块同款：整块替换或追加到末尾。与计划区块互不干扰。"""
+    text = text or ""
+    start = text.find(MEM_BLOCK_START)
+    end = text.find(MEM_BLOCK_END)
+    if start >= 0 and end > start:
+        return text[:start] + block + text[end + len(MEM_BLOCK_END):]
     sep = "" if not text or text.endswith("\n") else "\n"
     return text + sep + "\n" + block + "\n"
 
@@ -114,7 +141,8 @@ def pick_plans(plans: list[dict], rolling: set[str], limit: int) -> list[dict]:
 
 def run(today: date | None = None, g: Gitee | None = None,
         plans: list[dict] | None = None, cfg: dict | None = None,
-        now: datetime | None = None) -> dict:
+        now: datetime | None = None,
+        memory: str | None = None) -> dict:
     now = now or now_bj()
     today = today or now.date()
     cfg = cfg if cfg is not None else ((load_json(DATA_DIR / "sources.json") or {}).get("diary") or {})
@@ -170,7 +198,10 @@ def run(today: date | None = None, g: Gitee | None = None,
     entries = [(p["id"], safe_text(p.get("text"), 100), p["id"] in done_ids) for p in picked]
     picked_ids = [p["id"] for p in picked]
 
-    if not entries and not text:
+    # memory = 昨天的日记生成的「助手记忆」段落（diary_collector.ensure_day_memory）。
+    # None = 今天没生成（窗口外/日记太短/AI 挂了没占位），区块干脆不写。
+
+    if not entries and not text and not memory:
         log(f"写回：{iso} 没有可写的计划，也不新建空日记")
         save_json(WB_PATH, {"updated_at": now_bj().isoformat(timespec="seconds"),
                             "last_date": prev_date, "last_path": prev_path})
@@ -178,18 +209,28 @@ def run(today: date | None = None, g: Gitee | None = None,
                 "undone": sorted(undone), "path": path}
 
     block = render_block(iso, entries)
-    new_text = upsert_block(text or NEW_FILE_TEMPLATE, block)
+    mem_block = (render_memory_block((today - timedelta(days=1)).isoformat(), memory)
+                 if memory else "")
+
+    def _compose(base: str) -> str:
+        t = upsert_block(base or NEW_FILE_TEMPLATE, block)
+        return upsert_memory(t, mem_block) if mem_block else t
+
+    new_text = _compose(text)
     if new_text == text:
         log(f"写回：{iso} 内容无变化，跳过提交")
     else:
-        msg = f"chore(diary): 助手待办 {iso}（{len(entries)} 条）"
+        msg = f"chore(diary): 助手区块 {iso}（待办 {len(entries)} 条"
+        if memory:
+            msg += "，含记忆"
+        msg += "）"
         ok = g.write_file(path, new_text, msg, sha=sha)
         if not ok and sha:
             # sha 被拒 = 用户/同步刚好改过这个文件。重读最新正文再合并一次，
             # 区块外以他的最新内容为准，只重试一次，不覆盖他的编辑。
             log(f"写回：{iso} 提交被拒（文件刚被改过），重读后重试一次", level="WARN")
             text, sha = g.read_file(path)
-            new_text = upsert_block(text or NEW_FILE_TEMPLATE, block)
+            new_text = _compose(text)
             if new_text == text:
                 ok = True
             elif sha:

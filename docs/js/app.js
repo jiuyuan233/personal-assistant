@@ -1,46 +1,23 @@
 // 任务看板前端。只读 render_readme.py 生成的 docs/data/*.json，不做任何计算逻辑，
 // 分档/排序的权威实现都在 Python 侧，这里只负责显示。
-// 例外是「立即更新」按钮：它只做一次 workflow_dispatch（触发采集），不碰任何数据。
+// 例外是「立即更新」按钮：它只负责把用户带到 GitHub Actions 的运行页，不碰任何数据。
 'use strict';
 
 const KIND = { work: '作业', eval: '互评', exam: '考试', quiz: '随堂' };
 const REPO = 'jiuyuan233/personal-assistant';
-const TOKEN_KEY = 'pa_github_pat';
+// GitHub 的 workflow_dispatch 必须带凭证，而公开页面嵌任何 Token 都违反本仓库
+// 铁律（凭据只进 Secrets）。所以按钮零密钥：跳到 GitHub 的 workflow 页，用用户
+// 自己浏览器的登录态点 Run workflow（2026-11-16 用户要求：不要询问密钥）。
+const WORKFLOW_URL = `https://github.com/${REPO}/actions/workflows/assistant.yml`;
 
-// 立即更新：dispatch 一次 tick（远程触发采集）。约 2 分钟后自动刷新本页。
-// PAT 只存浏览器 localStorage，仅发往 api.github.com；失败（401/403）会清除重填。
-async function triggerRefresh() {
-  let token = localStorage.getItem(TOKEN_KEY) || '';
-  if (!token) {
-    token = prompt('粘贴一个 GitHub Token（Fine-grained、勾本仓库 Actions:write 权限；'
-      + '只存你浏览器本地，用于触发采集）：') || '';
-    if (!token.trim()) return;
-  }
+// 立即更新：打开 GitHub Actions 页（已登录状态无需密钥），用户点 Run workflow
+// 选 tick 运行；采集约 2 分钟后本页自动刷新。全程不提示任何 Token。
+function triggerRefresh() {
   const btn = document.getElementById('refreshBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ 已触发采集，等待运行…';
-  try {
-    const r = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/assistant.yml/dispatches`, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' },
-      body: JSON.stringify({ ref: 'main', inputs: { mode: 'tick' } })
-    });
-    if (r.status === 204) {
-      localStorage.setItem(TOKEN_KEY, token);
-      btn.textContent = '✅ 已触发，约 2 分钟后自动刷新';
-      setTimeout(() => location.reload(), 150000);
-      return;
-    }
-    localStorage.removeItem(TOKEN_KEY);
-    btn.disabled = false;
-    btn.textContent = '🔄 立即更新';
-    alert('触发失败：HTTP ' + r.status
-      + (r.status === 401 || r.status === 403 ? '（Token 无效或没有 Actions:write 权限，请重新粘贴）' : ''));
-  } catch (e) {
-    btn.disabled = false;
-    btn.textContent = '🔄 立即更新';
-    alert('网络错误：' + e.message);
-  }
+  btn.textContent = '⏳ 已打开 GitHub，去点 Run workflow…';
+  window.open(WORKFLOW_URL, '_blank', 'noopener');
+  setTimeout(() => location.reload(), 150000);
 }
 const STATE = { pending: '待完成', submitted: '已提交', done: '已完成', unknown: '未知' };
 const BUCKETS = [

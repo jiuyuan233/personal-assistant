@@ -20,7 +20,7 @@
 
 | 源 | 内容 | 采集方式 | 间隔（约） |
 | --- | --- | --- | --- |
-| 1 | Gitee 日记里的名言 + 潜在计划 | Gitee API v5（只读 .md） | 120 分钟 |
+| 1 | Gitee 日记里的名言 + 潜在计划 + 助手记忆段落 | Gitee API v5（只读 .md） | 120 分钟 |
 | 2 | 学习通作业/考试 | 模拟登录四步链 | 60 分钟 |
 | 3 | 校园比赛/项目公告 | 公开列表页，**不登录** | 360 分钟 |
 
@@ -380,7 +380,8 @@ workflow 的飞书步骤 `if [ -s ... ]` 就发**卡片**（人话 + 清单 + �
   写回成功后才记 `writeback_date`。这是修「错过凌晨窗口 → 计划永久不再进入待办」（审计 §1.5）的关键：
   窗口有 6 小时宽、每 20 分钟一次机会，只要 Actions 在这 6 小时里跑成过一轮就写得上。
 - 落点：`{root}/{daily_dir}/{YYYY-MM-DD}.md`，`daily_dir` 在 `data/sources.json` 里配（当前是 `日`）。
-- **只动助手区块**，边界是 `<!-- assistant:plans:start -->` / `<!-- assistant:plans:end -->`。
+- **只动助手区块**，边界是 `<!-- assistant:plans:start -->` / `<!-- assistant:plans:end -->`
+  和 `<!-- assistant:memory:start -->` / `<!-- assistant:memory:end -->` 两个。
   区块外是用户正文，**一个字节都不许碰**。`upsert_block()` 有 markers 就替换区间，没有就追加。
 - 每行带 `<!-- pid:xxx -->`，复查靠 pid 对齐，不靠文本匹配（用户可能改字）。
 - **已勾选的状态必须保住**：合并时 `[x]` 优先，重复写回同一天是幂等的。
@@ -392,6 +393,13 @@ workflow 的飞书步骤 `if [ -s ... ]` 就发**卡片**（人话 + 清单 + �
 - 选取规则 `pick_plans(plans, rolling, limit)`：`state=="open"` 且（**没写过** `written_once` 或 pid 在 rolling 里），
   排序键 `(rolling 优先, due_date, first_seen 升序, -confidence)`，上限 `max_writeback`（默认 20）。
   **`first_seen` 升序是刻意的**：老计划先写，否则新计划天天挤掉老计划，老的永远轮不到（审计 §3.4 的饥饿问题）。
+
+**助手记忆区块（2026-11-16 用户要求「根据日记自己生成一段话」）**：同一凌晨窗口里
+`diary_collector.ensure_day_memory()` 用**昨天**的日记生成一段自由文本（AI 按既有
+人格写，不编造、不罗列待办；AI 不可用时离线统计摘要占位，恢复后重生成覆盖），
+账本在 `data/diary/memory.json`（`{date, text, source}`，ai 版当天只生成一次，60 天清理），
+随计划一起写进**今天**的日记（`assistant:memory` 区块，标题标的是昨天的日期）。
+昨天日记太短（<40 字）/ 不存在 / 在私人黑名单里 → 当天不写记忆，不编造。
   写过的计划会带 `written_once=True` / `last_written`，只有 rolling 里的才允许再写一次。
 - **没有内容且文件不存在时不创建空日记。** 别给用户造垃圾文件。
 - 新建文件用用户的三段骨架 `NEW_FILE_TEMPLATE`（今日记录 / 随笔感想 / 明日计划）。

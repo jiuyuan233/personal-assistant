@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import base64
 import re
-from datetime import date
+from datetime import date, datetime, timedelta
 from urllib.parse import quote
 
 import requests
@@ -33,20 +33,33 @@ STATE_PATH = DIARY_DIR / "state.json"
 QUOTES_PATH = DIARY_DIR / "quotes.json"
 PLANS_PATH = DIARY_DIR / "plans.json"
 ARCHIVE_PATH = DIARY_DIR / "plans_archive.json"
+# 助手的记忆（用户 2026-11-16 要求）：每天一条，由昨天日记生成，与计划一起写回。
+MEMORY_PATH = DIARY_DIR / "memory.json"
+MEMORY_MIN_CHARS = 40      # 昨天日记短于这个数就不生成（没东西可记，不编造）
+MEMORY_MAX_CHARS = 4000     # 送 AI 的正文上限
+MEMORY_KEEP_DAYS = 60       # 记忆账本保留天数，过期清理
 
 API = "https://gitee.com/api/v5/repos/{repo}/contents/{path}"
 MAX_DEPTH = 3
 CHECKBOX_RE = re.compile(r"^\s*[-*+]\s*\[([ xX])\]\s*(.+?)\s*$", re.M)
 DATE_IN_NAME_RE = re.compile(r"(\d{4})-(\d{2})-(\d{2})")
-# 助手写回区块。里面的复选框由 diary_writeback 自己管，采集时必须整块跳过，
-# 否则同一句话会被 extract_checkboxes 和 AI 各抽一遍，plans.json 里全是重复项。
+# 助手写回区块（plans + memory 两个）。里面的内容由 diary_writeback 自己管，
+# 采集时必须整块跳过，否则会被 extract_checkboxes 和 AI 各抽一遍——助手写的
+# 待办/记忆混进 plans.json 或被自己"回忆"，都是污染。
 BLOCK_START = "<!-- assistant:plans:start -->"
 BLOCK_END = "<!-- assistant:plans:end -->"
-BLOCK_RE = re.compile(re.escape(BLOCK_START) + r".*?" + re.escape(BLOCK_END), re.S)
+MEM_BLOCK_START = "<!-- assistant:memory:start -->"
+MEM_BLOCK_END = "<!-- assistant:memory:end -->"
+_BLOCK_STRIP = [
+    re.compile(re.escape(BLOCK_START) + r".*?" + re.escape(BLOCK_END), re.S),
+    re.compile(re.escape(MEM_BLOCK_START) + r".*?" + re.escape(MEM_BLOCK_END), re.S),
+]
 
 
 def strip_assistant_block(text: str) -> str:
-    return BLOCK_RE.sub("", text or "")
+    for pat in _BLOCK_STRIP:
+        text = pat.sub("", text or "")
+    return text
 
 
 # ---------------------------------------------------------------------------
@@ -278,6 +291,90 @@ def ai_extract(client, text: str, entry: dict, today: date) -> tuple[list[dict],
 
 
 # ---------------------------------------------------------------------------
+# 助手的记忆（用户 2026-11-16：「给我的 action 的 AI 加一个记忆的功能，
+# 数据来源于 obsidian 的笔记里，根据日记自己生成一段话，说什么都可以」）
+# ---------------------------------------------------------------------------
+def offline_memory(text: str, day: str) -> str:
+    """AI 不可用时的确定性占位（诚实：只报统计，不冒充理解）。"""
+    boxes = list(CHECKBOX_RE.finditer(text))
+    done = sum(1 for m in boxes if m.group(1).lower() == "x")
+    return (f"（离线摘要，AI 今天不在线）{day} 你写了约 {len(text)} 字的日记，"
+            f"勾了 {done}/{len(boxes)} 个待办。先替你记着这一笔，明天见。")
+
+
+def memory_ledger_prune(items: list[dict], today: date) -> list[dict]:
+    """记忆账本只留最近 MEMORY_KEEP_DAYS 天，防慢性膨胀。"""
+    cutoff = (today - timedelta(days=MEMORY_KEEP_DAYS)).isoformat()
+    return [it for it in items if (it.get("date") or "") >= cutoff]
+
+
+def ensure_day_memory(g: Gitee, dcfg: dict, prefixes: list[str] | None = None,
+                       now: datetime | None = None, client=None) -> str | None:
+    """为**昨天**生成一段「助手记忆」，存 data/diary/memory.json，返回文本。
+
+    时机与 plans 写回同款：只在凌晨写回窗口内做（白天绝不读外不写）；
+    窗口内有多次 tick，已生成 ai 版就复用；offline 版下个 tick 若 AI 恢复会重生成。
+    跳过条件（都返回 None，不生成也不占账）：窗口外 / 昨天日记不存在 /
+    正文过短（MEMORY_MIN_CHARS）/ 昨天日记路径在私人黑名单里。
+    """
+    import diary_writeback  # 懒导入避免环：writeback 也 import 本模块的常量
+
+    now = now or now_bj()
+    if not dcfg.get("memory_enabled", True):
+        return None
+    window = dcfg.get("writeback_window") or diary_writeback.DEFAULT_WINDOW
+    if not diary_writeback.in_window(now, window):
+        return None
+
+    day = (now.date() - timedelta(days=1)).isoformat()
+    root = dcfg.get("path") or ""
+    daily_dir = dcfg.get("daily_dir") or "日"
+    rel = f"{root}/{daily_dir}/{day}.md".lstrip("/")
+    if prefixes and is_excluded(rel, prefixes):
+        log("[memory] 昨天的日记在私人黑名单里，不生成记忆")
+        return None
+
+    items = (load_json(MEMORY_PATH) or {}).get("items") or []
+    by_date = {it.get("date"): it for it in items if isinstance(it, dict)}
+    prev = by_date.get(day)
+    if prev and prev.get("source") == "ai":
+        return safe_text(prev.get("text"), 600) or None
+
+    text, _sha = g.read_file(rel)
+    text = strip_assistant_block(text).strip()
+    if len(text) < MEMORY_MIN_CHARS:
+        if not prev:
+            log(f"[memory] {day} 的日记太短（{len(text)} 字），今天不写记忆")
+        return prev and prev.get("text") or None
+
+    source, out = "ai", ""
+    if client is None:
+        try:
+            from ai_client import AIClient
+            client = AIClient(timeout=90)
+        except (SystemExit, RuntimeError):
+            client = None
+    if client is not None:
+        try:
+            from prompts import memory_messages
+            out = safe_text(client.chat_text(
+                memory_messages(text[:MEMORY_MAX_CHARS], day),
+                temperature=0.8, max_tokens=500), 600).strip()
+        except Exception as e:
+            log(f"[memory] AI 生成失败，用离线摘要：{safe_text(e, 160)}", level="WARN")
+    if not out:
+        source, out = "offline", offline_memory(text, day)
+
+    by_date[day] = {"date": day, "text": out, "source": source}
+    items = memory_ledger_prune(list(by_date.values()), now.date())
+    items.sort(key=lambda it: it.get("date") or "")
+    save_json(MEMORY_PATH, {"updated_at": now.isoformat(timespec="seconds"),
+                            "items": items})
+    log(f"[memory] 记住 {day}（{source}）：{out[:80]}")
+    return out
+
+
+# ---------------------------------------------------------------------------
 # 主流程
 # ---------------------------------------------------------------------------
 def run() -> dict:
@@ -392,12 +489,21 @@ def run() -> dict:
     log(f"日记完成：处理 {processed} 个文件，名言 {len(quotes)} 条，"
         f"计划 {len(plans)} 条（未完成 {len(open_plans)}）")
 
+    # 助手的记忆（用户 2026-11-16）：凌晨窗口内为昨天生成一段记忆段落，
+    # 与潜在计划一起写进今天的日记。失败只告警——采集数据已落盘，记忆明天再补。
+    memory_text: str | None = None
+    try:
+        memory_text = ensure_day_memory(g, dcfg, prefixes)
+    except Exception as e:
+        log(f"记忆生成失败：{safe_text(e, 160)}", level="WARN")
+
     # 写回：昨天挖到的潜在计划 → 今天日记里的复选框；上次没勾完的滚过来。
     # 写回失败只告警，不影响采集结果 —— 日记数据已经落盘了。
     wb: dict = {}
     try:
         import diary_writeback
-        wb = diary_writeback.run(today=today, g=g, plans=plans, cfg=dcfg)
+        wb = diary_writeback.run(today=today, g=g, plans=plans, cfg=dcfg,
+                                memory=memory_text)
     except Exception as e:
         log(f"日记写回失败：{safe_text(e, 200)}", level="WARN")
     done = set(wb.get("done") or [])

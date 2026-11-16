@@ -125,7 +125,9 @@
     "daily_dir": "日",
     "max_writeback": 20,
     "writeback_window": "00:00-06:00",
-    "_写回说明": "T 日挖到的潜在计划写进 T+1 日的 daily_dir/YYYY-MM-DD.md，只动 assistant:plans 区块；T+2 复查勾选，没勾的滚进当天日记",
+    "memory_enabled": true,
+    "_memory说明": "助手记忆（用户 2026-11-16：「根据日记自己生成一段话，说什么都可以」）：凌晨窗口内用昨天的日记生成一段记忆，和潜在计划一起写进今天的日记。关掉改这里为 false；日记长度阈值/账本保留天数在 diary_collector 的 MEMORY_* 常量",
+    "_写回说明": "T 日挖到的潜在计划写进 T+1 日的 daily_dir/YYYY-MM-DD.md，只动 assistant:plans 与 assistant:memory 两个区块；T+2 复查勾选，没勾的滚进当天日记。memory 区块是助手根据 T 日日记生成的记忆段落（用户 2026-11-16 要求），随计划同窗口写入，每天整段替换",
     "_writeback_window说明": "北京时间 HH:MM-HH:MM，含头不含尾，支持跨零点。只有落在这个窗口内的 diary 运行才会提交到日记仓库；窗口外只复查勾选、不写。改这里即可调整凌晨时段，格式写错会失败关闭（当天不写）。审计 §4.1：原为 00:00-05:00，实测 GitHub schedule 延迟可达 54 分钟，故放宽到 06:00。v1.4.0 起不再有专用凌晨 cron：全仓库只有一条 7-59/20 cron（错峰非准点），窗口内每 20 分钟一次 tick = 18 次机会，当天还没写回就强制加跑 diary。硬下界：窗口宽度必须 >= cron 间隔，否则窗口里可能一次都不触发",
     "_私人路径说明": "私人日记目录不采集也不公开。黑名单**只放 GitHub Secret DIARY_EXCLUDE**（逗号分隔的路径前缀），仓库里只出现这个名字 —— 路径名本身就暴露了用户把哪些主题标成私人。见 scripts/diary_collector.excluded_prefixes()"
   },
