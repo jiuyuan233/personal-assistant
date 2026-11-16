@@ -991,19 +991,26 @@ def do_selftest() -> bool:
                                          datetime(2026, 11, 14, tzinfo=BJ_TZ).date())
                   == [{"date": "2026-11-13", "text": "新"}])
 
-            fg_w = FakeGitee({"Tasks/日/2026-11-14.md": ("# 今天\n", "w1")})
-            r_w = dw.run(g=fg_w, plans=[], cfg=wb_cfg, memory="记得你昨天熬夜了。哼。",
-                         now=datetime(2026, 11, 14, 3, 7, tzinfo=BJ_TZ))
-            body_w = fg_w.files["Tasks/日/2026-11-14.md"][0]
-            check("写回：记忆段落随计划一起写入（标昨天的日期）",
-                  dw.MEM_BLOCK_START in body_w and "记得你昨天熬夜了" in body_w
-                  and "助手记得 · 2026-11-13" in body_w and r_w.get("ok"), body_w[:120])
-            fg_w2 = FakeGitee({})
-            r_w2 = dw.run(g=fg_w2, plans=[], cfg=wb_cfg, memory="只有记忆也要写。",
-                          now=datetime(2026, 11, 14, 4, 7, tzinfo=BJ_TZ))
-            check("写回：无计划无正文但有记忆也写入（新建骨架）",
-                  "只有记忆也要写" in (fg_w2.files.get("Tasks/日/2026-11-14.md") or ("",))[0]
-                  and r_w2.get("ok"))
+            # 写回集成用例也必须隔离：dw.run 会写 writeback.json，
+            # 不換路径会把测试状态写进真实数据（v1.6.3 提交时实测踩过）
+            saved_wb2 = dw.WB_PATH
+            dw.WB_PATH = Path(td) / "writeback_test.json"
+            try:
+                fg_w = FakeGitee({"Tasks/日/2026-11-14.md": ("# 今天\n", "w1")})
+                r_w = dw.run(g=fg_w, plans=[], cfg=wb_cfg, memory="记得你昨天熬夜了。哼。",
+                             now=datetime(2026, 11, 14, 3, 7, tzinfo=BJ_TZ))
+                body_w = fg_w.files["Tasks/日/2026-11-14.md"][0]
+                check("写回：记忆段落随计划一起写入（标昨天的日期）",
+                      dw.MEM_BLOCK_START in body_w and "记得你昨天熬夜了" in body_w
+                      and "助手记得 · 2026-11-13" in body_w and r_w.get("ok"), body_w[:120])
+                fg_w2 = FakeGitee({})
+                r_w2 = dw.run(g=fg_w2, plans=[], cfg=wb_cfg, memory="只有记忆也要写。",
+                              now=datetime(2026, 11, 14, 4, 7, tzinfo=BJ_TZ))
+                check("写回：无计划无正文但有记忆也写入（新建骨架）",
+                      "只有记忆也要写" in (fg_w2.files.get("Tasks/日/2026-11-14.md") or ("",))[0]
+                      and r_w2.get("ok"))
+            finally:
+                dw.WB_PATH = saved_wb2
     finally:
         dc.MEMORY_PATH = saved_mem
 
