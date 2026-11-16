@@ -1,40 +1,37 @@
 {
-  "updated_at": "2026-11-16T18:34:35+08:00",
+  "updated_at": "2026-11-16T18:39:19+08:00",
   "week": "第 11 周 / 共 18 周",
   "stats": {
-    "pending": 4,
+    "pending": 1,
     "overdue": 0,
     "today": 1,
     "week": 0,
     "later": 0,
-    "unknown": 3,
+    "unknown": 0,
     "dropped": {
-      "not_pending": 44,
-      "overdue": 32
+      "not_pending": 36,
+      "overdue": 32,
+      "not_started": 3
     },
     "courses": 14,
-    "suffix": "，其中 **1 项今天截止**，**3 项截止未知（可能已逾期，请点进去确认）**"
+    "suffix": "，其中 **1 项今天截止**"
   },
   "sources": {
     "study": {
-      "last_success": "2026-11-16T18:32:54+08:00",
-      "ok": false,
-      "status": "partial",
+      "last_success": "2026-11-16T18:35:01+08:00",
+      "ok": true,
+      "status": "ok",
       "courses": 14,
       "courses_ok": 14,
       "courses_failed": 0,
-      "tasks": 80,
-      "pending": 36,
-      "unknown_deadline": 3,
-      "anomalies": [
-        "待完成但抓不到截止：建筑环境与能源应用工程概论 · 工业建筑环境与能源应用",
-        "待完成但抓不到截止：建筑环境与能源应用工程概论 · 建筑区域能源规划",
-        "待完成但抓不到截止：建筑环境与能源应用工程概论 · 人造空间能源应用工程"
-      ],
+      "tasks": 72,
+      "pending": 33,
+      "unknown_deadline": 0,
+      "anomalies": [],
       "urgent_sig": "219232606-dc942471f7",
       "urgent_count": 1,
-      "quiz_cursor": 0,
-      "last_attempt": "2026-11-16T18:32:54+08:00"
+      "quiz_cursor": 4,
+      "last_attempt": "2026-11-16T18:35:01+08:00"
     }
   }
 }
