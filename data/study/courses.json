@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-16T21:06:26+08:00",
+  "updated_at": "2026-11-16T23:12:41+08:00",
   "count": 14,
   "items": [
     {
@@ -40,7 +40,7 @@
       "ismooc2": "1",
       "name": "建筑环境与能源应用工程概论",
       "task_count": 11,
-      "pending_count": 4
+      "pending_count": 1
     },
     {
       "course_id": "268016715",
