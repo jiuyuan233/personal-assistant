@@ -28,7 +28,7 @@ PLANS_DOC = REPO_ROOT / "docs" / "潜在计划.md"
 EXCLUDED_TEMPLATE = REPO_ROOT / "scripts" / "excluded_template.md"
 EXCLUDED_DOC = REPO_ROOT / "docs" / "已剔除任务.md"
 
-KIND_CN = {"work": "作业", "eval": "互评", "exam": "考试"}
+KIND_CN = {"work": "作业", "eval": "互评", "exam": "考试", "quiz": "随堂"}
 REASON_CN = {"overdue": "已逾期", "not_pending": "非待完成"}
 REASON_ORDER = ("overdue", "not_pending")
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]

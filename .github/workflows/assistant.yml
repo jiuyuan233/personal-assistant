@@ -162,8 +162,10 @@ jobs:
           python scripts/main.py "$MODE" 2>&1 | tee -a /tmp/task-output.log
 
       - name: 提交数据
-        # probe / selftest / studydiag 不产生数据，三时段推送只读 data/ 不写，都跳过提交
-        if: steps.mode.outputs.push != 'true' && steps.mode.outputs.mode != 'probe' && steps.mode.outputs.mode != 'selftest' && steps.mode.outputs.mode != 'studydiag'
+        # probe / selftest / studydiag 不产生数据，跳过提交。
+        # 三时段推送（v1.6.0）：只写 runtime.json 的推送记账，也必须提交 ——
+        # 否则直派发的推送不落账，下一轮任何触发源的 tick 都会再发一次（重复推送）。
+        if: steps.mode.outputs.mode != 'probe' && steps.mode.outputs.mode != 'selftest' && steps.mode.outputs.mode != 'studydiag'
         env:
           MODE: ${{ steps.mode.outputs.mode }}
           REF_NAME: ${{ github.ref_name }}
@@ -173,6 +175,11 @@ jobs:
           case "$MODE" in
             tick|finalize|all)
               git add data docs README.md
+              ;;
+            morning|noon|dusk|night)
+              # 推送模式只读 data/ 不写，唯一变化是 runtime.json 的记账；
+              # README/docs 归 finalize，这里不碰。
+              git add data
               ;;
             *)
               # 采集模式只提交自己采到的 data。README/docs 是派生产物，统一交给 finalize，
@@ -235,7 +242,10 @@ jobs:
           # 每轮 run 结束都接力（失败也接：下一轮可能自愈）。接力器睡 19.5 分钟后
           # 触发下一轮 tick + 下一棒接力。防失控设计见 relay.yml 头注释：
           # 独立并发组保证链恒 ≤1 条；推送由 pushed 记账防重，重复触发无害。
-          # GitHub 错峰 cron 独立于此作为兜底（cron-job.org 已于 2026-11-15 停用）。
+          # 触发源三路并存（2026-11-16 用户拍板，cron-job.org 重新启用为准点主力）：
+          # cron-job.org 外部准点 → tick；GitHub 错峰 cron → tick（兜底）；
+          # 接力链（仓库内自续，维持采集节奏）。三路靠 pushed 记账防重，
+          # 谁先触发谁发，后到的自动跳过，绝不重复发。
           curl -s -X POST \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \

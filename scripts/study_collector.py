@@ -28,7 +28,7 @@ from urllib.parse import parse_qs, urlparse
 
 import requests
 
-from dedup import load_list, merge_tasks, save_list, sort_by_deadline
+from dedup import load_list, merge_quiz, merge_tasks, save_list, sort_by_deadline
 from utils import (DATA_DIR, clean_html_text, env, exc_brief, fmt_remaining,
                    load_json, log, make_id, now_bj, parse_datetime,
                    parse_remaining, safe_text, save_json, scrub_course_name,
@@ -612,9 +612,13 @@ def run() -> dict:
         anomalies.append(f"待完成但抓不到截止：{t.get('course')} · {t.get('title')}")
         log(f"⚠️ 待完成却无截止时间，可能已逾期：{t.get('course')} · {t.get('title')}", level="WARN")
 
-    # v1.5.22 随堂作业 Playwright 采集：每轮只抓 cursor 指向的少数课程（轮换），
-    # 请求率低于主采集（反爬约束）。**任何失败都不影响主采集**（诊断信息落日志，
-    # 第一版不并入 tasks.json——等真实渲染样本确认结构后实现精确解析）。
+    # v1.6.0 随堂作业**收录**：Playwright 打开课程页 → 从内嵌的
+    # stuActiveList frame 提取行（v1.5.22 四层逆向确认的唯一可行路径：
+    # 单独 goto 该 URL 渲染 0 字，课程页内的 iframe 才渲染出真实内容）。
+    # 每轮只轮换抓少数课程（反爬约束），**任何失败都不影响主采集**。
+    # 行结构未吃透时落打码诊断日志，据实收紧 parse_active_rows，不许猜。
+    quiz_new: list[dict] = []
+    quiz_covered: set = set()
     if cfg.get("quiz_browser", True):
         try:
             import quiz_browser as qb
@@ -622,74 +626,63 @@ def run() -> dict:
             cursor = int(meta_q.get("quiz_cursor") or 0) % max(1, len(courses))
             per_round = max(1, int(cfg.get("quiz_per_round") or 2))
             picks = courses[cursor:cursor + per_round] or courses[:1]
-            log(f"[quiz] 本轮随堂探测 {len(picks)} 门（cursor={cursor}）："
+            log(f"[quiz] 本轮随堂采集 {len(picks)} 门（cursor={cursor}）："
                 f"{', '.join((c.get('name') or '?')[:12] for c in picks)}")
-            q_cookies = qb.cookies_from_session(cx.s)
+            q_cookies = qb.cookies_for_browser(cx.s)
             for c in picks:
                 time.sleep(2)
                 mid_url = (f"https://mooc1.huuc.edu.cn/visit/stucoursemiddle"
                            f"?courseid={c['course_id']}&clazzid={c['class_id']}&cpi={c['cpi']}"
                            f"&ismooc2={c.get('ismooc2', '1')}")
-                res = qb.collect_course_page(c, mid_url, q_cookies, UA, click_tab="任务")
+                res = qb.collect_quiz(c, mid_url, q_cookies, UA)
+                cname = c.get("name") or "?"
                 if not res.get("ok"):
-                    log(f"[quiz] {c.get('name')} 失败：{res.get('error', '')[:120]}", level="WARN")
+                    log(f"[quiz] {cname} 随堂采集失败：{res.get('error', '')[:120]}", level="WARN")
                     continue
-                log(f"[quiz] {c.get('name')} 课程页 {res['html_len']}B | XHR {len(res['xhr'])} 条"
-                    + (f" | tab_error: {res.get('tab_error', '')[:60]}" if res.get("tab_error") else ""))
-                for u in res["xhr"][:8]:
-                    log(f"[quiz]   XHR：{safe_text(u, 200)}")
-                # 安全：只 dump 任务相关行（页面菜单含用户姓名，全文进公开日志=泄露）
-                for r in qb.extract_quiz_rows(res["dom_text"])[:10]:
-                    log(f"[quiz]   行：{r['line'][:120]}")
-                log(f"[quiz]   frame 数：{res.get('frame_count', '未知')}")
-                # v1.5.22 收官：随堂活动列表（stuActiveList，Vue 渲染）——用渲染后
-                # 页面 URL 里的 enc 构造地址，Playwright 打开拿任务行并**收录**
-                try:
-                    time.sleep(2)
-                    from urllib.parse import parse_qs as _pqs, urlparse as _ups
-                    _enc_v = (_pqs(_ups(res.get("final_url") or "").query)
-                              .get("enc") or [""])[0]
-                    active_url = (f"https://mobilelearn.huuc.edu.cn/page/active/stuActiveList"
-                                  f"?courseid={c['course_id']}&clazzid={c['class_id']}"
-                                  f"&cpi={c['cpi']}&ut=s&t={int(time.time() * 1000)}"
-                                  f"&stuenc={_enc_v}")
-                    res_a = qb.collect_active_list(active_url, q_cookies, UA)
-                    if not res_a.get("ok"):
-                        log(f"[quiz] {c.get('name')} 随堂列表失败：{res_a.get('error', '')[:120]}",
-                            level="WARN")
-                    else:
-                        text_a = res_a.get("text") or ""
-                        rows_a = qb.extract_quiz_rows(text_a)
-                        log(f"[quiz] {c.get('name')} 随堂列表渲染 {len(text_a)} 字 | "
-                            f"任务行 {len(rows_a)} 条")
-                        for r in rows_a[:10]:
-                            log(f"[quiz]   随堂行：{r['line'][:120]}")
-                except Exception as e:
-                    log(f"[quiz] 随堂列表异常：{exc_brief(e)}", level="WARN")
-                for fu in res.get("frame_urls") or []:
-                    log(f"[quiz]   frame URL：{safe_text(fu, 150)}")
-                for fr in res.get("frames") or []:
-                    ft = fr.get("text") or ""
-                    log(f"[quiz]   frame {fr.get('url', '')[:100]} len={fr.get('len')}")
-                    hits_f = 0
-                    for line in ft.splitlines():
-                        s = line.strip()
-                        if len(s) > 6 and any(w in s for w in ("待做", "未交", "测试", "测验",
-                                                               "考试", "作业", "随堂", "知识总结",
-                                                               "已完成", "任务")):
-                            log(f"[quiz]     {safe_text(s, 140)}")
-                            hits_f += 1
-                            if hits_f >= 15:
-                                break
+                rows_raw = res.get("rows_raw") or []
+                tasks_q, unmapped = qb.parse_active_rows(
+                    rows_raw, c, now, res.get("frame_url") or "")
+                line_count = int(res.get("diag", {}).get("lineCount") or 0)
+                # 「打开成功」且（解析出行 或 页面明确空）才算覆盖这门课：
+                # 渲染了内容但一行没解析出来 = 结构没吃透，不算空，旧数据保命
+                if tasks_q or line_count < 120:
+                    quiz_covered.add((c["course_id"], c["class_id"]))
+                    quiz_new.extend(tasks_q)
+                    log(f"[quiz] {cname} 随堂 {len(tasks_q)} 条（frame {line_count} 行）")
+                    for t in tasks_q[:10]:
+                        log(f"[quiz]   · {t['title']}｜{t['status'] or '无状态'}｜"
+                            f"{t.get('deadline') or '无截止'}")
+                elif rows_raw:
+                    quiz_covered.add((c["course_id"], c["class_id"]))
+                    quiz_new.extend(tasks_q)
+                    log(f"[quiz] {cname} frame {line_count} 行、候选行 {len(rows_raw)} 条"
+                        f"但解析 0 条，dump 诊断（打码）：", level="WARN")
+                    for d in qb.masked_diag(res.get("diag") or {}, rows_raw)[:12]:
+                        log(f"[quiz]     {d}")
+                else:
+                    log(f"[quiz] {cname} frame 渲染 {line_count} 行、0 候选行，"
+                        f"dump 诊断（打码）：", level="WARN")
+                    for d in qb.masked_diag(res.get("diag") or [])[:12]:
+                        log(f"[quiz]     {d}")
+                for w in unmapped[:5]:
+                    log(f"[quiz] {cname} 未收录状态词「{w}」（按 pending 处理，待补词表）",
+                        level="WARN")
             new_cursor = (cursor + len(picks)) % max(1, len(courses))
             meta_now = load_json(META_PATH) or {}
             meta_now["quiz_cursor"] = new_cursor
             save_json(META_PATH, meta_now)
-            log(f"[quiz] cursor → {new_cursor}")
+            log(f"[quiz] cursor → {new_cursor}（本轮随堂新增 {len(quiz_new)} 条）")
         except Exception as e:
-            log(f"[quiz] 随堂探测异常（不影响主采集）：{exc_brief(e)}", level="WARN")
+            log(f"[quiz] 随堂采集异常（不影响主采集）：{exc_brief(e)}", level="WARN")
 
-    merged = merge_tasks(load_list(TASKS_PATH), all_tasks, now)
+    # 合并分两路：work/eval/exam 全量重抓走 merge_tasks（新列表即权威）；
+    # quiz 轮换制走 merge_quiz（覆盖到的课新值权威、没覆盖的保旧、
+    # 整轮失败全保旧——绝不让轮换把已收录的随堂任务清掉）。
+    old_all = load_list(TASKS_PATH)
+    old_quiz = [t for t in old_all if t.get("kind") == "quiz"]
+    old_main = [t for t in old_all if t.get("kind") != "quiz"]
+    merged = merge_tasks(old_main, all_tasks, now)
+    merged = sort_by_deadline(merged + merge_quiz(old_quiz, quiz_new, quiz_covered, now))
     # 审计 §2.5 / §7.2：data/ 是公开仓库的一部分，不是本地缓存。
     # cpi / answerId / enc 每生一份，落盘前必须抹掉；完整深链只在本轮内存里用于抓详情页。
     link_mode = cfg.get("public_links") or "course"

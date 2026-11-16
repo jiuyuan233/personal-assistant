@@ -129,6 +129,51 @@ def merge_tasks(old_list: list[dict], new_list: list[dict], now: datetime) -> li
     return sort_by_deadline(out)
 
 
+def merge_quiz(old_list: list[dict], new_list: list[dict],
+               covered: set, now: datetime) -> list[dict]:
+    """随堂任务（kind=quiz）的轮换增量合并（v1.6.0）。
+
+    work/eval/exam 每轮**全量**重抓，merge_tasks 的「新列表即权威」成立；
+    quiz 每轮只轮换抓少数课程（反爬约束），大部分课这轮没抓 ——
+    如果沿用 merge_tasks 的语义，没轮到的课的随堂任务会被当成「消失了」
+    而清空。所以按课程分治：
+
+    - **本轮覆盖到的课程**（covered 里 (course_id, class_id)）：新列表即权威，
+      一行为空 = 这门课真没随堂了，旧值删除；
+    - **本轮没覆盖的课程**：旧值原样保留（连 first_seen 都不动）；
+    - **covered 为空**（整轮失败/没启用）：全部保旧 —— 宁可旧着也不能清空
+      （§1.2 拒绝可疑清空的同款思路）。
+
+    旧值贡献：first_seen（新出现标记）+ 精确截止时间（同 merge_tasks）。
+    """
+    if not covered:
+        if old_list:
+            log(f"随堂本轮未覆盖任何课程（失败或未启用），保留旧 {len(old_list)} 条")
+        return list(old_list)
+    stamp = now.isoformat(timespec="seconds")
+    old_by_id = {t["id"]: t for t in old_list}
+    out: list[dict] = []
+    fresh = 0
+    for new in new_list:
+        old = old_by_id.get(new["id"])
+        if old:
+            new["first_seen"] = old.get("first_seen") or stamp
+            if old.get("deadline_exact") and not new.get("deadline_exact"):
+                new["deadline"] = old["deadline"]
+                new["deadline_exact"] = True
+        else:
+            new["first_seen"] = stamp
+            fresh += 1
+        new["last_seen"] = stamp
+        out.append(new)
+    kept_old = [dict(t) for t in old_list
+                if (t.get("course_id"), t.get("class_id")) not in covered]
+    out.extend(kept_old)
+    log(f"随堂合并：本轮覆盖 {len(covered)} 门课，新增 {fresh} 条，"
+        f"未覆盖保留 {len(kept_old)} 条")
+    return out
+
+
 def sort_by_deadline(tasks: list[dict]) -> list[dict]:
     """截止时间近的在前；没有截止时间的排最后。
 

@@ -3,9 +3,65 @@
 本项目的所有版本记录。日期为北京时间。
 
 > **读法**：每条版本记录都是**当时的快照**，里面的「未验证 / 仍未完成」不代表现状。
-> 当前状态只看两处：最新版（v1.5.22）的 **「仍未完成」一节**（**认标题不认编号**，
+> 当前状态只看两处：最新版（v1.6.0）的 **「仍未完成」一节**（**认标题不认编号**，
 > 编号会随补记漂移），和 [不足与风险 §0.5 状态表](docs/不足与风险.md)（唯一权威）。
 > 被后续版本推翻的结论已就地加注，**保留原文是为了记住当时为什么这么判断，不是让人照着做**。
+
+## v1.6.0 — 2026-11-16
+
+**用户需求（2026-11-16）**：「要获取我的全部作业，包括随堂测试」+「定时推送任务，
+上一个 AI 把定时任务全删了，帮我补一下 cron-job.org——优先 cron-job 准时推送、
+GitHub 自带定时兜底，两种方式不能重复发」。
+
+### 1. 随堂作业收录（v1.5.22 差的那一环，本轮打通）
+
+**关键日志证据（2026-11-16 runs 43793959922 / 43800209131，拉 Actions 日志复核）**：
+v1.5.22 的结论「mobilelearn 域认证不通」只对**单独 goto** 成立——课程页内的
+stuActiveList iframe 一直在渲染真实内容（高数 1443 字、思修 316 字含
+「小组视频作业。」行）。正确路径不是另开页面，是**从课程页自己的 frame 里提取**。
+
+- `quiz_browser.py` 重写为收录版：
+  - `cookies_for_browser()`：cookie 域归一化到 `.huuc.edu.cn`（requests 存的
+    host-only cookie 不发给兄弟子域——单独 goto 渲染 0 字的根因）+ 按名去重；
+  - `collect_quiz()`：goto 课程页（302 链）→ 轮询找 `stuActiveList` frame →
+    等 Vue 渲染 → `EXTRACT_JS` 行级提取（li/[onclick]/[aria-label]）；
+  - `parse_active_rows()` 纯函数：行文本 → 任务 dict（kind=quiz、状态词表、
+    剩余/绝对时间两种截止解析、aria「标题 ; 状态」结构、onclick 深链）；
+    未收录状态词 WARN 出来（不静默吞），state 诚实判 pending；
+  - `masked_diag()`：诊断 dump 数字全打码再进公开日志（防学号/ID 明文）。
+- `study_collector.run()`：诊断块换成真实入库——`quiz_covered` 记录本轮真正
+  渲染成功的课；「渲染成功但 0 行解析」不算覆盖（结构没吃透 ≠ 没随堂，旧数据保命）。
+- `dedup.merge_quiz()`：轮换制专用合并——覆盖到的课新值权威（空=真没随堂，删旧）、
+  没覆盖的课保旧、整轮失败全保旧（绝不让轮换把已收录的随堂清空）。
+- `utils._PUBLIC_KEEP` 加 `activeid`/`knowledgeid`（activity 级 ID，与 workId 同性质）。
+- 渲染链路自动继承：`render_readme.KIND_CN` 与 `docs/js/app.js` 的 KIND 加
+  「quiz: 随堂」；任务清单/已剔除/urgent/飞书清单全部复用现有口径，零新逻辑。
+- `sources.json` study 段加 `quiz_browser` / `quiz_per_round`（可调，关随堂改这里）。
+- selftest +13 条断言（cookie 归一化/状态词/时间解析/行解析/合并四情形/
+  打码/标签/白名单/yml 记账/do_push 记账）。
+
+### 2. 推送防重：三路触发源记账闭合
+
+- `main.do_push()` 加记账：发前查 `runtime.pushed[kind] == 今天`，发过直接跳过；
+  发成功落账。**cron-job.org tick / GitHub cron tick / 接力链 tick / 手动直派
+  四条路都过同一本账，谁先发谁记账，后到的自动跳过，绝不重复发**（用户硬要求）。
+- `assistant.yml`：推送模式不再跳过提交步骤，只 `git add data` 提交 runtime.json
+  记账——否则直派发的推送不落账，下一轮任何 tick 会再发一次。
+
+### 3. cron-job.org 重新启用（准点主力）
+
+- 用户拍板（2026-11-16）：优先 cron-job.org 保证准时推送，GitHub 自带 cron 兜底。
+  建四条 job（pa-morning 07:05 / pa-noon 12:05 / pa-dusk 18:05 / pa-night 22:05，
+  Asia/Shanghai，POST `tick` 到 dispatch API）——四个时刻都落在对应补发窗口内。
+- 三个时刻都必须用 `tick` 而不是直派 push 模式：tick 顺带采集 + 自带记账防重。
+- 接力链保留（维持采集节奏：study 60min / diary 120min / notice 360min 的轮次
+  由它扛），cron-job 只负责四个准点；两路靠 pushed 记账天然防重。
+
+### 4. 仍未完成（随堂）
+
+- 行解析是「行文本启发式第一版」——首次真实渲染样本到手后按 `[quiz]` 诊断
+  日志收紧选择器（保留 masked_diag 打码 dump 通道，禁止猜结构）。
+- quiz 任务无时间的会以 `⚠️截止未知` 入清单（诚实显示，不冒充宽裕）。
 
 ## v1.5.22 — 2026-11-15/16
 

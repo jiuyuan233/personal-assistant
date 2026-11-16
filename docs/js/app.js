@@ -3,7 +3,7 @@
 // 例外是「立即更新」按钮：它只做一次 workflow_dispatch（触发采集），不碰任何数据。
 'use strict';
 
-const KIND = { work: '作业', eval: '互评', exam: '考试' };
+const KIND = { work: '作业', eval: '互评', exam: '考试', quiz: '随堂' };
 const REPO = 'jiuyuan233/personal-assistant';
 const TOKEN_KEY = 'pa_github_pat';
 

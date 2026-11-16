@@ -885,6 +885,79 @@ def do_selftest() -> bool:
           and "不影响主采集" in inspect.getsource(study_collector.run))
     check("随堂轮换 cursor 记账在 meta.json",
           "quiz_cursor" in inspect.getsource(study_collector.run))
+
+    # v1.6.0 随堂作业收录：解析/合并/标签/记账的接线与纯函数守卫
+    import types as _types
+    import quiz_browser as qb
+    import utils as _u
+    from dedup import merge_quiz as _mq
+    fake = _types.SimpleNamespace(cookies=[
+        _types.SimpleNamespace(name="UID", value="v1", domain="mooc1.huuc.edu.cn", path="/"),
+        _types.SimpleNamespace(name="UID", value="v1", domain="passport2.huuc.edu.cn", path="/"),
+        _types.SimpleNamespace(name="fid", value="12", domain=".huuc.edu.cn", path="/"),
+        _types.SimpleNamespace(name="other", value="x", domain="www.baidu.com", path="/"),
+    ])
+    cc = qb.cookies_for_browser(fake)
+    check("随堂 cookie 域归一化（huuc 限内、按名去重、父域化）",
+          len(cc) == 2 and all(c["domain"] == ".huuc.edu.cn" for c in cc)
+          and {c["name"] for c in cc} == {"UID", "fid"}, str(cc))
+    check("随堂状态词分类", qb.classify_quiz("进行中") == "pending"
+          and qb.classify_quiz("已参与") == "done"
+          and qb.classify_quiz("某个没见过的词") == "unknown")
+    qdl, qex = qb.parse_quiz_time("剩余2天3小时", now)
+    check("随堂倒计时推算（非精确）",
+          qdl == "2026-11-15T01:00:00+08:00" and qex is False, str(qdl))
+    qdl2, qex2 = qb.parse_quiz_time("12-05 10:00", now)
+    check("随堂绝对时间就近补年", qdl2 == "2026-12-05T10:00:00+08:00" and qex2 is False, str(qdl2))
+    qdl3, qex3 = qb.parse_quiz_time("2026-11-15 09:00", now)
+    check("随堂带年份视为精确", qdl3 == "2026-11-15T09:00:00+08:00" and qex3 is True, str(qdl3))
+    qrows, qunmap = qb.parse_active_rows(
+        [{"text": "第三章知识总结\n进行中\n剩余2天3小时", "cls": "a",
+          "onclick": "openCurrentUrl('https://mobilelearn.huuc.edu.cn/page/active/"
+                     "stuActiveDetail?courseid=219232606&clazzid=153566712&activeId=123456789', 2)",
+          "aria": "第三章知识总结 ; 进行中"},
+         {"text": "已完成", "cls": "b", "onclick": "", "aria": ""}],
+        {"course_id": "219232606", "class_id": "153566712", "name": "高等数学A"}, now)
+    check("随堂行解析出 1 条（纯状态行跳过）",
+          len(qrows) == 1 and not qunmap, f"{len(qrows)}/{qunmap}")
+    if len(qrows) == 1:
+        t0 = qrows[0]
+        check("随堂行字段齐（kind/label/标题/状态/截止/深链）",
+              t0["kind"] == "quiz" and t0["label"] == "随堂"
+              and t0["title"] == "第三章知识总结"
+              and t0["state"] == "pending" and t0["status"] == "进行中"
+              and t0["deadline"] == qdl and t0["deadline_exact"] is False
+              and "courseid=219232606" in t0["url"] and "123456789" in t0["url"],
+              str(t0))
+    masked = qb.masked_diag({"firstLines": ["学号12345 某某 undisclosed"]}, [])
+    check("随堂诊断数字打码", masked and "12345" not in masked[0] and "D" in masked[0], str(masked))
+    old_q = [{"id": "a", "kind": "quiz", "course_id": "1", "class_id": "1", "title": "A", "state": "pending"},
+             {"id": "b", "kind": "quiz", "course_id": "2", "class_id": "2", "title": "B", "state": "pending"}]
+    m1 = _mq(old_q, [{"id": "a2", "kind": "quiz", "course_id": "1", "class_id": "1",
+                      "title": "A2", "state": "pending"}], {("1", "1")}, now)
+    check("随堂合并：覆盖课新值权威、未覆盖保旧", {t["id"] for t in m1} == {"a2", "b"}
+          and "first_seen" in m1[0], str([t["id"] for t in m1]))
+    m2 = _mq(old_q, [], {("1", "1"), ("2", "2")}, now)
+    check("随堂合并：覆盖且为空 = 真没随堂，全删", m2 == [], str(len(m2)))
+    m3 = _mq(old_q, [], set(), now)
+    check("随堂合并：整轮失败全保旧（不清空）", {t["id"] for t in m3} == {"a", "b"}, str(len(m3)))
+    m4 = _mq([{"id": "a", "kind": "quiz", "course_id": "1", "class_id": "1", "title": "A",
+               "state": "pending", "deadline": "2026-11-20T10:00:00+08:00", "deadline_exact": True}],
+             [{"id": "a", "kind": "quiz", "course_id": "1", "class_id": "1",
+               "title": "A", "state": "pending"}], {("1", "1")}, now)
+    check("随堂合并：精确截止旧值优先（防精度倒退）",
+          m4[0]["deadline"] == "2026-11-20T10:00:00+08:00" and m4[0]["deadline_exact"] is True,
+          str(m4[0].get("deadline")))
+    check("README 与网页看板都有随堂标签",
+          rr.KIND_CN.get("quiz") == "随堂"
+          and "quiz: '随堂'" in (rr.REPO_ROOT / "docs" / "js" / "app.js").read_text(encoding="utf-8"))
+    check("随堂深链白名单含 activity 级 ID",
+          "activeid" in _u._PUBLIC_KEEP and "knowledgeid" in _u._PUBLIC_KEEP)
+    check("推送模式也提交 runtime.json 记账（防重复推送）",
+          "push != 'true'" not in yml and "morning|noon|dusk|night)" in yml)
+    check("跨触发源推送防重在 do_push 记账",
+          "记账防重" in inspect.getsource(do_push)
+          and "RUNTIME_PATH" in inspect.getsource(do_push))
     wcfg = ((dw.load_json(dw.DATA_DIR / "sources.json") or {}).get("diary") or {}).get("writeback_window")
     check("sources.json 的写回窗口可解析", dw.parse_window(wcfg or dw.DEFAULT_WINDOW) is not None, str(wcfg))
 
@@ -1308,8 +1381,26 @@ def do_selftest() -> bool:
 
 
 def do_push(kind: str) -> bool:
+    """三时段推送（v1.6.0 加记账防重）。
+
+    用户硬要求「cron-job.org 定时 + GitHub 自带定时并存，但不能重复发」。
+    三路触发源（cron-job.org → tick / GitHub cron → tick / 接力链 → tick）的
+    防重在 do_tick 的 due_pushes（pushed[kind] 按日期记账）；这里再兜一层：
+    **手动直派 morning/noon/dusk/night 也先查记账**，今天发过的直接跳过，
+    并把成功结果写回 runtime.json（提交步骤会带上它，下一轮任何触发源都看得到）。
+    """
     import daily_push
-    return bool(daily_push.run(kind).get("ok"))
+    rt = load_json(RUNTIME_PATH) or {}
+    today = now_bj().date().isoformat()
+    if (rt.get("pushed") or {}).get(kind) == today:
+        log(f"[push] {kind} 今天已推送过（记账防重，跳过重复触发）")
+        return True
+    ok = bool(daily_push.run(kind).get("ok"))
+    if ok:
+        rt.setdefault("pushed", {})[kind] = today
+        save_json(RUNTIME_PATH, rt)
+        log(f"[push] {kind} 推送成功并记账（pushed.{kind} = {today}）")
+    return ok
 
 
 HANDLERS = {

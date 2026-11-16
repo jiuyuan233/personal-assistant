@@ -142,6 +142,9 @@
     "fetch_detail": true,
     "max_detail": 24,
     "_max_detail说明": "审计 §3.5 + 用户报的截止时间 bug：待完成且无截止时间的任务**全部**优先取详情页，剩余额度才给已有截止时间的。14 门课实测 38 条任务、5 条 pending，24 足够覆盖",
+    "quiz_browser": true,
+    "quiz_per_round": 2,
+    "_quiz说明": "v1.6.0 随堂作业收录（用户报「老师把作业当随堂作业发了，不在仓库里」）：Playwright 打开课程页后从内嵌 stuActiveList frame 提取。每轮只轮换抓 quiz_per_round 门课（反爬约束，14 门轮一圈约 7 小时）；任何失败不影响主采集。关掉随堂采集改这里为 false",
     "public_links": "course",
     "_public_links说明": "审计 §2.5 / §7.2：公开产物（README / docs）里的作业链接保留到哪一级。course=只留课程级参数（去掉 cpi/enc/clazzid 等可定位到个人的值），full=保留完整深链。完整深链只在飞书推送里给（飞书是私聊，不公开）"
   }
