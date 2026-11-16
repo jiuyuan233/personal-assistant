@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-16T01:56:58+08:00",
+  "updated_at": "2026-11-17T00:03:48+08:00",
   "count": 40,
   "repo": "jiuyuan233/obsidion-gitee",
   "items": [
@@ -8,14 +8,14 @@
       "text": "周清：回顾前几天落下的内容",
       "due_date": "2026-10-11",
       "confidence": 0.7,
-      "state": "open",
+      "state": "done",
       "tags": [
         "学习",
         "复盘"
       ],
       "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-11.md",
       "source_date": "2026-10-11",
-      "origin": "ai",
+      "origin": "checkbox",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
@@ -26,14 +26,14 @@
       "text": "周六下午两点半进社区",
       "due_date": "2026-10-17",
       "confidence": 0.9,
-      "state": "open",
+      "state": "done",
       "tags": [
         "实践",
         "生活"
       ],
       "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-17.md",
       "source_date": "2026-10-17",
-      "origin": "ai",
+      "origin": "checkbox",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
@@ -53,7 +53,9 @@
       "source_date": "",
       "origin": "ai",
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-17"
     },
     {
       "id": "-d21b091330",
@@ -69,7 +71,9 @@
       "source_date": "",
       "origin": "ai",
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-17"
     },
     {
       "id": "-2b99e1930c",
@@ -86,14 +90,14 @@
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
-      "last_written": "2026-11-16"
+      "last_written": "2026-11-17"
     },
     {
       "id": "-f9d8b71f05",
       "text": "认真学习",
       "due_date": null,
       "confidence": 1.0,
-      "state": "open",
+      "state": "done",
       "tags": [
         "待办"
       ],
@@ -110,7 +114,7 @@
       "text": "每天工作",
       "due_date": null,
       "confidence": 1.0,
-      "state": "open",
+      "state": "done",
       "tags": [
         "待办"
       ],
@@ -137,7 +141,7 @@
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
-      "last_written": "2026-11-16"
+      "last_written": "2026-11-17"
     },
     {
       "id": "-f124b4c6a7",
@@ -154,7 +158,7 @@
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
-      "last_written": "2026-11-16"
+      "last_written": "2026-11-17"
     },
     {
       "id": "-2922dfc5b5",
@@ -171,7 +175,7 @@
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
-      "last_written": "2026-11-16"
+      "last_written": "2026-11-17"
     },
     {
       "id": "-e79fcbc0dd",
@@ -188,7 +192,7 @@
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
-      "last_written": "2026-11-16"
+      "last_written": "2026-11-17"
     },
     {
       "id": "-20c7a194c3",
@@ -205,7 +209,7 @@
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
-      "last_written": "2026-11-16"
+      "last_written": "2026-11-17"
     },
     {
       "id": "-a3f23891e4",
@@ -221,7 +225,9 @@
       "source_date": "2026-11-12",
       "origin": "ai",
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-17"
     },
     {
       "id": "-3b92fa7ed6",
@@ -243,7 +249,7 @@
       "text": "宋浩数学cot章节",
       "due_date": null,
       "confidence": 1.0,
-      "state": "open",
+      "state": "done",
       "tags": [
         "待办"
       ],
@@ -260,7 +266,7 @@
       "text": "英语为也想学",
       "due_date": null,
       "confidence": 1.0,
-      "state": "open",
+      "state": "done",
       "tags": [
         "待办"
       ],
@@ -286,7 +292,9 @@
       "source_date": "2026-10-15",
       "origin": "ai",
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-17"
     },
     {
       "id": "-71d06a6fe7",
@@ -324,7 +332,7 @@
       "text": "是否周清",
       "due_date": null,
       "confidence": 1.0,
-      "state": "open",
+      "state": "done",
       "tags": [
         "待办"
       ],
@@ -351,14 +359,14 @@
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
-      "last_written": "2026-11-16"
+      "last_written": "2026-11-17"
     },
     {
       "id": "-fd8e984f02",
       "text": "还有就是高数老师讲的太烂了还是听宋浩老师吧，第一章映射",
       "due_date": null,
       "confidence": 1.0,
-      "state": "open",
+      "state": "done",
       "tags": [
         "待办"
       ],
@@ -401,7 +409,7 @@
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
-      "last_written": "2026-11-16"
+      "last_written": "2026-11-17"
     },
     {
       "id": "free-21e5de2715",
@@ -418,7 +426,7 @@
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
-      "last_written": "2026-11-16"
+      "last_written": "2026-11-17"
     },
     {
       "id": "-869ac21c54",
@@ -434,7 +442,9 @@
       "source_date": "2026-09-28",
       "origin": "ai",
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-17"
     },
     {
       "id": "-aac6719e5f",
@@ -450,7 +460,9 @@
       "source_date": "2026-09-28",
       "origin": "ai",
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-17"
     },
     {
       "id": "-46e93b75ce",
@@ -481,7 +493,9 @@
       "source_date": "",
       "origin": "ai",
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-17"
     },
     {
       "id": "-f066a04900",
@@ -514,7 +528,7 @@
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
-      "last_written": "2026-11-16"
+      "last_written": "2026-11-17"
     },
     {
       "id": "-2a8159dce1",
@@ -531,7 +545,7 @@
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
-      "last_written": "2026-11-16"
+      "last_written": "2026-11-17"
     },
     {
       "id": "4-free-0e46cdf207",
@@ -548,7 +562,7 @@
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
-      "last_written": "2026-11-16"
+      "last_written": "2026-11-17"
     },
     {
       "id": "-ae3f98ed3f",
@@ -563,7 +577,9 @@
       "source_date": "",
       "origin": "checkbox",
       "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13"
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-17"
     },
     {
       "id": "10-ff72f57765",
