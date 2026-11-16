@@ -1,44 +1,8 @@
 {
-  "updated_at": "2026-11-17T00:03:48+08:00",
+  "updated_at": "2026-11-17T01:59:55+08:00",
   "count": 40,
   "repo": "jiuyuan233/obsidion-gitee",
   "items": [
-    {
-      "id": "-c4671332f9",
-      "text": "周清：回顾前几天落下的内容",
-      "due_date": "2026-10-11",
-      "confidence": 0.7,
-      "state": "done",
-      "tags": [
-        "学习",
-        "复盘"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-11.md",
-      "source_date": "2026-10-11",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-16"
-    },
-    {
-      "id": "-84eedcb1ba",
-      "text": "周六下午两点半进社区",
-      "due_date": "2026-10-17",
-      "confidence": 0.9,
-      "state": "done",
-      "tags": [
-        "实践",
-        "生活"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-17.md",
-      "source_date": "2026-10-17",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-16"
-    },
     {
       "id": "-2aa48d1eba",
       "text": "每周周日固定做周清",
@@ -91,40 +55,6 @@
       "last_seen": "2026-11-13",
       "written_once": true,
       "last_written": "2026-11-17"
-    },
-    {
-      "id": "-f9d8b71f05",
-      "text": "认真学习",
-      "due_date": null,
-      "confidence": 1.0,
-      "state": "done",
-      "tags": [
-        "待办"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/年/26年.md",
-      "source_date": "",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-16"
-    },
-    {
-      "id": "-533f0f4cfe",
-      "text": "每天工作",
-      "due_date": null,
-      "confidence": 1.0,
-      "state": "done",
-      "tags": [
-        "待办"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/年/26年.md",
-      "source_date": "",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-16"
     },
     {
       "id": "-8d49ec9b37",
@@ -245,40 +175,6 @@
       "last_seen": "2026-11-13"
     },
     {
-      "id": "cot-892294649f",
-      "text": "宋浩数学cot章节",
-      "due_date": null,
-      "confidence": 1.0,
-      "state": "done",
-      "tags": [
-        "待办"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-15.md",
-      "source_date": "2026-10-15",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-16"
-    },
-    {
-      "id": "-527079539d",
-      "text": "英语为也想学",
-      "due_date": null,
-      "confidence": 1.0,
-      "state": "done",
-      "tags": [
-        "待办"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-15.md",
-      "source_date": "2026-10-15",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-16"
-    },
-    {
       "id": "-3719416394",
       "text": "接下来的时间学习数学",
       "due_date": null,
@@ -328,23 +224,6 @@
       "last_seen": "2026-11-13"
     },
     {
-      "id": "-a372863e5b",
-      "text": "是否周清",
-      "due_date": null,
-      "confidence": 1.0,
-      "state": "done",
-      "tags": [
-        "待办"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-11.md",
-      "source_date": "2026-10-11",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-16"
-    },
-    {
       "id": "3-0b9dad151c",
       "text": "大概就是3天一篇文章吧今天继续阅读，今天就全部阅读完",
       "due_date": null,
@@ -360,23 +239,6 @@
       "last_seen": "2026-11-13",
       "written_once": true,
       "last_written": "2026-11-17"
-    },
-    {
-      "id": "-fd8e984f02",
-      "text": "还有就是高数老师讲的太烂了还是听宋浩老师吧，第一章映射",
-      "due_date": null,
-      "confidence": 1.0,
-      "state": "done",
-      "tags": [
-        "待办"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-09.md",
-      "source_date": "2026-10-09",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-16"
     },
     {
       "id": "-84142a9782",
@@ -595,6 +457,144 @@
       "origin": "ai",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13"
+    },
+    {
+      "id": "-c4671332f9",
+      "text": "周清：回顾前几天落下的内容",
+      "due_date": "2026-10-11",
+      "confidence": 0.7,
+      "state": "done",
+      "tags": [
+        "学习",
+        "复盘"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-11.md",
+      "source_date": "2026-10-11",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-16"
+    },
+    {
+      "id": "-84eedcb1ba",
+      "text": "周六下午两点半进社区",
+      "due_date": "2026-10-17",
+      "confidence": 0.9,
+      "state": "done",
+      "tags": [
+        "实践",
+        "生活"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-17.md",
+      "source_date": "2026-10-17",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-16"
+    },
+    {
+      "id": "-f9d8b71f05",
+      "text": "认真学习",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/年/26年.md",
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-16"
+    },
+    {
+      "id": "-533f0f4cfe",
+      "text": "每天工作",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/年/26年.md",
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-16"
+    },
+    {
+      "id": "cot-892294649f",
+      "text": "宋浩数学cot章节",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-15.md",
+      "source_date": "2026-10-15",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-16"
+    },
+    {
+      "id": "-527079539d",
+      "text": "英语为也想学",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-15.md",
+      "source_date": "2026-10-15",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-16"
+    },
+    {
+      "id": "-a372863e5b",
+      "text": "是否周清",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-11.md",
+      "source_date": "2026-10-11",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-16"
+    },
+    {
+      "id": "-fd8e984f02",
+      "text": "还有就是高数老师讲的太烂了还是听宋浩老师吧，第一章映射",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-09.md",
+      "source_date": "2026-10-09",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-16"
     },
     {
       "id": "jb-a0e1c35a76",
