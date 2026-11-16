@@ -643,6 +643,13 @@ def run() -> dict:
                 tasks_q, unmapped = qb.parse_active_rows(
                     rows_raw, c, now, res.get("frame_url") or "")
                 line_count = int(res.get("diag", {}).get("lineCount") or 0)
+                if line_count <= 0:
+                    # 内容轮询后仍 0 行：疑似没加载完/被限流（run 43807375956
+                    # 实测同一门课一轮 316 字、一轮 0 字）——**不算覆盖**，
+                    # 旧数据保命，下一轮自然重试。
+                    log(f"[quiz] {cname} frame 渲染 0 行（疑似未加载完/限流），"
+                        f"本轮不覆盖、保留旧数据", level="WARN")
+                    continue
                 # 「打开成功」且（解析出行 或 页面明确空）才算覆盖这门课：
                 # 渲染了内容但一行没解析出来 = 结构没吃透，不算空，旧数据保命
                 if tasks_q or line_count < 120:

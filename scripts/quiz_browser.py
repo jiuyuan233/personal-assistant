@@ -332,7 +332,9 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
     """一门课的随堂采集：打开课程页 → 等 stuActiveList iframe 渲染 → 提取行。
 
     返回 {"ok", "rows_raw", "diag", "frame_url", "error"}：
-    - ok=True 且找到 frame（行可为空 = 这门课真没随堂）；
+    - ok=True 且找到 frame；**内容轮询最长 20s**（Vue 数据是慢 XHR：v1.5.22
+      的 27s 固定等待下能渲染、13s 下时有时无，run 43807375956 实测 思修
+      一轮 316 字、一轮 0 字——必须等 innerText 出现而不是赌固定时长）；
     - rows_raw 是 EXTRACT_JS 的行级结构化数据，解析在调用方（纯函数）；
     - 任何异常只写 error，**不抛**（主采集保护）。
     """
@@ -367,11 +369,23 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
                     frame.wait_for_load_state("domcontentloaded", timeout=20000)
                 except Exception:
                     pass
-                frame.wait_for_timeout(4000)  # Vue 渲染
+                # 内容轮询：等 innerText 真正出现（最长 20s），而不是赌固定等待
+                text_len = 0
+                for _ in range(20):
+                    try:
+                        text_len = frame.evaluate(
+                            "() => document.body ? (document.body.innerText || '').trim().length : 0")
+                    except Exception:
+                        text_len = 0
+                    if isinstance(text_len, int) and text_len > 0:
+                        break
+                    frame.wait_for_timeout(1000)
+                if text_len:
+                    frame.wait_for_timeout(1500)  # 出内容后再等一拍，列表尾行补齐
                 data = frame.evaluate(_EXTRACT_JS)
                 rows = data.get("rows") or []
-                if not rows:  # 再等一轮，列表可能慢加载
-                    frame.wait_for_timeout(3000)
+                if not rows and text_len:  # 有内容但没抓到候选：再等一轮
+                    frame.wait_for_timeout(2000)
                     data = frame.evaluate(_EXTRACT_JS)
                     rows = data.get("rows") or []
                 result.update({"ok": True, "rows_raw": rows, "diag": data,
