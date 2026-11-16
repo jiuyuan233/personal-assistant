@@ -1,5 +1,5 @@
 {
-  "last_success": "2026-11-16T21:04:30+08:00",
+  "last_success": "2026-11-16T21:22:15+08:00",
   "ok": true,
   "status": "ok",
   "courses": 14,
@@ -11,6 +11,6 @@
   "anomalies": [],
   "urgent_sig": "219232606-dc942471f7,228141406-12104c89e4,228141406-183effa9b4,228141406-196238fb25",
   "urgent_count": 4,
-  "quiz_cursor": 12,
-  "last_attempt": "2026-11-16T21:04:30+08:00"
+  "quiz_cursor": 0,
+  "last_attempt": "2026-11-16T21:22:15+08:00"
 }
