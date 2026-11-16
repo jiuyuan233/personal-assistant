@@ -1,21 +1,21 @@
 {
-  "updated_at": "2026-11-16T15:40:30+08:00",
+  "updated_at": "2026-11-16T17:36:41+08:00",
   "stats": {
-    "pending": 1,
+    "pending": 4,
     "overdue": 0,
     "today": 1,
     "week": 0,
     "later": 0,
-    "unknown": 0,
+    "unknown": 3,
     "dropped": {
       "not_pending": 44,
-      "overdue": 25
+      "overdue": 32
     },
     "courses": 14
   },
   "items": [
     {
-      "id": "219232606-0a8b2d030a",
+      "id": "219232606-dc942471f7",
       "kind": "work",
       "course": "高等数学A",
       "course_id": "219232606",
@@ -23,15 +23,69 @@
       "title": "4.1不定积分的概念与性质",
       "work_id": "58558183",
       "label": "互评",
-      "status": "未交",
+      "status": "待批阅",
       "state": "pending",
       "deadline": "2026-11-16T23:59:00+08:00",
       "deadline_exact": true,
-      "remaining_text": "剩余8小时19分钟",
+      "remaining_text": "剩余6小时23分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58558183",
       "start_time": "2026-11-16T14:44:00+08:00",
-      "first_seen": "2026-11-16T15:38:40+08:00",
-      "last_seen": "2026-11-16T15:38:40+08:00"
+      "first_seen": "2026-11-16T17:34:53+08:00",
+      "last_seen": "2026-11-16T17:34:53+08:00"
+    },
+    {
+      "id": "228141406-99040f071f",
+      "kind": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "class_id": "157088208",
+      "title": "工业建筑环境与能源应用",
+      "work_id": "58491082",
+      "label": "",
+      "status": "未开始",
+      "state": "pending",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491082",
+      "first_seen": "2026-11-16T17:34:53+08:00",
+      "last_seen": "2026-11-16T17:34:53+08:00"
+    },
+    {
+      "id": "228141406-62062f91c8",
+      "kind": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "class_id": "157088208",
+      "title": "建筑区域能源规划",
+      "work_id": "58491059",
+      "label": "",
+      "status": "未开始",
+      "state": "pending",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491059",
+      "first_seen": "2026-11-16T17:34:53+08:00",
+      "last_seen": "2026-11-16T17:34:53+08:00"
+    },
+    {
+      "id": "228141406-6862bfa9c2",
+      "kind": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "class_id": "157088208",
+      "title": "人造空间能源应用工程",
+      "work_id": "58491026",
+      "label": "",
+      "status": "未开始",
+      "state": "pending",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491026",
+      "first_seen": "2026-11-16T17:34:53+08:00",
+      "last_seen": "2026-11-16T17:34:53+08:00"
     }
   ],
   "courses": [
@@ -72,8 +126,8 @@
       "class_id": "157088208",
       "ismooc2": "1",
       "name": "建筑环境与能源应用工程概论",
-      "task_count": 8,
-      "pending_count": 1
+      "task_count": 11,
+      "pending_count": 4
     },
     {
       "course_id": "268016715",
