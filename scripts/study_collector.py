@@ -624,7 +624,7 @@ def run() -> dict:
             import quiz_browser as qb
             meta_q = load_json(META_PATH) or {}
             cursor = int(meta_q.get("quiz_cursor") or 0) % max(1, len(courses))
-            per_round = max(1, int(cfg.get("quiz_per_round") or 2))
+            per_round = max(1, int(cfg.get("quiz_per_round") or 4))
             picks = courses[cursor:cursor + per_round] or courses[:1]
             log(f"[quiz] 本轮随堂采集 {len(picks)} 门（cursor={cursor}）："
                 f"{', '.join((c.get('name') or '?')[:12] for c in picks)}")
@@ -662,7 +662,7 @@ def run() -> dict:
                 else:
                     log(f"[quiz] {cname} frame 渲染 {line_count} 行、0 候选行，"
                         f"dump 诊断（打码）：", level="WARN")
-                    for d in qb.masked_diag(res.get("diag") or [])[:12]:
+                    for d in qb.masked_diag(res.get("diag") or {})[:12]:
                         log(f"[quiz]     {d}")
                 for w in unmapped[:5]:
                     log(f"[quiz] {cname} 未收录状态词「{w}」（按 pending 处理，待补词表）",

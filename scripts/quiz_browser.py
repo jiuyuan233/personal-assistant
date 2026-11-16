@@ -9,12 +9,15 @@
    **课程页内的 iframe 却渲染出真实内容**（日志证据：高数 1443 字、
    思修 316 字含「小组视频作业。」行）→ 正确路径是打开课程页后
    **直接从它的 frame 里提取**，不另开页面；
-4. 行 DOM 结构未最终吃透 → parse_active_rows 基于行文本启发式 +
-   结构化诊断落日志（数字打码），拿到真实样本后收紧，**不许猜**。
+4. 行结构（run 43805479954 首轮真实样本）：同一可视行被渲染成多个
+   **并列碎片元素**（计数徽标「（0）」/标题/中文时间行/机器时间行），
+   不是嵌在同一个候选元素里 → 提取时带 getBoundingClientRect 的
+   **Y 坐标，按视觉位置聚类成行**（嵌套元素靠子串去重）；
+   课堂互动类（签到/选人/投票/抢答）不是作业，过滤掉。
 
 设计约束（v1.5.21 反爬实测教训，沿用）：
 - **失败绝不影响主采集**：任何异常返回空结果，调用方只记 WARN；
-- 每轮只轮换抓少数课程（study.quiz_per_round，默认 2），课程间 sleep 2s；
+- 每轮只轮换抓少数课程（study.quiz_per_round，默认 4），课程间 sleep 2s；
 - cookie 复用登录链会话，**域归一化到 .huuc.edu.cn**（requests 存的
   host-only cookie 不会发给兄弟子域 —— v1.5.22「单独 goto 渲染 0 字」
   的疑似根因；真实浏览器里这些 cookie 本来就是父域形态）；
@@ -74,15 +77,26 @@ def classify_quiz(status: str) -> str:
 
 
 _MDHM_RE = re.compile(r"(?:(\d{4})[-/年])?(\d{1,2})[-/月](\d{1,2})日?\s*(\d{1,2}):(\d{2})")
+# v1.6.1：中文显示层时间「11月03日 19时33分」（真实样本 run 43805479954）
+_MDHM2_RE = re.compile(r"(\d{1,2})月(\d{1,2})日\s*(\d{1,2})时(\d{1,2})分")
+# 纯计数/纯符号行（「（0）」「（2）」计数徽标碎片）
+_NOISE_TITLE_RE = re.compile(r"^[\d（）()：:、\s]*$")
+# 课堂互动类活动不是作业（签到/选人/投票/抢答/问卷），不进任务清单
+_CLASSROOM_RE = re.compile(r"(签到|选人|投票|抢答|问卷)")
+
+
+def _time_like(l: str) -> bool:
+    """这一行是不是时间形状（倒计时/月日时分/ISO 带冒号）。"""
+    return (parse_remaining(l) is not None or _MDHM_RE.search(l) is not None
+            or _MDHM2_RE.search(l) is not None)
 
 
 def parse_quiz_time(text: str, now: datetime) -> tuple[str | None, bool]:
     """随堂行的时间文本 → (deadline, 是否精确)。
 
-    两种形状（与 work 列表页同源）：
-    - 相对倒计时「剩余2天3小时」→ now + delta，非精确（≈）
-    - 绝对时间「12-05 10:00」/「2026-12-05 10:00」→ 按距 now 最近的一年补年
-      （学习通详情页同款规则；带年份的视为精确）
+    三种形状（真实样本）：「剩余2天3小时」倒计时、「11月03日 19时33分」
+    中文显示层、「2026-11-03 19:33」机器层（带冒号）。不带年份的按距
+    now 最近的一年补（学习通详情页同款规则）；带年份的视为精确。
     都不是 → (None, False)：诚实留空，绝不冒充「很宽裕」。
     """
     t = (text or "").strip()
@@ -91,6 +105,25 @@ def parse_quiz_time(text: str, now: datetime) -> tuple[str | None, bool]:
     rem = parse_remaining(t)
     if rem is not None:
         return (now + rem).isoformat(timespec="seconds"), False
+
+    def _nearest(mo: str, d: str, h: str, mi: str) -> tuple[str | None, bool]:
+        best: datetime | None = None
+        for year in (now.year, now.year - 1, now.year + 1):
+            try:
+                cand = datetime(year, int(mo), int(d), int(h), int(mi),
+                                tzinfo=now.tzinfo)
+            except ValueError:
+                continue
+            if best is None or abs((cand - now).total_seconds()) < \
+                    abs((best - now).total_seconds()):
+                best = cand
+        if best is None:
+            return None, False
+        return best.isoformat(timespec="seconds"), False
+
+    m2 = _MDHM2_RE.search(t)
+    if m2:
+        return _nearest(m2.group(1), m2.group(2), m2.group(3), m2.group(4))
     m = _MDHM_RE.search(t)
     if not m:
         return None, False
@@ -101,82 +134,128 @@ def parse_quiz_time(text: str, now: datetime) -> tuple[str | None, bool]:
                             tzinfo=now.tzinfo).isoformat(timespec="seconds"), True
         except ValueError:
             return None, False
-    # 不带年份：候选当年与上一年，取距 now 最近的那个（跨年作业会落对年）
-    best: datetime | None = None
-    for year in (now.year, now.year - 1, now.year + 1):
-        try:
-            cand = datetime(year, int(mo), int(d), int(h), int(mi), tzinfo=now.tzinfo)
-        except ValueError:
-            continue
-        if best is None or abs((cand - now).total_seconds()) < abs((best - now).total_seconds()):
-            best = cand
-    if best is None:
-        return None, False
-    return best.isoformat(timespec="seconds"), False
+    return _nearest(mo, d, h, mi)
+
+
+def cluster_rows(rows_raw: list[dict], tol: int = 25) -> list[dict]:
+    """按视觉位置把碎片元素聚成行（v1.6.1 真实样本结构）。
+
+    同一可视行的标题/计数/时间是**并列元素**（不在同一候选里），靠
+    getBoundingClientRect 的 Y 中心聚类合并；同簇内子串去重，消灭
+    嵌套元素（li 全文 vs 子节点碎片）与碎片本身。
+    rows_raw 每项：{text, y, onclick, aria}（y 缺失时按单独一行处理）。
+    返回每项 {texts: [行内全部文本], onclick, aria}。
+    """
+    items = [r for r in rows_raw if (r.get("text") or "").strip()]
+    with_y = [r for r in items if isinstance(r.get("y"), (int, float))]
+    without_y = [r for r in items if not isinstance(r.get("y"), (int, float))]
+    with_y.sort(key=lambda r: r["y"])
+    clusters: list[list[dict]] = []
+    for r in with_y:
+        if clusters and abs(r["y"] - clusters[-1][-1]["y"]) <= tol:
+            clusters[-1].append(r)
+        else:
+            clusters.append([r])
+    out = []
+    for cl in clusters + [[r] for r in without_y]:
+        texts = [r["text"].strip() for r in cl]
+        # 子串去重：嵌套/碎片文本被全文包含的丢掉
+        kept = [t for t in texts
+                if not any(t != o and t in o for o in texts)]
+        if not kept:
+            kept = texts
+        onclick = next((r.get("onclick") for r in cl if r.get("onclick")), "")
+        aria = next((r.get("aria") for r in cl if r.get("aria")), "")
+        out.append({"texts": kept, "onclick": onclick, "aria": aria})
+    return out
 
 
 def parse_active_rows(rows_raw: list[dict], course: dict, now: datetime,
                       frame_url: str = "") -> tuple[list[dict], list[str]]:
-    """frame 里提出的原始行 → 任务 dict 列表。纯函数。
+    """frame 里提出的碎片元素 → 任务 dict 列表。纯函数。
 
-    rows_raw 每项是 EXTRACT_JS 给的 {text, cls, onclick, aria}。
-    行文本启发式（结构未吃透前的第一版，据诊断日志迭代）：
+    rows_raw 每项是 EXTRACT_JS 给的 {text, y, onclick, aria}，
+    先 cluster_rows() 按视觉位置聚成行，再对每行做启发式：
     - 状态行 = 短行且能 classify（待做/进行中/已完成…）
-    - 时间行 = 含「剩余」或月-日 时:分形状
+    - 时间行 = 倒计时/月日时分/带冒号 ISO 形状
     - 标题 = 剩余行里最长的一条；aria-label「标题 ; 状态」结构优先补状态
-    未收录状态词 → 收集进 unmapped（调用方 WARN），state 诚实判 pending：
-    没吃透的状态宁可让用户看见，也不要静默吞掉（§1.1 假成功教训）。
+    - 纯计数行（「（0）」）与课堂互动（签到/选人…）不是任务，跳过
+    无状态时默认 pending（诚实显示，§1.1 教训：没吃透宁可让用户看见）；
+    未收录状态词收集进 unmapped（调用方 WARN），下一轮补词表。
     """
     tasks: list[dict] = []
     unmapped: list[str] = []
-    for raw in rows_raw:
-        lines = [l.strip() for l in ((raw.get("text") or "").splitlines()) if l.strip()]
+    for cl in cluster_rows(rows_raw):
+        lines = [l for t in cl["texts"] for l in t.splitlines() if l.strip()]
         if not lines:
             continue
         status, time_line = "", ""
         title_candidates: list[str] = []
+        time_lines: list[str] = []
         for l in lines:
             if not status and len(l) <= 12 and classify_quiz(l) != "unknown":
                 status = l
                 continue
-            if not time_line and (parse_remaining(l) is not None or _MDHM_RE.search(l)):
-                time_line = l
+            if _time_like(l):
+                time_lines.append(l)
                 continue
             title_candidates.append(l)
-        aria = (raw.get("aria") or "").strip()
+        aria = (cl.get("aria") or "").strip()
         if not status and ";" in aria:
             parts = [p.strip() for p in aria.split(";")]
             if len(parts) >= 2 and classify_quiz(parts[1]) != "unknown":
                 status = parts[1]
         if not title_candidates and aria:
-            # aria-label 本身常就是「标题 ; 状态」
             title_candidates = [aria.split(";")[0].strip()]
-        title = scrub_task_title(max(title_candidates, key=len) if title_candidates else "")
-        if not title:
+        title = max(title_candidates, key=len) if title_candidates else ""
+        title = scrub_task_title(title)
+        if not title or _NOISE_TITLE_RE.fullmatch(title):
             continue
-        state = classify_quiz(status)
+        if _CLASSROOM_RE.search(title):
+            continue  # 签到/选人等课堂互动，不是作业
+        # 零信息行（页头/标签条）：无时间无状态无深链，不是任务
+        if not (time_lines or status or re.search(r"https?://", cl.get("onclick") or "")):
+            continue
+        state = classify_quiz(status) if status else "pending"
         if state == "unknown" and status:
             unmapped.append(status)
             state = "pending"
         deadline, exact = (None, False)
-        if time_line:
-            deadline, exact = parse_quiz_time(time_line, now)
-        # 行身份：onclick 里的长数字串（activeId/knowledgeId），拿不到用标题兜底
+        if time_lines:
+            # 真实样本一行里两种时间：显示层「11月05日 15时30分」+机器层
+            # 「2026-11-05 15:30」（带年份）。优先机器层（精确）。
+            for tl in time_lines:
+                d2, e2 = parse_quiz_time(tl, now)
+                if e2 and d2:
+                    deadline, exact, time_line = d2, e2, tl
+                    break
+            if deadline is None:
+                time_line = time_lines[0]
+                deadline, exact = parse_quiz_time(time_line, now)
+        # 行身份：优先 onclick 里的对象级命名 ID（activeId/knowledgeId…），
+        # 拿不到退到最后一段 6 位以上数字串（courseid 在前、对象 ID 靠后）。
+        # **ID 必须再加标题做盐**：只靠数字串时同一门课的行会撞车（v1.6.0
+        # 曾因此只留一条），撞了会被去重吞掉。
         key = ""
-        om = re.search(r"(\d{6,})", raw.get("onclick") or "")
-        if om:
-            key = om.group(1)
+        oc = cl.get("onclick") or ""
+        km = re.search(r"(?:activeId|knowledgeId|activityId|objectId|workId|exerciseId)\W+(\d{4,})",
+                       oc, re.I)
+        if km:
+            key = km.group(1)
         else:
-            km = re.search(r"(\d{4,})", title)
-            key = km.group(1) if km else title
+            nums = re.findall(r"\d{6,}", oc)
+            key = nums[-1] if nums else ""
+        if not key:
+            tm = re.search(r"(\d{4,})", title)
+            key = tm.group(1) if tm else title
         url = ""
-        um = re.search(r"https?://[^\s'\"]+", raw.get("onclick") or "")
+        um = re.search(r"https?://[^\s'\"]+", cl.get("onclick") or "")
         if um:
             url = um.group(0)
         elif frame_url:
             url = frame_url
         tasks.append({
-            "id": make_id(course["course_id"], course["class_id"], "quiz", key),
+            "id": make_id(course["course_id"], course["class_id"], "quiz", key, title),
             "kind": "quiz",
             "course": course.get("name") or "",
             "course_id": course["course_id"],
@@ -221,17 +300,22 @@ _EXTRACT_JS = """
   out.lineCount = lines.length;
   out.firstLines = lines.slice(0, 12).map(s => s.length > 50 ? s.slice(0, 50) : s);
   const seen = new Set();
-  const cands = document.querySelectorAll('li, [onclick], [aria-label]');
-  for (const el of cands) {
+  const els = [];
+  for (const el of document.querySelectorAll('li, [onclick], [aria-label]')) {
     const t = (el.innerText || '').trim();
-    if (t.length < 2 || t.length > 400 || seen.has(t)) continue;
+    if (!t || t.length > 400 || seen.has(t)) continue;
     seen.add(t);
-    out.rows.push({text: t.slice(0, 220),
-                   cls: String(el.className || '').slice(0, 80),
-                   onclick: (el.getAttribute('onclick') || '').slice(0, 220),
-                   aria: (el.getAttribute('aria-label') || '').slice(0, 160)});
-    if (out.rows.length >= 30) break;
+    let r = null;
+    try { r = el.getBoundingClientRect(); } catch (e) { continue; }
+    if (r.width === 0 && r.height === 0) continue;
+    els.push({text: t.slice(0, 220),
+              y: Math.round(r.y + r.height / 2),
+              onclick: (el.getAttribute('onclick') || '').slice(0, 220),
+              aria: (el.getAttribute('aria-label') || '').slice(0, 160),
+              cls: String(el.className || '').slice(0, 60)});
+    if (els.length >= 80) break;
   }
+  out.rows = els;
   return out;
 }
 """

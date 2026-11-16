@@ -929,6 +929,40 @@ def do_selftest() -> bool:
               and t0["deadline"] == qdl and t0["deadline_exact"] is False
               and "courseid=219232606" in t0["url"] and "123456789" in t0["url"],
               str(t0))
+    # v1.6.1 真实样本结构（run 43805479954）：同一可视行是并列碎片元素，
+    # 靠 Y 坐标聚类合并；计数徽标与课堂互动（签到）过滤；中文时分格式；
+    # ID 提取认 activeId 而非顺位第一的 courseid（撞车会吞任务）。
+    qdl4, qex4 = qb.parse_quiz_time("11月05日 15时30分", now)
+    check("随堂中文时分就近补年", qdl4 == "2026-11-05T15:30:00+08:00" and qex4 is False, str(qdl4))
+    frag_rows = [
+        {"text": "（3）", "y": 100,
+         "onclick": "openCurrentUrl('https://mobilelearn.huuc.edu.cn/page/active/"
+                    "stuActiveDetail?courseid=219232606&clazzid=153566712&activeId=123456789', 2)",
+         "aria": ""},
+        {"text": "第三章知识总结", "y": 102, "onclick": "", "aria": "第三章知识总结 ; 进行中"},
+        {"text": "11月05日 15时30分\n2026-11-05 15:30", "y": 104, "onclick": "", "aria": ""},
+        {"text": "2026-2027第一学期第一次签到", "y": 200, "onclick": "", "aria": ""},
+        {"text": "11月03日 19时33分", "y": 202, "onclick": "", "aria": ""},
+        {"text": "3-5函数的极值与最值", "y": 300,
+         "onclick": "openCurrentUrl('https://mobilelearn.huuc.edu.cn/page/active/"
+                    "stuActiveDetail?courseid=219232606&clazzid=153566712&activeId=987654321', 2)",
+         "aria": ""},
+    ]
+    frows, funmap = qb.parse_active_rows(
+        frag_rows, {"course_id": "219232606", "class_id": "153566712", "name": "高等数学A"}, now)
+    check("碎片按视觉聚类：2 条任务（签到行被过滤）",
+          len(frows) == 2 and not funmap, f"{len(frows)}/{funmap}")
+    if len(frows) == 2:
+        f0, f1 = frows
+        check("聚类行的字段（标题/状态/机器层精确截止/深链）",
+              f0["title"] == "第三章知识总结" and f0["state"] == "pending"
+              and f0["status"] == "进行中"
+              and f0["deadline"] == "2026-11-05T15:30:00+08:00" and f0["deadline_exact"] is True
+              and "courseid=219232606" in f0["url"] and "123456789" in f0["url"],
+              str(f0))
+        check("ID 提取认 activeId 不撞车（两行同课不同 ID）",
+              f1["title"] == "3-5函数的极值与最值" and f0["id"] != f1["id"],
+              f"{f0['id']}/{f1['id']}")
     masked = qb.masked_diag({"firstLines": ["学号12345 某某 undisclosed"]}, [])
     check("随堂诊断数字打码", masked and "12345" not in masked[0] and "D" in masked[0], str(masked))
     old_q = [{"id": "a", "kind": "quiz", "course_id": "1", "class_id": "1", "title": "A", "state": "pending"},
