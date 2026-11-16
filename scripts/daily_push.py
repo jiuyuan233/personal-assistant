@@ -357,7 +357,7 @@ def new_task_pick(now: datetime, ledger: dict, tasks: list | None = None) -> tup
     hits: list[dict] = []
     for t in tasks:
         tid = t.get("id")
-        if not tid or tid in ledger or t.get("state") != "pending":
+        if not tid or tid in ledger or t.get("state") not in ("pending", "upcoming"):
             continue
         fs = parse_datetime(t.get("first_seen"))
         if not fs or fs < NEW_SINCE:
@@ -373,6 +373,8 @@ def new_task_pick(now: datetime, ledger: dict, tasks: list | None = None) -> tup
     for t in hits[:NEW_MAX_PER_MSG]:
         dl = parse_datetime(t.get("deadline"))
         when = dl.strftime("%m-%d %H:%M") if dl else "截止未知"
+        if t.get("state") == "upcoming":
+            when = f"未开始（{when}）" if dl else "未开始"
         label = t.get("label") or ""
         label_part = f" · {label}" if label else ""
         lines.append(f"- {t.get('course')} · {t.get('title')}{label_part} · 截止 {when}")

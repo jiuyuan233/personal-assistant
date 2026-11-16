@@ -19,7 +19,7 @@ function triggerRefresh() {
   window.open(WORKFLOW_URL, '_blank', 'noopener');
   setTimeout(() => location.reload(), 150000);
 }
-const STATE = { pending: '待完成', submitted: '已提交', done: '已完成', unknown: '未知' };
+const STATE = { pending: '待完成', submitted: '已提交', done: '已完成', upcoming: '未开始', unknown: '未知' };
 const BUCKETS = [
   ['overdue', '🔴 已逾期'],
   ['unknown', '🔴 截止未知（可能早已逾期，点进去自己确认）'],

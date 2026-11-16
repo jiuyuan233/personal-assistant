@@ -45,7 +45,7 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 AES_KEY = b"u2oh6Vu^HWe4_AES"
 
 PENDING = {"待做", "未做", "待提交", "未提交", "未交", "待完成", "进行中", "待互评",
-           "待考试", "未开始", "待作答", "待批阅互评"}
+           "待考试", "待作答", "待批阅互评"}
 SUBMITTED = {"待批阅", "已提交", "批阅中", "待批改", "批改中"}
 DONE = {"已完成", "已互评", "已批阅", "已结束", "已交", "已评分"}
 
@@ -99,6 +99,12 @@ def aes_encrypt(plain: str) -> str:
 
 def classify(status: str) -> str:
     s = (status or "").strip()
+    # v1.6.5（用户报的 bug）：「未开始」不是「未完成」——作业还没开放作答，现在做不了。
+    # 单独判为 upcoming：不进待办清单，归入「已剔除」文档的「未开始」一节；
+    # 老师开放作答后学习通状态会变（待做/进行中…），下一轮采集自动回到清单。
+    # 实测样本：建环概论三条「未开始」新作业（无截止时间）曾被当成待完成挂进清单。
+    if s == "未开始":
+        return "upcoming"
     if s in DONE:
         return "done"
     if s in SUBMITTED:

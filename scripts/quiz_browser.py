@@ -59,14 +59,17 @@ def cookies_for_browser(session) -> list[dict]:
 
 # 随堂状态词表。未收录的词 classify 返回 unknown，调用方 WARN 出来下一轮补，
 # 不许静默吞掉（学习通「未交」漏词教训，v1.2.3）。
+# v1.6.5：「未开始」单独判 upcoming——活动还没开放，不算待办（与 study_collector.classify 同口径）。
 QUIZ_DONE = {"已完成", "已参与", "已提交", "已结束", "已交", "已答", "已互评", "已过期", "已评分"}
 QUIZ_SUBMITTED = {"待批阅", "批阅中", "待批改", "批改中"}
 QUIZ_PENDING = {"待做", "未做", "未交", "未提交", "待完成", "进行中", "未参与", "待参与",
-                "未开始", "待作答", "未答", "已发布", "待开始"}
+                "待作答", "未答", "已发布", "待开始"}
 
 
 def classify_quiz(status: str) -> str:
     s = (status or "").strip()
+    if s == "未开始":        # v1.6.5：未开始 ≠ 待办（与 study_collector.classify 同口径）
+        return "upcoming"
     if s in QUIZ_DONE:
         return "done"
     if s in QUIZ_SUBMITTED:

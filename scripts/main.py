@@ -348,8 +348,14 @@ def do_selftest() -> bool:
 
     check("未交 归为 pending", study_collector.classify("未交") == "pending",
           study_collector.classify("未交"))
+    # v1.6.5（用户报的 bug）：「未开始」不是「未完成」——单独 upcoming，不进待办
+    check("未开始 归为 upcoming（不进待办清单）",
+          study_collector.classify("未开始") == "upcoming",
+          study_collector.classify("未开始"))
+    check("待考试 仍是 pending（考试可备考，不受未开始误伤）",
+          study_collector.classify("待考试") == "pending")
 
-    # 清单只留能做的：非待完成 / 已逾期，两类剔除。
+    # 清单只留能做的：未开始 / 非待完成 / 已逾期，三类剔除（v1.6.5 起）。
     # 「开始超过一周就剔除」已按用户要求废除（v1.3.0），下面有专门的回归断言。
     import render_readme as rr
 
@@ -362,29 +368,34 @@ def do_selftest() -> bool:
         mk(),                                                  # 无截止无开始 → 留
         mk(state="done", first_seen=iso(now - timedelta(days=9))),  # 已完成 → 剔（开始列退化）
         mk(state="submitted"),                                 # 已批阅 → 剔
+        mk(state="upcoming"),                                   # 未开始 → 剔（单独一类，v1.6.5）
         mk(deadline=iso(now - timedelta(hours=1))),             # 已逾期 → 剔
         mk(start_time=iso(now - timedelta(days=8))),            # 开始超一周 → 现在留
         mk(start_time=iso(now - timedelta(days=2))),            # 开始两天前 → 留
         mk(first_seen=iso(now - timedelta(days=9))),            # 只有 first_seen → 现在留
     ]
     kept, dropped = rr.actionable(sample, now)
-    check("可做过滤：留 4 剔 3", len(kept) == 4 and sum(dropped.values()) == 3,
+    check("可做过滤：留 4 剔 4", len(kept) == 4 and sum(dropped.values()) == 4,
           f"kept={len(kept)} dropped={dropped}")
     check("逾期任务不进清单", dropped["overdue"] == 1, str(dropped))
     check("已完成/已批阅不进清单", dropped["not_pending"] == 2, str(dropped))
+    check("未开始不进清单（单独一类）", dropped["not_started"] == 1, str(dropped))
     check("一周规则已废除：开始 8 天前仍留在清单",
           "stale" not in dropped
           and rr.drop_reason(mk(start_time=iso(now - timedelta(days=8))), now) is None)
     check("一周规则已废除：first_seen 9 天前仍留在清单",
           rr.drop_reason(mk(first_seen=iso(now - timedelta(days=9))), now) is None)
-    check("剔除原因只剩两类", rr.REASON_ORDER == ("overdue", "not_pending"),
+    check("剔除原因三类（逾期/未开始/非待完成）",
+          rr.REASON_ORDER == ("overdue", "not_started", "not_pending"),
           str(rr.REASON_ORDER))
+    check("未开始的剔除原因写明自动回清单",
+          "自动回到清单" in rr.reason_detail("not_started", mk(state="upcoming"), now, None, None))
 
     # 被剔除的任务要逐项留档：判定与清单共用 drop_reason()，条数必须对得上
     ex_body, ex_n = rr.render_excluded(sample, now)
     check("已剔除条数与过滤统计一致", ex_n == sum(dropped.values()), f"{ex_n} vs {dropped}")
-    check("已剔除逐项写明两类原因",
-          all(k in ex_body for k in ("已逾期", "非待完成")), ex_body[:120])
+    check("已剔除逐项写明三类原因",
+          all(k in ex_body for k in ("已逾期", "未开始", "非待完成")), ex_body[:120])
     check("已剔除不再出现开始过久", "开始过久" not in ex_body)
     check("开始时间退化标注首次发现", "（首次发现）" in ex_body)
     check("无剔除时给说明不给空表",
@@ -667,6 +678,10 @@ def do_selftest() -> bool:
     check("新作业账本 30 天旧账自动清理", "old" not in n_led4 and "作业n9" in n_msg4)
     n_msg5, _ = dp.new_task_pick(n_now, {}, [_mk_n("n8", 1, deadline=None)])
     check("无截止的新作业如实标「截止未知」", "截止未知" in n_msg5, n_msg5[:80])
+    n_msg9, _ = dp.new_task_pick(n_now, {}, [_mk_n("n10", 0.5, state="upcoming",
+                                                   deadline="2026-11-25T10:00:00+08:00")])
+    check("新发布但未开始的也通知一次（如实标「未开始」）",
+          "作业n10" in n_msg9 and "未开始（11-25 10:00）" in n_msg9, n_msg9[:120])
     n_msg6, _ = dp.new_task_pick(n_now, {},
                                  [_mk_n(f"m{i}", 1) for i in range(10)])
     check("新作业超过 8 条截断并计数（另有 N 条）",
@@ -1084,6 +1099,7 @@ def do_selftest() -> bool:
           and {c["name"] for c in cc} == {"UID", "fid"}, str(cc))
     check("随堂状态词分类", qb.classify_quiz("进行中") == "pending"
           and qb.classify_quiz("已参与") == "done"
+          and qb.classify_quiz("未开始") == "upcoming"
           and qb.classify_quiz("某个没见过的词") == "unknown")
     qdl, qex = qb.parse_quiz_time("剩余2天3小时", now)
     check("随堂倒计时推算（非精确）",
@@ -1384,6 +1400,8 @@ def do_selftest() -> bool:
     _appjs = (rr.REPO_ROOT / "docs" / "js" / "app.js").read_text(encoding="utf-8")
     check("看板名言也按 AI 价值排序", "(b.value || 0) - (a.value || 0)" in _appjs)
     check("看板名言显示 AI 价值分", "AI 价值 " in _appjs)
+    check("看板状态含未开始（v1.6.5，与 Python 分类同口径）",
+          "upcoming: '未开始'" in _appjs)
     # 用户 2026-11-16：看板「立即更新」按钮**免密钥**——不再弹框要 Token。
     # GitHub 不允许匿名 dispatch，公开页面嵌 Token 违反铁律 2（凭据只进 Secrets），
     # 所以按钮跳转 GitHub workflow 页，用用户自己的登录态点 Run workflow。
