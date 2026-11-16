@@ -907,8 +907,12 @@ cron 后到的自动跳过（`main.do_push` 还有一层兜底：今天发过的
   写成 `[{"key":…,"value":…}]` 会 500；body 是**字符串**（JSON 序列化后的）；
 - **限流 1 次/秒、5 次/分钟**（连发必 429；批量创建要隔 ~15 秒）；
 - 创建时 job 的名字字段是 **`title`**（`name` 会被静默忽略，title 留空）；
-- `schedule.timezone: "Asia/Shanghai"` 直接生效，hours/minutes 各给一个值即每天一次，
-  mdays/months/wdays 给 `["*"]`（schedule 里没有 years 字段）；
+- `schedule.timezone: "Asia/Shanghai"` 直接生效，hours/minutes 各给一个值即每天一次；
+- **⚠️ mdays/months/wdays 必须给显式数字数组**（months `1..12` / mdays `1..31` /
+  wdays `0..6`），**不要给 `["*"]`**：2026-11-16 实测四条 job 全被存成
+  months=[1] mdays=[1] wdays=[0]，nextExecution 直接跳到 2027-01-01——
+  四条准点推送全部**静默失效**，靠逐条核对 nextExecution 才发现（HTTP 200
+  不代表存对了）。建完/改完必须 GET 复核 `nextExecution` 是当天/次日的准点；
 - 立即触发一次的 API 端点（`/jobs/{id}/run`）在当前 API 版本 404，**验证就等下一次整点触发**，
   看 job 的 `lastExecution`（epoch 秒，按 UTC+8 换算）与 GitHub Actions 列表是否出现对应 run；
   首验实录：pa-noon 12:05:13 触发 → GitHub 04:05:15Z run success；

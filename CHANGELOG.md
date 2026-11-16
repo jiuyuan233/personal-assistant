@@ -56,6 +56,13 @@ stuActiveList iframe 一直在渲染真实内容（高数 1443 字、思修 316 
 - 三个时刻都必须用 `tick` 而不是直派 push 模式：tick 顺带采集 + 自带记账防重。
 - 接力链保留（维持采集节奏：study 60min / diary 120min / notice 360min 的轮次
   由它扛），cron-job 只负责四个准点；两路靠 pushed 记账天然防重。
+- **接入踩坑全记录**（当日三次实测修正，运维手册「API 接入细节」已同步）：
+  ① 平铺结构 400（必须包 `{"job":{...}}`）；② `requestMethod` 是顶层整数不是
+  extendedData 里的字符串；③ **mdays/months/wdays 给 `["*"]` 会被存成
+  months=[1] mdays=[1] wdays=[0]，nextExecution 跳到 2027-01-01——四条 job
+  全部静默失效**（HTTP 200 不代表存对）。修复：显式数字数组
+  （months 1..12 / mdays 1..31 / wdays 0..6）+ 逐条 GET 复核 nextExecution
+  = 当天/次日准点（pa-dusk 2026-11-16 18:05、pa-night 22:05 当日首次触发）。
 
 ### 4. 结构收紧（v1.6.1，首轮真机样本 run 43805479954 后立即迭代）
 
