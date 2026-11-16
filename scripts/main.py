@@ -1594,6 +1594,38 @@ def do_selftest() -> bool:
     check("文档与看板的相对链接全部可达", not bad_links, str(bad_links[:10]))
     check("看板链接不逃出 Pages 根目录", not escaped, str(escaped))
 
+    # v1.6.4 交接守卫：AI日常维护手册是给弱 AI 的操作指令，它指向的每个常量/文件
+    # 都必须真实存在——手册变假指令 = 弱 AI 照做即报错/白干。锁住关键锚点。
+    _maint = (rr.REPO_ROOT / "docs" / "AI日常维护手册.md").read_text(encoding="utf-8")
+    _anchors = {
+        "PERSONA": "PERSONA" in _maint and hasattr(__import__("prompts"), "PERSONA"),
+        "PUSH_KIND_BRIEF": "PUSH_KIND_BRIEF" in _maint
+                            and hasattr(__import__("prompts"), "PUSH_KIND_BRIEF"),
+        "PUSH_RULES": "PUSH_RULES" in _maint and hasattr(__import__("prompts"), "PUSH_RULES"),
+        "MEMORY_INSTRUCTIONS": "MEMORY_INSTRUCTIONS" in _maint
+                               and hasattr(__import__("prompts"), "MEMORY_INSTRUCTIONS"),
+        "MORNING_TASK_LIMIT": "MORNING_TASK_LIMIT" in _maint
+                               and hasattr(__import__("daily_push"), "MORNING_TASK_LIMIT"),
+        "TICK_INTERVALS": "TICK_INTERVALS" in _maint and "TICK_INTERVALS" in globals(),
+        "PUSH_HOURS": "PUSH_HOURS" in _maint and "PUSH_HOURS" in globals(),
+        "quiz_browser 开关": "quiz_browser" in _maint,
+        "memory_enabled 开关": "memory_enabled" in _maint,
+        "pushed 手改说明": "pushed" in _maint,
+        "竞赛日历": "竞赛日历" in _maint
+                   and (rr.REPO_ROOT / "docs" / "竞赛日历.md").exists(),
+        "readme_template 模板指引": "readme_template" in _maint,
+        "白名单文件都存在": all((rr.REPO_ROOT / f).exists() for f in (
+            "scripts/prompts.py", "scripts/daily_push.py", "scripts/anime_image.py",
+            "data/sources.json", "data/runtime.json", "data/diary/plans.json",
+            "scripts/readme_template.md")),
+    }
+    check("日常维护手册指向的锚点全部真实存在（手册不是假指令）",
+          all(_anchors.values()),
+          str([k for k, v in _anchors.items() if not v]))
+    check("日常维护手册已挂进 README 目录区（模板）",
+          "AI日常维护手册" in (rr.REPO_ROOT / "scripts" / "readme_template.md")
+          .read_text(encoding="utf-8"))
+
     log(f"[selftest] 失败 {len(failures)} 项")
     return not failures
 
