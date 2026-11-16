@@ -250,6 +250,23 @@ def push_messages(kind: str, facts: str, hitokoto: str) -> list[dict]:
     return [{"role": "user", "content": content}]
 
 
+def newtask_messages(facts: str, hitokoto: str) -> list[dict]:
+    """新作业发布通知的人话部分（用户 2026-11-16：风格与四时段推送一致，卡片化）。
+
+    复用 PUSH_RULES 的同一套人设与禁令，只换时段任务说明；
+    清单仍由程序拼（new_task_pick），AI 不碰条目。
+    """
+    brief = ("检测到老师新发布了作业，你正在通知用户。先对「又来新作业了」这件事损一句，"
+             "再落到一句实在的话（比如：先看清单里的截止时间、早动手早轻松、"
+             "别拖着攒到期末）。可以提「清单我列在下面了」「图也给你带了」。"
+             "**不要复述清单条目、日期、链接**，**绝对不要提课表**。"
+             "不许编造作业之外的事——事实里没有的就是没发生。")
+    content = PUSH_RULES + f"\n本次时段：{brief}\n\n今日事实：\n{facts}\n"
+    if hitokoto:
+        content += f"\n一言（原文，不许改字）：{hitokoto}\n"
+    return [{"role": "user", "content": content}]
+
+
 # ---------------------------------------------------------------------------
 # 名言价值打分：README 只放 3 条，由 AI 挑「有价值的」
 # ---------------------------------------------------------------------------

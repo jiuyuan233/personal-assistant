@@ -26,6 +26,7 @@ const BUCKETS = [
   ['today', '🟠 今天截止'],
   ['week', '🟡 7 天内'],
   ['later', '⚪ 更远'],
+  ['upcoming', '🕓 未开始（老师开放后自动进入待办）'],
 ];
 
 const $ = (id) => document.getElementById(id);
@@ -59,6 +60,9 @@ function fmtWhen(iso, exact) {
 }
 
 function bucketOf(t, now) {
+  // 未开始是独立状态（v1.6.6 用户定稿：要显示，只是状态区分）——单独一桶，
+  // 不塞「截止未知」（不是抓不到，是还没开放）
+  if (t.state === 'upcoming') return 'upcoming';
   // 没有截止时间不是「还很宽裕」，是「不知道」。Python 侧同样单独分一档。
   if (!t.deadline) return 'unknown';
   const d = new Date(t.deadline);
@@ -86,9 +90,11 @@ function taskTable(items) {
 function renderTasks(data) {
   const items = (data && data.items) || [];
   const now = new Date();
-  const pending = items.filter((t) => t.state === 'pending');
-  const groups = { overdue: [], unknown: [], today: [], week: [], later: [] };
-  pending.forEach((t) => groups[bucketOf(t, now)].push(t));
+  // 待办 = 待完成 + 未开始（v1.6.6：未开始的也要显示，状态列标「未开始」）
+  const todo = items.filter((t) => t.state === 'pending' || t.state === 'upcoming');
+  const pend = items.filter((t) => t.state === 'pending');
+  const groups = { overdue: [], unknown: [], today: [], week: [], later: [], upcoming: [] };
+  todo.forEach((t) => groups[bucketOf(t, now)].push(t));
   const byDeadline = (a, b) => (a.deadline ? new Date(a.deadline) : Infinity) - (b.deadline ? new Date(b.deadline) : Infinity);
   Object.values(groups).forEach((g) => g.sort(byDeadline));
 
@@ -97,7 +103,8 @@ function renderTasks(data) {
     ['red', `截止未知 ${groups.unknown.length}`],
     ['orange', `今天 ${groups.today.length}`],
     ['yellow', `7天内 ${groups.week.length}`],
-    ['', `待完成 ${pending.length}`],
+    ['', `待完成 ${pend.length}`],
+    ['', `未开始 ${groups.upcoming.length}`],
     ['', `总任务 ${items.length}`],
   ].map(([c, s]) => `<span class="chip ${c}">${esc(s)}</span>`).join('');
 

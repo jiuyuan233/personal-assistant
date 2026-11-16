@@ -92,9 +92,11 @@ def _when(t: dict) -> str:
 
 
 def study_facts(now: datetime, tasks: list[dict] | None = None) -> tuple[str, list[dict]]:
-    """待完成作业。与 README 任务清单共用 actionable()，口径不会漂。
+    """待完成作业（+ 未开始的单独标注）。与 README 任务清单共用 actionable()，口径不会漂。
 
     链接紧跟在每条作业下面（不是集中堆在末尾）：飞书里一眼能对上是哪条作业的入口。
+    v1.6.6：未开始的作业也列出来（用户澄清：要显示，只是状态区分）——标「未开始」，
+    不计入待完成条数，也永远不会标「截止未知」（不是抓不到，是还没开放）。
     tasks 可注入（selftest 离线测「全部完成」场景），缺省读 data/study/tasks.json。
     """
     import render_readme as rr
@@ -103,13 +105,22 @@ def study_facts(now: datetime, tasks: list[dict] | None = None) -> tuple[str, li
         tasks = load_list(DATA_DIR / "study" / "tasks.json")
     kept, _ = rr.actionable(tasks, now)
     kept = sort_by_deadline(kept)
-    lines = [f"待完成作业 {len(kept)} 条（只算能做的：待完成且未逾期）。"]
-    for t in kept[:MORNING_TASK_LIMIT]:
+    act = [t for t in kept if t.get("state") != "upcoming"]
+    upc = [t for t in kept if t.get("state") == "upcoming"]
+    header = f"待完成作业 {len(act)} 条（只算能做的：待完成且未逾期）"
+    if upc:
+        header += f"；另有 {len(upc)} 条未开始（老师开放后自动进入待办）"
+    lines = [header + "。"]
+    for t in act[:MORNING_TASK_LIMIT]:
         lines.append(f"- {t.get('course')} · {t.get('title')} · 截止 {_when(t)}")
         if t.get("url"):
             lines.append(f"  ↳ {t['url']}")
-    if len(kept) > MORNING_TASK_LIMIT:
-        lines.append(f"（还有 {len(kept) - MORNING_TASK_LIMIT} 条，全量在 README 任务清单）")
+    for t in upc[:MORNING_TASK_LIMIT]:
+        lines.append(f"- {t.get('course')} · {t.get('title')} · 未开始（暂不可做）")
+        if t.get("url"):
+            lines.append(f"  ↳ {t['url']}")
+    if len(act) > MORNING_TASK_LIMIT:
+        lines.append(f"（还有 {len(act) - MORNING_TASK_LIMIT} 条，全量在 README 任务清单）")
     return "\n".join(lines), kept
 
 
@@ -313,6 +324,9 @@ def urgent6_pick(now: datetime, ledger: dict, tasks: list | None = None) -> tupl
     ledger = {k: v for k, v in ledger.items() if isinstance(v, str) and v >= cutoff}
     hits = []
     for t in kept:
+        # v1.6.6：未开始（upcoming）做不了，不崔——紧急提醒只认能马上动手的 pending
+        if t.get("state") != "pending":
+            continue
         key = f"{t.get('id')}@{t.get('deadline')}"
         if key in ledger:
             continue
@@ -355,15 +369,23 @@ def new_task_pick(now: datetime, ledger: dict, tasks: list | None = None) -> tup
     cutoff = (now - timedelta(days=NEW_LEDGER_DAYS)).date().isoformat()
     ledger = {k: v for k, v in ledger.items() if isinstance(v, str) and v >= cutoff}
     hits: list[dict] = []
+    seen_tids: set[str] = set()
     for t in tasks:
         tid = t.get("id")
-        if not tid or tid in ledger or t.get("state") not in ("pending", "upcoming"):
+        if not tid or tid in ledger or tid in seen_tids:
+            continue
+        if t.get("state") not in ("pending", "upcoming"):
             continue
         fs = parse_datetime(t.get("first_seen"))
         if not fs or fs < NEW_SINCE:
             continue
         if (now - fs).total_seconds() > NEW_WINDOW_HOURS * 3600:
             continue
+        # v1.6.6：首次发现就已逾期 → 历史课次/旧任务，不是「新发布」，不报
+        dl = parse_datetime(t.get("deadline"))
+        if dl and dl < now:
+            continue
+        seen_tids.add(tid)
         hits.append(t)
     if not hits:
         return "", ledger
@@ -383,6 +405,72 @@ def new_task_pick(now: datetime, ledger: dict, tasks: list | None = None) -> tup
     if len(hits) > NEW_MAX_PER_MSG:
         lines.append(f"（另有 {len(hits) - NEW_MAX_PER_MSG} 条未列出，见 README 任务清单）")
     return "\n".join(lines), {**ledger, **{t["id"]: iso for t in hits}}
+
+
+# v1.6.6：新作业推送的降级开头（AI 挂了也要发，人设不变）
+NEWTASK_FALLBACK = ("新作业来了。别装看不见——清单我列在下面了，"
+                    "截止时间和链接自己点。哼，早动手早轻松。")
+
+
+def run_newtask_notice(plain_msg: str, now: datetime | None = None, *,
+                       ai_client=None, fetch_extras: bool = True,
+                       hit: str | None = None, en: str | None = None) -> str:
+    """把 new_task_pick 的清单包装成与早中晚同款的推送文案。
+
+    用户 2026-11-16 要求：「发送的风格要和之前早中晚常规的信息保持一样，
+    卡片类似的，每日英语，一言和图片」。
+
+    - AI 只写开头人话（复用四时段的 PUSH_RULES 人设），清单由 new_task_pick
+      确定性拼在后面——**人话与清单分离**的分工原则与四时段完全一致；
+    - 图片：anime_image.run() 落盘 /tmp/push-image.json，飞书步骤读到后自动
+      拼成与四时段同款的卡片（🆕 标题 + image_key 内嵌真图/按钮）；
+    - 所有联网环节失败都降级：AI 挂→固定人设开头；英语/一言/图挂→缺哪跳哪，
+      消息一定发得出去；
+    - ai_client / hit / en 可注入、fetch_extras=False 跳过全部外网（selftest 用）。
+    """
+    now = now or now_bj()
+    if fetch_extras:
+        if hit is None:
+            hit = hitokoto()
+        if en is None:
+            en = daily_english()
+        try:
+            import anime_image
+            anime_image.run()
+        except Exception as e:
+            log(f"新作业推送取图异常：{type(e).__name__}，本次不带图", level="WARN")
+    hit, en = hit or "", en or ""
+
+    prose = ""
+    client = ai_client
+    if client is None and fetch_extras:
+        try:
+            from ai_client import AIClient
+            client = AIClient(timeout=90)
+        except Exception as e:
+            log(f"新作业推送 AI 不可用：{type(e).__name__}", level="WARN")
+    if client is not None:
+        try:
+            from prompts import newtask_messages
+            prose = safe_text(client.chat_text(newtask_messages(plain_msg, hit),
+                                               temperature=0.8, max_tokens=800),
+                              400).strip()
+        except Exception as e:
+            log(f"新作业推送文案 AI 生成失败：{type(e).__name__}", level="WARN")
+    if not prose:
+        prose = NEWTASK_FALLBACK
+        log("新作业推送：AI 无输出，用固定人设开头", level="WARN")
+
+    parts = [prose, "", plain_msg]
+    if en:
+        parts += ["", "🇬🇧 今日英语一句\n" + en]
+    if hit:
+        parts += ["", f"💬 今日一言：{hit}"]
+    text = "\n\n".join(parts)
+    log(f"[newtask] 卡片文案 {len(text)} 字："
+        f"AI{'有' if prose != NEWTASK_FALLBACK else '降级'}，"
+        f"英语{'有' if en else '无'}，一言{'有' if hit else '无'}")
+    return text
 
 
 def diary_facts(kind: str, today: date) -> str:

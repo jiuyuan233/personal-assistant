@@ -29,10 +29,10 @@ EXCLUDED_TEMPLATE = REPO_ROOT / "scripts" / "excluded_template.md"
 EXCLUDED_DOC = REPO_ROOT / "docs" / "已剔除任务.md"
 
 KIND_CN = {"work": "作业", "eval": "互评", "exam": "考试", "quiz": "随堂"}
-# v1.6.5 新增 not_started：状态「未开始」（作业还没开放作答）不是待完成，也不算
-# 已完成——单独一类，开放后自动回到清单。
-REASON_CN = {"overdue": "已逾期", "not_pending": "非待完成", "not_started": "未开始"}
-REASON_ORDER = ("overdue", "not_started", "not_pending")
+# v1.6.6（用户澄清定稿）：「未开始」的任务**留在清单里显示**，状态标「未开始」——
+# 不是剔除对象。剔除仍然只有两类：逾期、非待完成。
+REASON_CN = {"overdue": "已逾期", "not_pending": "非待完成"}
+REASON_ORDER = ("overdue", "not_pending")
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 NOTICE_LIMIT = 12
 PLAN_LIMIT = 15
@@ -63,12 +63,14 @@ def task_start(t: dict) -> datetime | None:
 
 
 def drop_reason(t: dict, now: datetime) -> str | None:
-    """剔除原因键；None = 可做。判定顺序即优先级：未开始 → 非待完成 → 逾期。
+    """剔除原因键；None = 可做或待显示。判定顺序即优先级：非待完成 → 逾期。
 
     清单与「已剔除任务」文档共用这一个判定，避免两处口径漂移。
+    v1.6.6：未开始（upcoming）**不算剔除**——留左清单里，单元格标「未开始」；
+    老师开放作答后状态变成 pending，自然变成普通待完成。
     """
     if t.get("state") == "upcoming":
-        return "not_started"
+        return None
     if t.get("state") != "pending":
         return "not_pending"
     dt = parse_datetime(t.get("deadline"))
@@ -78,9 +80,9 @@ def drop_reason(t: dict, now: datetime) -> str | None:
 
 
 def actionable(tasks: list[dict], now: datetime) -> tuple[list[dict], dict]:
-    """只留能做的：待完成、未逾期。已完成/已批阅/未开始的一律不进清单。"""
+    """只留能做的和未开始的。已完成/已批阅/已逾期剔除；未开始（upcoming）保留显示。"""
     kept: list[dict] = []
-    dropped = {"not_pending": 0, "overdue": 0, "not_started": 0}
+    dropped = {"not_pending": 0, "overdue": 0}
     for t in tasks:
         reason = drop_reason(t, now)
         if reason:
@@ -122,6 +124,13 @@ def course_rows(courses: list[dict], kept: list[dict]) -> list[str]:
         items = sort_by_deadline(by_course.get(course_key(c), []))
         cells = []
         for t in items:
+            # v1.6.6：未开始的任务留在清单里，单元格标「未开始」（没有截止时间可显示，
+            # 也不该标「截止未知」——不是抓不到，是还没到开放的时候）
+            if t.get("state") == "upcoming":
+                cells.append("{}（{}·未开始）".format(
+                    md_link(t.get("title"), t.get("url")),
+                    KIND_CN.get(t.get("kind"), t.get("kind") or "")))
+                continue
             dt = parse_datetime(t.get("deadline"))
             # 「抓不到截止」不等于「很久以后」。原来渲染成「无截止」并被算进「更远」，
             # 用户看到的是一条其实早已逾期的作业（审计 §1.1 / 用户报的 bug）。
@@ -131,9 +140,15 @@ def course_rows(courses: list[dict], kept: list[dict]) -> list[str]:
             cells.append("{}（{}·{}）".format(
                 md_link(t.get("title"), t.get("url")),
                 KIND_CN.get(t.get("kind"), t.get("kind") or ""), when))
+        act_n = sum(1 for t in items if t.get("state") != "upcoming")
+        upc_n = len(items) - act_n
+        # 待完成列只数能做的；未开始另附计数，不混在一起（用户要求状态区分开）
+        count = (str(act_n) if act_n else "**无**")
+        if upc_n:
+            count += f"（另 {upc_n} 项未开始）"
         lines.append("| {} | {} | {} | {} |".format(
             esc(c.get("name")), c.get("task_count") or 0,
-            len(items) if items else "**无**",
+            count,
             "<br>".join(cells) if cells else "—"))
     return lines
 
@@ -144,8 +159,11 @@ def render_tasks(tasks: list[dict], now: datetime) -> tuple[str, str, dict]:
     body = "\n".join(course_rows(courses, kept)) + "\n"
 
     today = now.date()
-    counts = {"today": 0, "week": 0, "later": 0, "unknown": 0}
+    counts = {"today": 0, "week": 0, "later": 0, "unknown": 0, "upcoming": 0}
     for t in kept:
+        if t.get("state") == "upcoming":
+            counts["upcoming"] += 1
+            continue
         dt = parse_datetime(t.get("deadline"))
         if dt is None:
             # 单独一类，不能混进「更远」—— 那会让逾期作业看起来还很宽裕
@@ -157,13 +175,15 @@ def render_tasks(tasks: list[dict], now: datetime) -> tuple[str, str, dict]:
         else:
             counts["later"] += 1
 
-    note = ("> 已剔除：逾期 {} 项 · 未开始 {} 项 · 非待完成 {} 项。"
+    note = ("> 已剔除：逾期 {} 项 · 非待完成 {} 项。"
             "课程按活跃度（作业发表数量）排序，共 {} 门。\n"
             "> 📄 [逐项查看已剔除任务与原因](docs/已剔除任务.md)\n").format(
-                dropped["overdue"], dropped["not_started"], dropped["not_pending"], len(courses))
+                dropped["overdue"], dropped["not_pending"], len(courses))
     suffix = f"，其中 **{counts['today']} 项今天截止**" if counts["today"] else ""
     if counts["unknown"]:
         suffix += f"，**{counts['unknown']} 项截止未知（可能已逾期，请点进去确认）**"
+    if counts["upcoming"]:
+        suffix += f"，{counts['upcoming']} 项未开始（老师开放后自动进入待办）"
     stats = {"pending": len(kept), "overdue": 0, **counts,
              "dropped": dropped, "courses": len(courses), "suffix": suffix}
     return body, note, stats
@@ -172,8 +192,6 @@ def render_tasks(tasks: list[dict], now: datetime) -> tuple[str, str, dict]:
 def reason_detail(reason: str, t: dict, now: datetime,
                   dt: datetime | None, st: datetime | None) -> str:
     """把剔除原因写成能看懂的一句话，带上具体天数/状态，而不是只给个分类名。"""
-    if reason == "not_started":
-        return "**未开始**：作业尚未开放作答，老师开放后自动回到清单"
     if reason == "overdue" and dt:
         return f"**已逾期**：截止 {dt:%Y-%m-%d %H:%M}，已过 {(now - dt).days} 天，做不了了"
     return "**非待完成**：状态「{}」".format(esc(t.get("status") or t.get("state") or "未知"))
@@ -489,6 +507,9 @@ def run() -> bool:
     now = now_bj()
     tasks = load_list(DATA_DIR / "study" / "tasks.json")
     body, filter_note, stats = render_tasks(tasks, now)
+    # v1.6.6：清单里同时有待完成和未开始，日志把两者分开报（用户要求状态区分开）
+    n_upcoming = stats.get("upcoming") or 0
+    n_pending = stats.get("pending", 0) - n_upcoming
     week_info, sched_table, week_detail = render_schedule(now)
     sources, meta = render_sources(now)
     alert = render_alert(stats, meta, now)
@@ -574,7 +595,8 @@ def run() -> bool:
     log(f"任务清单：{stats['pending']} 条可做 / {stats['courses']} 门课"
         f"（今天 {stats['today']} / 7天内 {stats['week']} / 更远 {stats['later']}"
         f" / 截止未知 {stats['unknown']}）")
-    log(f"已剔除：逾期 {d['overdue']} / 未开始 {d['not_started']} / 非待完成 {d['not_pending']}")
+    log(f"已剔除：逾期 {d['overdue']} / 非待完成 {d['not_pending']}；"
+        f"清单内待完成 {n_pending} + 未开始 {n_upcoming}")
     log(f"独立文档：公告 {notice_count} 条 / 潜在计划 {plan_count} 项 / 已剔除 {excluded_count} 项")
     log("README 已生成")
     return ok_n and ok_p and ok_e

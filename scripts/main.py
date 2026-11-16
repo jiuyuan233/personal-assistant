@@ -158,15 +158,17 @@ def do_tick() -> bool:
         results["urgent6"] = False
 
     # 新作业发布提醒（用户 2026-11-16：「首次检测到有新的作业发布的时候给我发
-    # 一个消息，这个独立与其他的消息」）：第三条独立通道，每条任务只通知一次
-    # （runtime.notified_new 记账 task_id → 日期）。写 /tmp/push-new.txt，workflow
-    # 的飞书步骤看到就发（与 urgent 同款独立 if，常规成功静默轮也必达）。
-    # study 没跑的轮次不会有新 first_seen；挑选只读 tasks.json，代价可忽略。
-    # NEW_SINCE 之前发现的存量不追溯——上线当天数据里已有的任务不当「新发布」。
+    # 一个消息，这个独立与其他的消息」+「发送的风格要和之前早中晚常规的信息
+    # 保持一样，卡片类似的，每日英语，一言和图片」）：第三条独立通道，
+    # 每条任务只通知一次（runtime.notified_new 记账 task_id → 日期）。
+    # run_newtask_notice 把清单包装成与四时段同款的卡片文案（AI 人话 + 清单 +
+    # 每日英语 + 一言，图片由 anime_image 落盘、飞书步骤拼卡片），
+    # 常规成功静默轮也必达（带文本参数的调用不走降噪闸门）。
     try:
         msg_new, new_ledger2 = dp.new_task_pick(now, rt.get("notified_new") or {})
         if msg_new:
-            dp.NEW_MESSAGE_PATH.write_text(msg_new, encoding="utf-8")
+            card_new = dp.run_newtask_notice(msg_new, now)
+            dp.NEW_MESSAGE_PATH.write_text(card_new, encoding="utf-8")
             results["newtask"] = True
             log(f"[newtask] {msg_new.splitlines()[0]}")
         rt["notified_new"] = new_ledger2
@@ -348,14 +350,15 @@ def do_selftest() -> bool:
 
     check("未交 归为 pending", study_collector.classify("未交") == "pending",
           study_collector.classify("未交"))
-    # v1.6.5（用户报的 bug）：「未开始」不是「未完成」——单独 upcoming，不进待办
-    check("未开始 归为 upcoming（不进待办清单）",
+    # v1.6.5→v1.6.6（用户澄清定稿）：「未开始」单独成类 upcoming，
+    # **留在清单里显示**（标「未开始」），不是剔除对象。
+    check("未开始 归为 upcoming（与待完成区分）",
           study_collector.classify("未开始") == "upcoming",
           study_collector.classify("未开始"))
     check("待考试 仍是 pending（考试可备考，不受未开始误伤）",
           study_collector.classify("待考试") == "pending")
 
-    # 清单只留能做的：未开始 / 非待完成 / 已逾期，三类剔除（v1.6.5 起）。
+    # 清单保留能做的和未开始的；剔除只有两类：非待完成、已逾期。
     # 「开始超过一周就剔除」已按用户要求废除（v1.3.0），下面有专门的回归断言。
     import render_readme as rr
 
@@ -368,34 +371,51 @@ def do_selftest() -> bool:
         mk(),                                                  # 无截止无开始 → 留
         mk(state="done", first_seen=iso(now - timedelta(days=9))),  # 已完成 → 剔（开始列退化）
         mk(state="submitted"),                                 # 已批阅 → 剔
-        mk(state="upcoming"),                                   # 未开始 → 剔（单独一类，v1.6.5）
+        mk(state="upcoming"),                                   # 未开始 → 留（v1.6.6，状态区分显示）
         mk(deadline=iso(now - timedelta(hours=1))),             # 已逾期 → 剔
         mk(start_time=iso(now - timedelta(days=8))),            # 开始超一周 → 现在留
         mk(start_time=iso(now - timedelta(days=2))),            # 开始两天前 → 留
         mk(first_seen=iso(now - timedelta(days=9))),            # 只有 first_seen → 现在留
     ]
     kept, dropped = rr.actionable(sample, now)
-    check("可做过滤：留 4 剔 4", len(kept) == 4 and sum(dropped.values()) == 4,
+    check("可做过滤：留 5 剔 3（未开始也留）", len(kept) == 5 and sum(dropped.values()) == 3,
           f"kept={len(kept)} dropped={dropped}")
     check("逾期任务不进清单", dropped["overdue"] == 1, str(dropped))
     check("已完成/已批阅不进清单", dropped["not_pending"] == 2, str(dropped))
-    check("未开始不进清单（单独一类）", dropped["not_started"] == 1, str(dropped))
+    check("未开始留在清单（不算剔除，drop_reason=None）",
+          rr.drop_reason(mk(state="upcoming"), now) is None
+          and "not_started" not in dropped)
     check("一周规则已废除：开始 8 天前仍留在清单",
           "stale" not in dropped
           and rr.drop_reason(mk(start_time=iso(now - timedelta(days=8))), now) is None)
     check("一周规则已废除：first_seen 9 天前仍留在清单",
           rr.drop_reason(mk(first_seen=iso(now - timedelta(days=9))), now) is None)
-    check("剔除原因三类（逾期/未开始/非待完成）",
-          rr.REASON_ORDER == ("overdue", "not_started", "not_pending"),
+    check("剔除原因两类（逾期/非待完成；未开始是显示分类不是剔除）",
+          rr.REASON_ORDER == ("overdue", "not_pending"),
           str(rr.REASON_ORDER))
-    check("未开始的剔除原因写明自动回清单",
-          "自动回到清单" in rr.reason_detail("not_started", mk(state="upcoming"), now, None, None))
+    # 未开始在清单里的显示：单元格标「未开始」、计数另附、不计「截止未知」
+    _uc_rows = rr.course_rows(
+        [{"course_id": "c1", "class_id": "", "name": "示例课", "task_count": 2}],
+        [mk(title="能做的"), mk(state="upcoming", title="未开始的那条")])
+    _uc_line = next(r for r in _uc_rows if "未开始的那条" in r)
+    check("未开始单元格标「未开始」且不标截止未知",
+          "[未开始的那条](u)（作业·未开始）" in _uc_line
+          and "[未开始的那条](u)（作业·⚠️" not in _uc_line,
+          _uc_line[:160])
+    check("未开始计数另附在待完成列",
+          any("1（另 1 项未开始）" in r for r in _uc_rows), str(_uc_rows))
+    _uc_stats = rr.render_tasks(sample, now)[2]
+    check("未开始计入独立统计并提示自动进待办",
+          _uc_stats["upcoming"] == 1
+          and "1 项未开始（老师开放后自动进入待办）" in _uc_stats["suffix"],
+          str(_uc_stats))
 
     # 被剔除的任务要逐项留档：判定与清单共用 drop_reason()，条数必须对得上
     ex_body, ex_n = rr.render_excluded(sample, now)
     check("已剔除条数与过滤统计一致", ex_n == sum(dropped.values()), f"{ex_n} vs {dropped}")
-    check("已剔除逐项写明三类原因",
-          all(k in ex_body for k in ("已逾期", "未开始", "非待完成")), ex_body[:120])
+    check("已剔除逐项写明两类原因（未开始不在剔除文档里）",
+          all(k in ex_body for k in ("已逾期", "非待完成")) and "未开始" not in ex_body,
+          ex_body[:120])
     check("已剔除不再出现开始过久", "开始过久" not in ex_body)
     check("开始时间退化标注首次发现", "（首次发现）" in ex_body)
     check("无剔除时给说明不给空表",
@@ -682,6 +702,18 @@ def do_selftest() -> bool:
                                                    deadline="2026-11-25T10:00:00+08:00")])
     check("新发布但未开始的也通知一次（如实标「未开始」）",
           "作业n10" in n_msg9 and "未开始（11-25 10:00）" in n_msg9, n_msg9[:120])
+    # v1.6.6（用户报的 bug）：体育课三条历史课次（同 id、截止已过）被当成
+    # 「新发布」连报三遍。两条闸：已逾期不报 + 同 id 只报一次。
+    n_msg10, _ = dp.new_task_pick(n_now, {}, [
+        _mk_n("n11", 0.5, deadline=(n_now - _td(hours=1)).isoformat(timespec="seconds")),
+        _mk_n("n12", 0.5),
+        _mk_n("n12", 0.5, deadline="2026-11-21T10:00:00+08:00"),  # 同 id 重复行
+    ])
+    check("新作业：首次发现已逾期的不报（历史课次不是新发布）",
+          "作业n11" not in n_msg10, n_msg10[:120])
+    check("新作业：同 id 的重复行只报一次",
+          n_msg10.count("作业n12") == 1
+          and n_msg10.count("https://example.com/n12") == 1, n_msg10[:120])
     n_msg6, _ = dp.new_task_pick(n_now, {},
                                  [_mk_n(f"m{i}", 1) for i in range(10)])
     check("新作业超过 8 条截断并计数（另有 N 条）",
@@ -690,6 +722,51 @@ def do_selftest() -> bool:
     check("新作业通道接线在 do_tick 与飞书步骤",
           "new_task_pick" in inspect.getsource(do_tick)
           and "newtask" in inspect.getsource(do_tick))
+    check("新作业推送走卡片化包装（与早中晚同款：AI+清单+英语+一言+图）",
+          "run_newtask_notice" in inspect.getsource(do_tick))
+
+    # v1.6.6：run_newtask_notice 卡片化包装（用户要求风格与四时段一致）
+    class FakeNewAI:
+        def __init__(self, text):
+            self.text = text
+            self.calls = 0
+
+        def chat_text(self, messages, **kw):
+            self.calls += 1
+            return self.text
+
+    _nt_plain = ("🆕 新作业发布：首次检测到 1 条\n"
+                 "- 测试课 · 作业X · 随堂 · 截止 11-20 10:00\n"
+                 "  ↳ https://example.com/x")
+    _nt_ai = FakeNewAI("哟，来新活了。")
+    _nt_card = dp.run_newtask_notice(_nt_plain, ai_client=_nt_ai,
+                                     fetch_extras=False,
+                                     hit="测试一言（来源）", en="test line\n测试翻译")
+    check("新作业卡片：AI 人话开头 + 清单 + 每日英语 + 一言",
+          _nt_card.startswith("哟，来新活了。") and _nt_plain in _nt_card
+          and "今日英语一句\ntest line" in _nt_card
+          and "今日一言：测试一言（来源）" in _nt_card and _nt_ai.calls == 1,
+          _nt_card[:160])
+    _nt_fb = dp.run_newtask_notice(_nt_plain, fetch_extras=False)
+    check("新作业卡片：AI 挂了走人设固定开头，清单仍在",
+          _nt_fb.startswith(dp.NEWTASK_FALLBACK) and _nt_plain in _nt_fb,
+          _nt_fb[:120])
+
+    # urgent6 不催未开始：6h 窗口内的 upcoming 不入选
+    msg_up, _ = dp.urgent6_pick(u_now, {}, [
+        _mk_u("up1", 3, state="upcoming")])
+    check("紧急提醒不催未开始（做不了的不催）", "作业up1" not in msg_up, msg_up[:80])
+
+    # 早报清单：未开始的单独标注、不计待完成数
+    _sf_txt, _sf_kept = dp.study_facts(
+        now, [dict(state="pending", course="测试课", title="常规作业",
+                   deadline=iso(now + timedelta(days=2)), deadline_exact=True,
+                   url="https://example.com/a"),
+              dict(state="upcoming", course="测试课", title="未开始的作业", url="u2")])
+    check("早报清单：待完成 1 条 + 另有 1 条未开始",
+          "待完成作业 1 条" in _sf_txt and "另有 1 条未开始（老师开放后自动进入待办）" in _sf_txt
+          and "未开始的作业 · 未开始（暂不可做）" in _sf_txt and "常规作业" in _sf_txt,
+          _sf_txt[:160])
 
     # 公告时效过滤（用户 2026-11-14：「时间都截至了还给我发，改掉」）
     from utils import notice_stale as _stale
@@ -1087,6 +1164,7 @@ def do_selftest() -> bool:
     import quiz_browser as qb
     import utils as _u
     from dedup import merge_quiz as _mq
+    from dedup import merge_tasks
     fake = _types.SimpleNamespace(cookies=[
         _types.SimpleNamespace(name="UID", value="v1", domain="mooc1.huuc.edu.cn", path="/"),
         _types.SimpleNamespace(name="UID", value="v1", domain="passport2.huuc.edu.cn", path="/"),
@@ -1179,6 +1257,19 @@ def do_selftest() -> bool:
     check("随堂合并：精确截止旧值优先（防精度倒退）",
           m4[0]["deadline"] == "2026-11-20T10:00:00+08:00" and m4[0]["deadline_exact"] is True,
           str(m4[0].get("deadline")))
+    # v1.6.6（用户报的 bug）：批内同 id 重复行只留一条（体育课三行同 id 实测）
+    m5 = _mq([], [{"id": "x", "kind": "quiz", "course_id": "1", "class_id": "1",
+                   "title": "体育课", "state": "pending",
+                   "deadline": "2026-10-20T13:52:00+08:00"},
+                  {"id": "x", "kind": "quiz", "course_id": "1", "class_id": "1",
+                   "title": "体育课", "state": "pending",
+                   "deadline": "2026-10-27T14:59:00+08:00"}], {("1", "1")}, now)
+    check("随堂合并：批内同 id 重复行只留一条",
+          sum(1 for t in m5 if t["id"] == "x") == 1, str(m5))
+    m6 = merge_tasks([], [{"id": "y", "kind": "work", "state": "pending", "title": "A"},
+                          {"id": "y", "kind": "work", "state": "pending", "title": "A"}], now)
+    check("作业合并：批内同 id 重复行只留一条",
+          sum(1 for t in m6 if t["id"] == "y") == 1, str(m6))
     check("README 与网页看板都有随堂标签",
           rr.KIND_CN.get("quiz") == "随堂"
           and "quiz: '随堂'" in (rr.REPO_ROOT / "docs" / "js" / "app.js").read_text(encoding="utf-8"))
@@ -1402,6 +1493,11 @@ def do_selftest() -> bool:
     check("看板名言显示 AI 价值分", "AI 价值 " in _appjs)
     check("看板状态含未开始（v1.6.5，与 Python 分类同口径）",
           "upcoming: '未开始'" in _appjs)
+    check("看板把未开始纳入待办并单列一桶（v1.6.6：显示但不计待完成）",
+          "t.state === 'upcoming'" in _appjs
+          and "return 'upcoming'" in _appjs
+          and "未开始（老师开放后自动进入待办）" in _appjs
+          and "未开始 ${groups.upcoming.length}" in _appjs)
     # 用户 2026-11-16：看板「立即更新」按钮**免密钥**——不再弹框要 Token。
     # GitHub 不允许匿名 dispatch，公开页面嵌 Token 违反铁律 2（凭据只进 Secrets），
     # 所以按钮跳转 GitHub workflow 页，用用户自己的登录态点 Run workflow。

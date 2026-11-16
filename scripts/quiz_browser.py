@@ -68,7 +68,7 @@ QUIZ_PENDING = {"待做", "未做", "未交", "未提交", "待完成", "进行�
 
 def classify_quiz(status: str) -> str:
     s = (status or "").strip()
-    if s == "未开始":        # v1.6.5：未开始 ≠ 待办（与 study_collector.classify 同口径）
+    if s == "未开始":        # v1.6.6：未开始单独判 upcoming（显示在清单、标「未开始」，不进待完成/urgent6）
         return "upcoming"
     if s in QUIZ_DONE:
         return "done"

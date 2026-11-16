@@ -106,6 +106,7 @@ def merge_tasks(old_list: list[dict], new_list: list[dict], now: datetime) -> li
     if not new_list and old_list:
         log(f"新任务列表为空而历史有 {len(old_list)} 条，拒绝合并（疑似采集失败）", level="WARN")
         return sort_by_deadline(old_list)
+    new_list = dedupe_by_id(new_list)  # v1.6.6：批内同 id 只留一条（同列表重复行防护）
     old_by_id = {t["id"]: t for t in old_list}
     stamp = now.isoformat(timespec="seconds")
     out = []
@@ -145,11 +146,17 @@ def merge_quiz(old_list: list[dict], new_list: list[dict],
       （§1.2 拒绝可疑清空的同款思路）。
 
     旧值贡献：first_seen（新出现标记）+ 精确截止时间（同 merge_tasks）。
+
+    **批内按 id 去重**（v1.6.6，用户报的 bug）：随堂行解析里同一门课的多条活动
+    可能产出相同 id（标题退化成课程名、key 退化成标题里数字时，实测体育课
+    三条历史课次撞成一个 id 三条记录），不去重会在 tasks.json 存下重复条目、
+    新作业推送里同一条报三遍。
     """
     if not covered:
         if old_list:
             log(f"随堂本轮未覆盖任何课程（失败或未启用），保留旧 {len(old_list)} 条")
         return list(old_list)
+    new_list = dedupe_by_id(new_list)
     stamp = now.isoformat(timespec="seconds")
     old_by_id = {t["id"]: t for t in old_list}
     out: list[dict] = []
