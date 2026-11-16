@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-15T15:27:03+08:00",
+  "updated_at": "2026-11-16T15:40:30+08:00",
   "count": 14,
   "items": [
     {
@@ -104,7 +104,7 @@
       "ismooc2": "1",
       "name": "高等数学A",
       "task_count": 15,
-      "pending_count": 1
+      "pending_count": 2
     },
     {
       "course_id": "205372276",
