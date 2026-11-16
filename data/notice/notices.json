@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-11-16T02:38:28+08:00",
-  "count": 122,
+  "updated_at": "2026-11-16T08:39:59+08:00",
+  "count": 124,
   "sources": [
     "校网通知公告",
     "教务处",
@@ -64,6 +64,25 @@
       ],
       "score": 4,
       "first_seen": "2026-11-13",
+      "last_seen": "2026-11-16"
+    },
+    {
+      "id": "41-1a55af25e8",
+      "title": "关于举办第41期“领雁青春”报告会的通知",
+      "url": "https://www.huuc.edu.cn/info/1061/27200.htm",
+      "source": "校网通知公告",
+      "publish_date": "2026-11-16",
+      "description": "",
+      "deadline": null,
+      "category": "讲座培训",
+      "reason": "优秀学生经验分享，全体可听，弱相关",
+      "tags": [
+        "报告会",
+        "经验分享",
+        "讲座"
+      ],
+      "score": 3,
+      "first_seen": "2026-11-16",
       "last_seen": "2026-11-16"
     },
     {
@@ -1550,6 +1569,21 @@
       "last_seen": "2026-11-16"
     },
     {
+      "id": "2026-2027-ac954a8ef8",
+      "title": "我校召开2026-2027学年第五次教学调度会",
+      "url": "https://jwc.huuc.edu.cn/info/1018/5578.htm",
+      "source": "教务处",
+      "publish_date": "2026-11-10",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 0,
+      "first_seen": "2026-11-16",
+      "last_seen": "2026-11-16"
+    },
+    {
       "id": "-ae8d2c0054",
       "title": "共建无烟校园 共享健康生活——学校控烟倡议书",
       "url": "https://www.huuc.edu.cn/info/1061/27155.htm",
@@ -1626,6 +1660,21 @@
         "教学",
         "新闻"
       ],
+      "score": 0,
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-16"
+    },
+    {
+      "id": "2026-2027-147f833597",
+      "title": "我校召开2026-2027学年第四次教学调度会",
+      "url": "https://jwc.huuc.edu.cn/info/1018/5555.htm",
+      "source": "教务处",
+      "publish_date": "2026-10-27",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
       "score": 0,
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-16"
@@ -1989,21 +2038,6 @@
       "title": "校园网上网指南",
       "url": "https://nic.huuc.edu.cn/info/1085/3284.htm",
       "source": "校网通知公告",
-      "publish_date": null,
-      "description": "",
-      "deadline": null,
-      "category": "",
-      "reason": "",
-      "tags": [],
-      "score": 0,
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-16"
-    },
-    {
-      "id": "2026-2027-147f833597",
-      "title": "我校召开2026-2027学年第四次教学调度会",
-      "url": "https://jwc.huuc.edu.cn/info/1018/5555.htm",
-      "source": "教务处",
       "publish_date": null,
       "description": "",
       "deadline": null,
