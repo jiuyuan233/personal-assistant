@@ -648,10 +648,17 @@ def run() -> dict:
                 if tasks_q or line_count < 120:
                     quiz_covered.add((c["course_id"], c["class_id"]))
                     quiz_new.extend(tasks_q)
-                    log(f"[quiz] {cname} 随堂 {len(tasks_q)} 条（frame {line_count} 行）")
+                    log(f"[quiz] {cname} 随堂 {len(tasks_q)} 条（frame {line_count} 行、"
+                        f"候选 {len(rows_raw)} 条）")
                     for t in tasks_q[:10]:
                         log(f"[quiz]   · {t['title']}｜{t['status'] or '无状态'}｜"
                             f"{t.get('deadline') or '无截止'}")
+                    if not tasks_q and rows_raw:
+                        # 「判定为空」但页面明明有候选元素——要么真没随堂、要么被
+                        # 过滤规则误杀。打码 dump 出来，下一轮人工核对，不许盲删。
+                        log(f"[quiz] {cname} 判定空但有 {len(rows_raw)} 条候选，诊断（打码）：")
+                        for d in qb.masked_diag(res.get("diag") or {}, rows_raw)[:12]:
+                            log(f"[quiz]     {d}")
                 elif rows_raw:
                     quiz_covered.add((c["course_id"], c["class_id"]))
                     quiz_new.extend(tasks_q)
