@@ -1655,6 +1655,31 @@ def do_selftest() -> bool:
     check("科技热点节只出现在傍晚档",
           "科技热点" not in dp.info_block("morning", now, "")
           and "科技热点" not in dp.info_block("night", now, ""))
+    # v1.7.1（用户 2026-11-17 报）：傍晚没有作业时必须明说并夸——空清单不是跳过
+    _empty_dusk = dp.info_block("dusk", now, "", tech_provider=lambda: "",
+                                tasks=[{"state": "done", "title": "已交", "course": "X",
+                                        "kind": "work", "deadline": "", "url": ""}])
+    check("傍晚无作业时明说全部搞定（确定性，AI 挂了也在）",
+          "全部搞定" in _empty_dusk and "0 条要赶" in _empty_dusk, _empty_dusk[:120])
+    # task_overview：AI 事实注入的作业概览（清零 / 未清零两种口径）
+    _ov_empty = dp.task_overview(now, [{"state": "done", "title": "x", "course": "c",
+                                        "kind": "work", "deadline": None, "url": ""}])
+    check("作业概览：全做完时如实说「已全部做完」",
+          "作业已全部做完" in _ov_empty and "0 条" in _ov_empty, _ov_empty)
+    _ov_some = dp.task_overview(now, [
+        {"state": "pending", "title": "周内", "course": "c", "kind": "work",
+         "deadline": (now + timedelta(days=2)).isoformat(timespec="seconds"), "url": ""},
+        {"state": "upcoming", "title": "未开", "course": "c2", "kind": "work",
+         "deadline": None, "url": ""}])
+    check("作业概览：有条数/今天截止口径/未开始另计",
+          "还需要动手的 1 条" in _ov_some and "今天截止的已全部完成" in _ov_some
+          and "另有 1 条未开始" in _ov_some, _ov_some)
+    check("AI 的 facts 注入了作业概览（run 源码守卫）",
+          "task_overview(now)" in inspect.getsource(dp.run))
+    import prompts as _pm
+    check("dusk/night 文案指令含「全部做完时必须夸」",
+          "这必须夸" in _pm.PUSH_KIND_BRIEF["dusk"]
+          and "今天作业全清" in _pm.PUSH_KIND_BRIEF["night"])
     # v1.5.20 用户要求：早报作业全部完成时，推送潜在任务（来自 Obsidian 笔记）
     pb = dp.plans_block([
         {"text": "学会 Rust", "state": "open", "confidence": 0.9},

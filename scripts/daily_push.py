@@ -502,6 +502,42 @@ def diary_facts(kind: str, today: date) -> str:
     return "\n".join(lines)
 
 
+def task_overview(now: datetime, tasks: list[dict] | None = None) -> str:
+    """给 AI 的一行作业概览事实（v1.7.1，用户 2026-11-17 报）。
+
+    之前四时段的 AI prose 只拿到日记事实，**根本不知道作业做没做完**——
+    傍晚档作业清零时它无话可说、也不夸。现在把确定性概览注入 facts：
+    「还剩 X 条要交，今天截止 Y 条（已全部完成）/未开始 W」，
+    AI 才有依据表态/夸奖。纯函数，selftest 可注入 tasks 离线测。
+    """
+    import render_readme as rr
+
+    if tasks is None:
+        tasks = load_list(DATA_DIR / "study" / "tasks.json")
+    kept, _ = rr.actionable(tasks, now)
+    act = [t for t in kept if t.get("state") != "upcoming"]
+    upc = len(kept) - len(act)
+    day_end = now.replace(hour=23, minute=59, second=59)
+    today_n = sum(1 for t in act
+                  if t.get("deadline")
+                  and now <= (parse_datetime(t["deadline"]) or now) <= day_end)
+    week_n = sum(1 for t in act
+                 if t.get("deadline")
+                 and day_end < (parse_datetime(t["deadline"]) or now) <= now + timedelta(days=7))
+    parts = [f"作业概况：还需要动手的 {len(act)} 条"]
+    if today_n:
+        parts.append(f"其中今天截止 {today_n} 条")
+    elif not act:
+        parts.append("作业已全部做完（待完成 0 条）")
+    else:
+        parts.append("今天截止的已全部完成")
+    if week_n:
+        parts.append(f"7 天内还有 {week_n} 条")
+    if upc:
+        parts.append(f"另有 {upc} 条未开始（暂不可做）")
+    return "，".join(parts) + "。"
+
+
 def _task_line(t: dict) -> list[str]:
     """一条作业两行：条目 + 可点链接（与 study_facts 的排版一致）。"""
     out = [f"- {t.get('course')} · {t.get('title')} · 截止 {_when(t)}"]
@@ -574,7 +610,9 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
             parts.append("📖 名言回顾（你日记里的话）\n" + recall)
     elif kind == "dusk":
         # v1.5.19 傍晚冲刺：今天 24:00 前截止的作业（全天最后一次「还来得及」）
-        # + HN 科技热点（本档独有）。不含英语/名言回顾（午安专属）与天气（晚安专属）。
+        # + IT之家科技热点（本档独有）。不含英语/名言回顾（午安专属）与天气（晚安专属）。
+        # v1.7.1（用户 2026-11-17 报）：没有作业时也要明说并夸他——空清单不是
+        # 直接跳过，而是确定性写「全部搞定」，AI 挂了这条也在。
         kept = _actionable_sorted(now, tasks)
         day_end = now.replace(hour=23, minute=59, second=59)
         today = [t for t in kept
@@ -587,10 +625,13 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
             if len(today) > 3:
                 lines.append(f"（还有 {len(today) - 3} 条，全量在 README）")
             parts.append("\n".join(lines))
-        # tech_provider 可注入（selftest 离线确定性）；缺省联 HN+AI 翻译
+        else:
+            parts.append("🎉 今天截止的作业：**全部搞定，0 条要赶**。\n"
+                         "该交的都交了，今晚不用再惦记作业——哼，千得漂亮。")
+        # tech_provider 可注入（selftest 离线确定性）；缺省联 IT之家 RSS
         tn = (tech_provider or tech_news)()
         if tn:
-            parts.append("📰 今日科技热点（Hacker News）\n" + tn)
+            parts.append("📰 今日科技热点\n" + tn)
     else:
         kept = _actionable_sorted(now, tasks)
         soon = [t for t in kept
@@ -650,6 +691,12 @@ def run(kind: str) -> dict:
     today = now.date()
     facts = diary_facts(kind, today)
     hit = hitokoto()
+    # v1.7.1：作业概览注入 AI 事实——之前的 prose 只有日记事实，作业清零时 AI
+    # 不知道也不夸（用户 2026-11-17 报）。失败只告警，不给旧 facts 开天窗。
+    try:
+        facts = facts + "\n" + task_overview(now)
+    except Exception as e:
+        log(f"作业概览注入失败（AI 将拿不到作业事实）：{type(e).__name__}", level="WARN")
 
     # 三时段都带图（用户 2026-11-14 推翻了「只有早上带图」的旧约定：
     # 「发送格式全部都按照早上的格式发，图片改成早中晚都发」）。
