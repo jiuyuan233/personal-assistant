@@ -43,16 +43,31 @@ API = "https://gitee.com/api/v5/repos/{repo}/contents/{path}"
 MAX_DEPTH = 3
 CHECKBOX_RE = re.compile(r"^\s*[-*+]\s*\[([ xX])\]\s*(.+?)\s*$", re.M)
 DATE_IN_NAME_RE = re.compile(r"(\d{4})-(\d{2})-(\d{2})")
-# 助手写回区块（plans + memory 两个）。里面的内容由 diary_writeback 自己管，
+# 助手写回区块（plans / memory / english 三个）。里面的内容由 diary_writeback 自己管，
 # 采集时必须整块跳过，否则会被 extract_checkboxes 和 AI 各抽一遍——助手写的
-# 待办/记忆混进 plans.json 或被自己"回忆"，都是污染。
-BLOCK_START = "<!-- assistant:plans:start -->"
-BLOCK_END = "<!-- assistant:plans:end -->"
-MEM_BLOCK_START = "<!-- assistant:memory:start -->"
-MEM_BLOCK_END = "<!-- assistant:memory:end -->"
+# 待办/记忆/英语混进 plans.json 或被自己"回忆"，都是污染。
+#
+# v1.7.0（用户报「乱码」）：区块标记从 HTML 注释改成 Obsidian 阅读视图不显示的
+# `%%注释%%` 语法，内容用 callout（`> ` 引用块）包裹——Obsidian 里干净，不再裸露
+# `<!-- ... -->` 原文。**旧格式（HTML 注释）仍能被识别**：读旧日记/迁移靠它。
+# 英语角（用户 2026-11-16 要求：每日一句 small talk，难度随回应程度提升）。
+BLOCK_START = "%% assistant:plans:start %%"
+BLOCK_END = "%% assistant:plans:end %%"
+OLD_BLOCK_START = "<!-- assistant:plans:start -->"
+OLD_BLOCK_END = "<!-- assistant:plans:end -->"
+MEM_BLOCK_START = "%% assistant:memory:start %%"
+MEM_BLOCK_END = "%% assistant:memory:end %%"
+OLD_MEM_BLOCK_START = "<!-- assistant:memory:start -->"
+OLD_MEM_BLOCK_END = "<!-- assistant:memory:end -->"
+EN_BLOCK_START = "%% assistant:english:start %%"
+EN_BLOCK_END = "%% assistant:english:end %%"
+# 新旧两种 marker 的区块都剩掉（旧日记迁移期间两种格式共存）
 _BLOCK_STRIP = [
     re.compile(re.escape(BLOCK_START) + r".*?" + re.escape(BLOCK_END), re.S),
+    re.compile(re.escape(OLD_BLOCK_START) + r".*?" + re.escape(OLD_BLOCK_END), re.S),
     re.compile(re.escape(MEM_BLOCK_START) + r".*?" + re.escape(MEM_BLOCK_END), re.S),
+    re.compile(re.escape(OLD_MEM_BLOCK_START) + r".*?" + re.escape(OLD_MEM_BLOCK_END), re.S),
+    re.compile(re.escape(EN_BLOCK_START) + r".*?" + re.escape(EN_BLOCK_END), re.S),
 ]
 
 
@@ -375,6 +390,85 @@ def ensure_day_memory(g: Gitee, dcfg: dict, prefixes: list[str] | None = None,
 
 
 # ---------------------------------------------------------------------------
+# 每日英语（用户 2026-11-16：「每日再给我一句英语句子，可以是复杂句，就是日常
+# 的 small talk，难度由我回答的程度逐步提升」）——写进今天日记的英语角区块。
+# ---------------------------------------------------------------------------
+ENGLISH_PATH = DIARY_DIR / "english.json"
+ENGLISH_MAX_LEVEL = 5          # 难度 1-5（1 简单日常 → 5 复杂句/地道表达）
+# 离线降级句库（AI 挂了也要有句子；每级两句，轮换用 index 挑）
+ENGLISH_FALLBACK = {
+    1: ["Long time no see! How have you been?",
+        "Did you sleep well last night?"],
+    2: ["What did you get up to this weekend?",
+        "Have you been keeping up with any shows lately?"],
+    3: ["If you could pick up one new habit this month, what would it be?",
+        "How do you usually unwind after a long day of classes?"],
+    4: ["Do you ever feel like your best ideas show up right before you sleep?",
+        "What's something you've been putting off that keeps lingering on your mind?"],
+    5: ["Had you known how much effort it would take, would you still have started?",
+        "If you had to describe your ideal weekend in three words, what would they be?"],
+}
+
+
+def offline_english(level: int, idx: int) -> str:
+    """AI 不可用时的降级句子（诚实固定句库，按难度取，idx 轮换）。"""
+    lv = max(1, min(ENGLISH_MAX_LEVEL, level))
+    return ENGLISH_FALLBACK[lv][idx % len(ENGLISH_FALLBACK[lv])]
+
+
+def ensure_daily_english(now: datetime | None = None, yesterday_text: str = "",
+                         client=None) -> str:
+    """生成今天的一句英语（small talk），返回句子文本；已生成当天则复用。
+
+    - 时机与 memory 同款：只在凌晨写回窗口内由调用方触发（窗口判断在调用方）；
+    - 难度自适应（用户：「难度由我回答的程度逐步提升」）：AI 读**昨天日记**里
+      用户对上一句的回应——有英文回应且通顺 → level+1（封顶 5）；没回应 → 不变；
+      AI 判断回应吃力 → 可 -1（下限 1）。AI 挂 → 离线句库按当前 level。
+    - 账本 data/diary/english.json（生成物）：{level, sentence, date, answered}，
+      answered 由下一轮的 AI 判断回写。今天已生成直接返回（窗口内幂等）。
+    """
+    now = now or now_bj()
+    iso = now.date().isoformat()
+    state = load_json(ENGLISH_PATH) or {}
+    if state.get("date") == iso and state.get("sentence"):
+        return safe_text(state.get("sentence"), 200)
+
+    level = int(state.get("level") or 1)
+    level = max(1, min(ENGLISH_MAX_LEVEL, level))
+    sentence = ""
+
+    if client is None:
+        try:
+            from ai_client import AIClient
+            client = AIClient(timeout=90)
+        except (SystemExit, RuntimeError):
+            client = None
+    if client is not None:
+        try:
+            from prompts import english_messages
+            data = client.chat_json(english_messages(level, yesterday_text,
+                                                      state.get("sentence") or ""),
+                                    temperature=0.7, max_tokens=400)
+            if isinstance(data, dict):
+                sentence = safe_text(data.get("sentence"), 200).strip()
+                try:
+                    new_lv = int(data.get("level") or level)
+                except (TypeError, ValueError):
+                    new_lv = level
+                level = max(1, min(ENGLISH_MAX_LEVEL, new_lv))
+        except Exception as e:
+            log(f"[english] AI 生成失败，用离线句库：{safe_text(e, 160)}", level="WARN")
+
+    if not sentence:
+        sentence = offline_english(level, int(now.strftime("%d")))
+
+    save_json(ENGLISH_PATH, {"updated_at": now.isoformat(timespec="seconds"),
+                             "date": iso, "sentence": sentence, "level": level})
+    log(f"[english] 今日一句（Lv{level}）：{sentence[:80]}")
+    return sentence
+
+
+# ---------------------------------------------------------------------------
 # 主流程
 # ---------------------------------------------------------------------------
 def run() -> dict:
@@ -497,13 +591,30 @@ def run() -> dict:
     except Exception as e:
         log(f"记忆生成失败：{safe_text(e, 160)}", level="WARN")
 
+    # 每日英语（用户 2026-11-16）：同一凌晨窗口生成今日一句 small talk；
+    # 自适应难度要读昨天日记（用户在日记里回应上一句），一并送 AI 判断。
+    english_text: str | None = None
+    try:
+        import diary_writeback
+        if diary_writeback.in_window(now_bj(), dcfg.get("writeback_window")
+                                     or diary_writeback.DEFAULT_WINDOW):
+            yesterday_rel = (f"{dcfg.get('path') or ''}/"
+                             f"{dcfg.get('daily_dir') or '日'}/"
+                             f"{(today_bj() - timedelta(days=1)).isoformat()}.md").lstrip("/")
+            y_text, _sha = g.read_file(yesterday_rel)
+            english_text = ensure_daily_english(yesterday_text=strip_assistant_block(y_text or ""))
+    except Exception as e:
+        log(f"每日英语生成失败：{safe_text(e, 160)}", level="WARN")
+    _en_level = int((load_json(ENGLISH_PATH) or {}).get("level") or 1)
+
     # 写回：昨天挖到的潜在计划 → 今天日记里的复选框；上次没勾完的滚过来。
     # 写回失败只告警，不影响采集结果 —— 日记数据已经落盘了。
     wb: dict = {}
     try:
         import diary_writeback
         wb = diary_writeback.run(today=today, g=g, plans=plans, cfg=dcfg,
-                                memory=memory_text)
+                                memory=memory_text, english=english_text,
+                                english_level=_en_level)
     except Exception as e:
         log(f"日记写回失败：{safe_text(e, 200)}", level="WARN")
     done = set(wb.get("done") or [])

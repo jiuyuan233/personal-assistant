@@ -45,11 +45,14 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 AES_KEY = b"u2oh6Vu^HWe4_AES"
 
 PENDING = {"待做", "未做", "待提交", "未提交", "未交", "待完成", "进行中", "待互评",
-           "待考试", "待作答", "待批阅互评"}
+           "待考试", "待作答", "待批阅互评", "已退回"}
 SUBMITTED = {"待批阅", "已提交", "批阅中", "待批改", "批改中"}
 DONE = {"已完成", "已互评", "已批阅", "已结束", "已交", "已评分"}
 
 MIDDLE_RE = re.compile(r"stucoursemiddle\?([^\"'\s>]+)")
+# v1.7.0：课件/文件类标题（.pptx/.pdf 等后缀）不是作业——采集层与存量清理共用同一形状
+quiz_browser_FILE_RE = re.compile(
+    r"\.(pptx?|docx?|pdf|zip|rar|7z|xlsx?|csv|txt|mp[34]|flv|mkv|avi|png|jpe?g|gif)\s*$", re.I)
 HIDDEN_RE = r'id="{k}"[^>]*value="([a-f0-9]+)"'
 # 课程名在列表页每个 li 内的 course-name span 上；middle 页的首个 h2 是全站横幅
 # 「在线学习诚信承诺书」，不能用，只有 <title> 才是课程名。
@@ -302,9 +305,10 @@ def parse_work_rows(html: str, course: dict, now: datetime) -> list[dict]:
         deadline, exact, rem_text, over = _row_deadline(chunk, now)
         label = clean_html_text(lm.group(1)) if lm else ""
         state = classify(status)
-        # 互评模式下「待批阅」+ 仍在倒计时 = 用户还得去互评，不是真的没事可做
-        if state == "submitted" and label == "互评" and deadline and not over:
-            state = "pending"
+        # v1.7.0（用户 2026-11-16 定稿）：待批阅 = 已交等老师批，**不需要用户动手**，
+        # 不算待办（原来互评升级规则已按用户澄清移除——他明确说"待批改不需要
+        # 我操作"；漏互评的风险由「待互评」状态单独扛，交完互评后状态就是待互评）。
+        # 需要动手的：待完成/未交/进行中/待互评/已退回（退回要重做）/待考试。
         out.append({
             "id": make_id(course["course_id"], course["class_id"], kind, work_id, answer_id),
             "kind": kind,
@@ -709,6 +713,13 @@ def run() -> dict:
     old_main = [t for t in old_all if t.get("kind") != "quiz"]
     merged = merge_tasks(old_main, all_tasks, now)
     merged = sort_by_deadline(merged + merge_quiz(old_quiz, quiz_new, quiz_covered, now))
+    # v1.7.0（用户报的 bug）：老师发的课件（.pptx/.pdf 等文件后缀标题）不是作业。
+    # 采集层已过滤新条目；这一步清掉历史入库的存量（一次性迁移，下轮采集起全链路干净）。
+    _before_files = len(merged)
+    merged = [t for t in merged
+              if not quiz_browser_FILE_RE.search((t.get("title") or "").strip())]
+    if len(merged) < _before_files:
+        log(f"清理课件类条目（.pptx 等文件后缀，非作业）：{_before_files - len(merged)} 条")
     # 审计 §2.5 / §7.2：data/ 是公开仓库的一部分，不是本地缓存。
     # cpi / answerId / enc 每生一份，落盘前必须抹掉；完整深链只在本轮内存里用于抓详情页。
     link_mode = cfg.get("public_links") or "course"

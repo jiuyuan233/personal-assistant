@@ -51,7 +51,8 @@ NEW_LEDGER_DAYS = 30  # 记账保留天数，与 urgent6 同款
 HITOKOTO_URL = "https://v1.hitokoto.cn/"
 # 免费数据源（v1.5.7 新增，用户勾选）：金山词霸每日一句、open-meteo 天气（无需 key）。
 ICIBA_URL = "https://open.iciba.com/dsapi/"
-# 坐标 = 平顶山（河南城建学院所在城市，城市级精度足够天气参考）。
+# 坐标 = 河南城建学院（平顶山，城市级精度足够天气参考；用户 2026-11-16 要求
+# 文案里直接写学校名）。
 WEATHER_URL = ("https://api.open-meteo.com/v1/forecast?latitude=33.77&longitude=113.19"
                "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max"
                "&timezone=Asia/Shanghai&forecast_days=2")
@@ -129,15 +130,20 @@ def notice_facts() -> tuple[str, list[dict]]:
 
     时效过滤（用户 2026-11-14：「时间都截至了还给我发」）：已过截止或无截止但
     发布超 90 天的不再推送。唯一判定在 `utils.notice_stale()`，与 README 共用。
+    **飞书侧再加一道「本月起」闸（v1.7.0 用户 2026-11-16：「推送的都是过期的公告，
+    改成只推送本月开始的公告」）**：publish_date 在本月 1 号之前的旧公告一律
+    不进飞书推送（README/看板不受此闸，仍按自己的时效规则展示）。
     开始时间（用户 2026-11-15：「就把发布时间当作开始时间」）：每条直接以发布日期
     作为开始时间标注 —— 公告正文里几乎从不写「活动从哪天开始」，发布日就是
     学生能拿到的最早时间锚点，README 公告表的「日期」列同源（publish_date）。
     """
     from utils import notice_stale
     items = load_list(DATA_DIR / "notice" / "notices.json")
+    month_start = now_bj().date().replace(day=1).isoformat()  # v1.7.0：飞书只推本月起的
     hot = [n for n in items
            if (n.get("score") or 0) >= NOTICE_MIN_SCORE
-           and not notice_stale(n, now_bj().date())]
+           and not notice_stale(n, now_bj().date())
+           and (n.get("publish_date") or "9999-12-31") >= month_start]
     hot.sort(key=lambda n: -(n.get("score") or 0))
     lines = [f"值得关注的公告 {len(hot)} 条（相关度 {NOTICE_MIN_SCORE} 分以上、仍在有效期内）。"]
     for n in hot[:MORNING_NOTICE_LIMIT]:
@@ -181,7 +187,7 @@ def weather_tomorrow(now: datetime) -> str:
         rain = (daily.get("precipitation_probability_max") or [None, None])[1]
         if tmax is None or tmin is None:
             return ""
-        out = f"明天 {round(tmin)}~{round(tmax)}°C"
+        out = f"河南城建学院 明天 {round(tmin)}~{round(tmax)}°C"
         if rain is not None:
             out += f"，降水概率 {rain}%"
             if isinstance(rain, (int, float)) and rain >= 60:

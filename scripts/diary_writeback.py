@@ -11,11 +11,15 @@
 - **只在凌晨窗口内写**（默认北京时间 00:00–06:00，`sources.json` 的 `writeback_window` 可改）。
   用户白天在 Obsidian 里写日记，白天写回会和他的编辑撞车。窗口外只复查勾选、绝不提交。
   **窗口宽度必须 ≥ cron 间隔（20 分钟）**，否则窗口里可能一次都不触发（审计 §4.1）。
-- 只动 `<!-- assistant:plans:start/end -->` 与 `<!-- assistant:memory:start/end -->`
-  两个区块内部，区块外的正文一个字节都不碰
+- 只动 `%% assistant:plans:start/end %%`、`%% assistant:memory:start/end %%`、
+  `%% assistant:english:start/end %%` 三个区块内部，区块外的正文一个字节都不碰。
+  （v1.7.0 前用 HTML 注释 `<!-- ... -->` 做 marker，Obsidian 里会裸露成「乱码」——
+  用户 2026-11-16 报过后改成 Obsidian 阅读视图不显示的 `%%...%%` 语法 + callout 包裹；
+  **旧格式仍能被识别**，读到旧区块会自动替换成新格式。）
 - 计划区块已存在就按 pid 合并，保留用户已经勾上的 [x]，不重置；
-  记忆区块整段替换（每天一条，不累积）
-- 每行尾部带 `<!-- pid:xxx -->`，Obsidian 预览里不显示，但能精确对回 plans.json
+  记忆/英语区块整段替换（每天各一条，不累积）
+- pid 用行内 `%%pid:xxx%%` 注释（Obsidian 阅读视图不显示，能精确对回 plans.json；
+  旧日记里的 `<!-- pid:xxx -->` 同样能读）
 - 文件不存在才新建，新建时用用户日记的三段式骨架
 """
 from __future__ import annotations
@@ -24,15 +28,20 @@ import re
 from datetime import date, datetime, timedelta
 
 from dedup import load_list
-from diary_collector import (BLOCK_END, BLOCK_START, MEM_BLOCK_END,
-                             MEM_BLOCK_START, PLANS_PATH, Gitee)
+from diary_collector import (BLOCK_END, BLOCK_START, EN_BLOCK_END,
+                             EN_BLOCK_START, MEM_BLOCK_END, MEM_BLOCK_START,
+                             OLD_BLOCK_END, OLD_BLOCK_START,
+                             OLD_MEM_BLOCK_END, OLD_MEM_BLOCK_START,
+                             PLANS_PATH, Gitee)
 from utils import DATA_DIR, load_json, log, now_bj, safe_text, save_json
 
 WB_PATH = DATA_DIR / "diary" / "writeback.json"
-PID_LINE_RE = re.compile(r"^\s*[-*+]\s*\[([ xX])\]\s*(.+?)\s*<!--\s*pid:(\S+?)\s*-->\s*$", re.M)
+# v1.7.0：pid 同时认两种写法（新 %%…%% 与旧 HTML 注释），复查旧日记不丢勾选
+PID_LINE_RE = re.compile(
+    r"^\s*(?:>\s*)?[-*+]\s*\[([ xX])\]\s*(.+?)\s*(?:%%\s*pid:(\S+?)\s*%%|<!--\s*pid:(\S+?)\s*-->)\s*$", re.M)
 WINDOW_RE = re.compile(r"\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*")
 DEFAULT_MAX = 20
-# 兜底值必须与 sources.json 一致。原来是 05:00，审计 §4.1 实测 cron 延迟可达 54 分钟，
+# 兕底值必须与 sources.json 一致。原来是 05:00，审计 §4.1 实测 cron 延迟可达 54 分钟，
 # 04:07 那班会落到窗口外；放宽到 06:00 后窗口内有 18 次 tick 机会。
 DEFAULT_WINDOW = "00:00-06:00"
 NEW_FILE_TEMPLATE = "# 今日记录\n\n# 随笔 / 感想\n\n# 明日计划\n\n"
@@ -61,14 +70,14 @@ def in_window(now: datetime, spec: str) -> bool:
 
 
 def render_block(day: str, entries: list[tuple[str, str, bool]]) -> str:
-    """entries = [(pid, 文本, 是否已完成)]"""
-    lines = [BLOCK_START, f"## 🤖 助手待办 · {day}", ""]
+    """entries = [(pid, 文本, 是否已完成)]。v1.7.0：Obsidian callout 包裹，无 HTML 标签。"""
+    lines = [BLOCK_START, f"> [!todo]- 🤖 助手待办 · {day}"]
     for pid, text, done in entries:
         mark = "x" if done else " "
-        lines.append(f"- [{mark}] {text} <!-- pid:{pid} -->")
+        lines.append(f"> - [{mark}] {safe_text(text, 100)} %%pid:{pid}%%")
     if not entries:
-        lines.append("- 今天没有要滚动的计划。哼，难得。")
-    lines += ["", "<sub>勾选表示完成；没勾的明天会自动滚进新日记。区块外随便写，助手不碰。</sub>",
+        lines.append("> - 今天没有要滚动的计划。哼，难得。")
+    lines += ["> 勾选表示完成；没勾的明天会自动滚进新日记。区块外随便写，助手不碰。",
               BLOCK_END]
     return "\n".join(lines)
 
@@ -76,42 +85,74 @@ def render_block(day: str, entries: list[tuple[str, str, bool]]) -> str:
 def render_memory_block(yesterday: str, text: str) -> str:
     """助手的记忆区块：一段自由文本（AI/离线生成），每天整段替换，不勾选、不滚动。"""
     body = "\n".join("> " + ln for ln in (text or "").strip().splitlines())
-    lines = [MEM_BLOCK_START, f"## 💭 助手记得 · {yesterday}", "", body, "",
-              "<sub>根据你 " + yesterday + " 的日记生成，当个念想，不一定对。</sub>",
+    lines = [MEM_BLOCK_START, f"> [!quote]- 💭 助手记得 · {yesterday}", body,
+              "> 根据你 " + yesterday + " 的日记生成，当个念想，不一定对。",
               MEM_BLOCK_END]
     return "\n".join(lines)
 
 
+def render_english_block(level: int, sentence: str) -> str:
+    """英语角（v1.7.0）：每日一句 small talk，难度随用户回应程度提升。"""
+    lines = [EN_BLOCK_START, f"> [!tip]- 🗣 每日英语 · Lv {level}",
+              "> " + (sentence or "").strip(),
+              "> 在明天的日记里用英语回它——回得动难度就升。",
+              EN_BLOCK_END]
+    return "\n".join(lines)
+
+
+def _find_span(text: str, start_marker: str, end_marker: str,
+              alt_start: str | None = None, alt_end: str | None = None) -> tuple[int, int] | None:
+    """找区块的 (start, end) 字符位置。新格式优先，旧格式兑底（迁移期间共存）。"""
+    text = text or ""
+    start, end = text.find(start_marker), text.find(end_marker)
+    if start >= 0 and end > start:
+        return start, end + len(end_marker)
+    if alt_start and alt_end:
+        start, end = text.find(alt_start), text.find(alt_end)
+        if start >= 0 and end > start:
+            return start, end + len(alt_end)
+    return None
+
+
 def parse_block(text: str) -> list[tuple[str, bool]]:
-    """从日记正文里读出助手区块的 (pid, 是否勾选)。没有区块返回空列表。"""
-    start = (text or "").find(BLOCK_START)
-    end = (text or "").find(BLOCK_END)
-    if start < 0 or end < start:
+    """从日记正文里读出助手区块的 (pid, 是否勾选)。新/旧格式都认，没有返回空列表。"""
+    span = _find_span(text or "", BLOCK_START, BLOCK_END, OLD_BLOCK_START, OLD_BLOCK_END)
+    if span is None:
         return []
-    return [(m.group(3), m.group(1).lower() == "x")
-            for m in PID_LINE_RE.finditer(text[start:end])]
+    seg = (text or "")[span[0]:span[1]]
+    out = []
+    for m in PID_LINE_RE.finditer(seg):
+        pid = m.group(3) or m.group(4)
+        if pid:
+            out.append((pid, m.group(1).lower() == "x"))
+    return out
+
+
+def _upsert_any(text: str, block: str, start_marker: str, end_marker: str,
+                alt_start: str | None = None, alt_end: str | None = None) -> str:
+    """区块通用替换/追加：新格式优先，旧格式命中也替换成新内容（自动迁移）。"""
+    text = text or ""
+    span = _find_span(text, start_marker, end_marker, alt_start, alt_end)
+    if span is not None:
+        return text[:span[0]] + block + text[span[1]:]
+    sep = "" if not text or text.endswith("\n") else "\n"
+    return text + sep + "\n" + block + "\n"
 
 
 def upsert_block(text: str, block: str) -> str:
-    """有区块就整块替换，没有就追加到末尾。区块外的内容原样保留。"""
-    text = text or ""
-    start = text.find(BLOCK_START)
-    end = text.find(BLOCK_END)
-    if start >= 0 and end > start:
-        return text[:start] + block + text[end + len(BLOCK_END):]
-    sep = "" if not text or text.endswith("\n") else "\n"
-    return text + sep + "\n" + block + "\n"
+    """计划区块：整块替换或追加。区块外内容原样保留；旧 HTML 注释区块会迁移成新格式。"""
+    return _upsert_any(text, block, BLOCK_START, BLOCK_END, OLD_BLOCK_START, OLD_BLOCK_END)
 
 
 def upsert_memory(text: str, block: str) -> str:
-    """记忆区块同款：整块替换或追加到末尾。与计划区块互不干扰。"""
-    text = text or ""
-    start = text.find(MEM_BLOCK_START)
-    end = text.find(MEM_BLOCK_END)
-    if start >= 0 and end > start:
-        return text[:start] + block + text[end + len(MEM_BLOCK_END):]
-    sep = "" if not text or text.endswith("\n") else "\n"
-    return text + sep + "\n" + block + "\n"
+    """记忆区块同款：整块替换或追加。与计划区块互不干扰。"""
+    return _upsert_any(text, block, MEM_BLOCK_START, MEM_BLOCK_END,
+                       OLD_MEM_BLOCK_START, OLD_MEM_BLOCK_END)
+
+
+def upsert_english(text: str, block: str) -> str:
+    """英语角同款：整块替换或追加（每天一句，不累积）。"""
+    return _upsert_any(text, block, EN_BLOCK_START, EN_BLOCK_END)
 
 
 def pick_plans(plans: list[dict], rolling: set[str], limit: int) -> list[dict]:
@@ -142,7 +183,9 @@ def pick_plans(plans: list[dict], rolling: set[str], limit: int) -> list[dict]:
 def run(today: date | None = None, g: Gitee | None = None,
         plans: list[dict] | None = None, cfg: dict | None = None,
         now: datetime | None = None,
-        memory: str | None = None) -> dict:
+        memory: str | None = None,
+        english: str | None = None,
+        english_level: int = 1) -> dict:
     now = now or now_bj()
     today = today or now.date()
     cfg = cfg if cfg is not None else ((load_json(DATA_DIR / "sources.json") or {}).get("diary") or {})
@@ -199,9 +242,10 @@ def run(today: date | None = None, g: Gitee | None = None,
     picked_ids = [p["id"] for p in picked]
 
     # memory = 昨天的日记生成的「助手记忆」段落（diary_collector.ensure_day_memory）。
-    # None = 今天没生成（窗口外/日记太短/AI 挂了没占位），区块干脆不写。
+    # english = 今日一句 small talk（diary_collector.ensure_daily_english）。
+    # 两个都是 None 时区块干脆不写。
 
-    if not entries and not text and not memory:
+    if not entries and not text and not memory and not english:
         log(f"写回：{iso} 没有可写的计划，也不新建空日记")
         save_json(WB_PATH, {"updated_at": now_bj().isoformat(timespec="seconds"),
                             "last_date": prev_date, "last_path": prev_path})
@@ -211,10 +255,15 @@ def run(today: date | None = None, g: Gitee | None = None,
     block = render_block(iso, entries)
     mem_block = (render_memory_block((today - timedelta(days=1)).isoformat(), memory)
                  if memory else "")
+    en_block = render_english_block(english_level, english) if english else ""
 
     def _compose(base: str) -> str:
         t = upsert_block(base or NEW_FILE_TEMPLATE, block)
-        return upsert_memory(t, mem_block) if mem_block else t
+        if mem_block:
+            t = upsert_memory(t, mem_block)
+        if en_block:
+            t = upsert_english(t, en_block)
+        return t
 
     new_text = _compose(text)
     if new_text == text:
@@ -223,6 +272,8 @@ def run(today: date | None = None, g: Gitee | None = None,
         msg = f"chore(diary): 助手区块 {iso}（待办 {len(entries)} 条"
         if memory:
             msg += "，含记忆"
+        if english:
+            msg += "，含英语角"
         msg += "）"
         ok = g.write_file(path, new_text, msg, sha=sha)
         if not ok and sha:

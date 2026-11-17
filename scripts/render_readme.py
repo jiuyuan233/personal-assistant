@@ -102,22 +102,49 @@ def course_key(d: dict) -> tuple[str, str]:
     return (d.get("course_id") or "", d.get("class_id") or "")
 
 
-def ordered_courses(courses: list[dict]) -> list[dict]:
-    """活跃度（作业发表数量）降序，同数按待完成数、再按名字。
+def latest_by_course(tasks: list[dict]) -> dict[tuple[str, str], str]:
+    """每门课「最后一次发布作业」的时间锚（v1.7.0 用户定稿的排序依据）。
+
+    锚点 = 该课全部任务里最大的 task_start（详情页真实发布时间优先，
+    退化用 first_seen——新作业的 first_seen≈发布时刻）。含已剔除任务：
+    排序问「这门课最近活没活跃」，不问「现在还有没有能做的」。
+    """
+    out: dict[tuple[str, str], str] = {}
+    for t in tasks:
+        st = task_start(t)
+        k = course_key(t)
+        if st is None:
+            continue
+        iso = st.isoformat(timespec="seconds")
+        if iso > out.get(k, ""):
+            out[k] = iso
+    return out
+
+
+def ordered_courses(courses: list[dict],
+                    latest: dict[tuple[str, str], str] | None = None) -> list[dict]:
+    """v1.7.0（用户定稿）：按「最后一次发布作业的时间」降序——谁的消息最新谁靠前；
+    同锚按待完成数、再按名字。latest 缺省时退回旧活跃度排序（selftest / 老数据兼容）。
 
     任务清单与「已剔除任务」文档共用这一个排序，两处课程顺序不会漂。
     """
+    if latest:
+        return sorted(courses, reverse=True,
+                      key=lambda c: (latest.get(course_key(c), ""),
+                                     c.get("pending_count") or 0,
+                                     c.get("name") or ""))
     return sorted(courses, key=lambda c: (-(c.get("task_count") or 0),
-                                          -(c.get("pending_count") or 0),
-                                          c.get("name") or ""))
+                                           -(c.get("pending_count") or 0),
+                                           c.get("name") or ""))
 
 
-def course_rows(courses: list[dict], kept: list[dict]) -> list[str]:
-    """全部课程都列出来，按活跃度（作业发表数量）降序；没任务的写「无」。"""
+def course_rows(courses: list[dict], kept: list[dict],
+                latest: dict[tuple[str, str], str] | None = None) -> list[str]:
+    """全部课程都列出来，按最新发布时间降序（v1.7.0）；没任务的写「无」。"""
     by_course: dict[tuple[str, str], list[dict]] = {}
     for t in kept:
         by_course.setdefault(course_key(t), []).append(t)
-    ordered = ordered_courses(courses)
+    ordered = ordered_courses(courses, latest)
     lines = ["| 课程 | 作业数 | 待完成 | 任务（截止近 → 远） |",
              "| --- | --- | --- | --- |"]
     for c in ordered:
@@ -156,7 +183,8 @@ def course_rows(courses: list[dict], kept: list[dict]) -> list[str]:
 def render_tasks(tasks: list[dict], now: datetime) -> tuple[str, str, dict]:
     kept, dropped = actionable(tasks, now)
     courses = load_list(DATA_DIR / "study" / "courses.json")
-    body = "\n".join(course_rows(courses, kept)) + "\n"
+    latest = latest_by_course(tasks)  # v1.7.0：按最后一次发布时间排课程
+    body = "\n".join(course_rows(courses, kept, latest)) + "\n"
 
     today = now.date()
     counts = {"today": 0, "week": 0, "later": 0, "unknown": 0, "upcoming": 0}
@@ -176,7 +204,7 @@ def render_tasks(tasks: list[dict], now: datetime) -> tuple[str, str, dict]:
             counts["later"] += 1
 
     note = ("> 已剔除：逾期 {} 项 · 非待完成 {} 项。"
-            "课程按活跃度（作业发表数量）排序，共 {} 门。\n"
+            "课程按「最后一次发布作业的时间」降序排（谁的消息最新谁靠前），共 {} 门。\n"
             "> 📄 [逐项查看已剔除任务与原因](docs/已剔除任务.md)\n").format(
                 dropped["overdue"], dropped["not_pending"], len(courses))
     suffix = f"，其中 **{counts['today']} 项今天截止**" if counts["today"] else ""
@@ -235,7 +263,7 @@ def render_excluded(tasks: list[dict], now: datetime,
 
     if courses is None:
         courses = load_list(DATA_DIR / "study" / "courses.json")
-    ordered = ordered_courses(courses)
+    ordered = ordered_courses(courses, latest_by_course(tasks))
     known = {course_key(c) for c in ordered}
     # courses.json 里没有的课（理论上不该有）排在最后，按名字兜底，不能凭空丢掉
     extra = sorted((k for k in by_course if k not in known),

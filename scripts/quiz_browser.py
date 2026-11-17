@@ -86,6 +86,11 @@ _MDHM2_RE = re.compile(r"(\d{1,2})月(\d{1,2})日\s*(\d{1,2})时(\d{1,2})分")
 _NOISE_TITLE_RE = re.compile(r"^[\d（）()：:、\s]*$")
 # 课堂互动类活动不是作业（签到/选人/投票/抢答/问卷），不进任务清单
 _CLASSROOM_RE = re.compile(r"(签到|选人|投票|抢答|问卷)")
+# v1.7.0（用户报的 bug）：老师发的课件/文件不是作业——「D1-2数列的极限.pptx」
+# 这种带文件后缀的标题一律不收（用户原话：任务名称后面有文件后缀的就是文件，
+# 不是要动手写的作业；旧版把文件当作业还标了逾期）
+_FILE_SUFFIX_RE = re.compile(
+    r"\.(pptx?|docx?|pdf|zip|rar|7z|xlsx?|csv|txt|mp[34]|flv|mkv|avi|png|jpe?g|gif)\s*$", re.I)
 
 
 def _time_like(l: str) -> bool:
@@ -216,6 +221,8 @@ def parse_active_rows(rows_raw: list[dict], course: dict, now: datetime,
             continue
         if _CLASSROOM_RE.search(title):
             continue  # 签到/选人等课堂互动，不是作业
+        if _FILE_SUFFIX_RE.search(title):
+            continue  # v1.7.0：.pptx 等课件文件，老师发的材料不是作业
         # 零信息行（页头/标签条）：无时间无状态无深链，不是任务
         if not (time_lines or status or re.search(r"https?://", cl.get("onclick") or "")):
             continue

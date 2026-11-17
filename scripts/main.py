@@ -323,12 +323,24 @@ def do_selftest() -> bool:
     course = study_collector.SAMPLE_COURSE
     check("作业行数=2", len(rows) == 2, f"实际 {len(rows)}")
     if len(rows) == 2:
-        check("互评待批阅升级为 pending", rows[0]["state"] == "pending", rows[0]["state"])
+        # v1.7.0（用户 2026-11-16 定稿）：待批阅 = 已交等老师批，**不算待办**
+        # （旧「互评模式下待批阅升级为 pending」规则已按用户澄清移除；
+        # 漏互评提醒由「待互评」状态单独承担，交完互评后状态就是待互评）。
+        check("互评待批阅不再升级为 pending（用户定稿：待批改不需动手）",
+              rows[0]["state"] == "submitted", rows[0]["state"])
         check("倒计时换算截止时间", rows[0]["deadline"] == "2026-11-12T23:12:00+08:00",
               str(rows[0]["deadline"]))
         check("eval-list 识别为互评", rows[1]["kind"] == "eval", rows[1]["kind"])
         check("待互评为 pending", rows[1]["state"] == "pending", rows[1]["state"])
         check("ID 不含 enc", "abc123" not in rows[0]["id"] and "def456" not in rows[1]["id"])
+    # v1.7.0：需要动手的状态集合 —— 待完成/待互评/已退回/待考试；
+    # 不需动手的：已完成/待批改(submitted)/未开始(upcoming)
+    check("已退回 归为 pending（退回要重做）",
+          study_collector.classify("已退回") == "pending",
+          study_collector.classify("已退回"))
+    check("待批阅 归为 submitted（不需动手）",
+          study_collector.classify("待批阅") == "submitted",
+          study_collector.classify("待批阅"))
 
     erows = study_collector.parse_exam_rows(study_collector.SAMPLE_EXAM_HTML, course, now)
     check("考试行数=2（已完成 viewExamAnswer + 待考 goTest）", len(erows) == 2, f"实际 {len(erows)}")
@@ -449,7 +461,23 @@ def do_selftest() -> bool:
     joined = "\n".join(crows)
     check("无任务的课程也列出", len(crows) == 4 and "军事理论" in joined, f"rows={len(crows)}")
     check("无任务写「无」", "**无**" in joined)
-    check("活跃度高的课程排前面", joined.index("高等数学A") < joined.index("军事理论"))
+    check("无 latest 时退回活跃度排序", joined.index("高等数学A") < joined.index("军事理论"))
+
+    # v1.7.0（用户定稿）：课程按「最后一次发布作业的时间」降序——谁的消息
+    # 最新谁靠前。含已剔除任务（问的是课最近活不活跃，不问还有没有能做的）。
+    late = {("c1", ""): "2026-11-12T10:00:00", ("c2", ""): "2026-11-11T08:00:00"}
+    _late_rows = rr.course_rows(
+        [{"course_id": "c1", "name": "A课", "task_count": 1},
+         {"course_id": "c2", "name": "B课", "task_count": 9}], [], late)
+    check("有 latest 时按最新发布降序",
+          "\n".join(_late_rows).index("A课") < "\n".join(_late_rows).index("B课"),
+          "\n".join(_late_rows)[:120])
+    check("latest_by_course 取每课最大 start 锚（含已剔除任务）",
+          rr.latest_by_course([
+              mk(course_id="c1", title="旧作业", first_seen=iso(now - timedelta(days=5))),
+              mk(course_id="c1", title="新作业", first_seen=iso(now - timedelta(hours=1))),
+              mk(course_id="c1", state="done", title="新但已完成",
+                 first_seen=iso(now))])[("c1", "")] == iso(now))
 
     # 实测：同一门英语课挂在两个教学班下（course_id 相同、class_id 不同），
     # 只按 course_id 归组会让两个班显示同一批任务
@@ -898,9 +926,26 @@ def do_selftest() -> bool:
     # 日记写回：只动助手区块，区块外一个字节都不碰
     import diary_collector as dc
     import diary_writeback as dw
+    import quiz_browser as qb
+    import prompts as prompts_module
 
     blk = dw.render_block("2026-11-14", [("p1", "背单词", False), ("p2", "跑步", True)])
     check("写回区块往返解析", dict(dw.parse_block(blk)) == {"p1": False, "p2": True})
+    # v1.7.0（用户报「乱码」）：区块用 Obsidian 阅读视图不显示的 %%…%% marker +
+    # callout 包裹，不再裸露 <!-- … --> / <sub> / 行尾 HTML 注释 pid
+    check("写回区块 Obsidian 友好（%%marker + callout，无 HTML 标签）",
+          dw.BLOCK_START.startswith("%%") and "> [!todo]-" in blk
+          and "<!--" not in blk and "<sub>" not in blk
+          and "%%pid:p1%%" in blk, blk[:120])
+    old_style = ("<!-- assistant:plans:start -->\n- [x] 旧勾选 <!-- pid:q1 -->\n"
+                 "- [ ] 旧未勾 <!-- pid:q2 -->\n<!-- assistant:plans:end -->\n不动我")
+    check("旧格式（HTML 注释）仍能解析勾选（迁移期兼容）",
+          dict(dw.parse_block(old_style)) == {"q1": True, "q2": False},
+          str(dw.parse_block(old_style)))
+    migrated = dw.upsert_block("# 我的日记\n\n" + old_style, blk)
+    check("旧格式区块被替换成新格式（自动迁移）且正文保留",
+          "<!-- assistant:plans" not in migrated and dw.BLOCK_START in migrated
+          and "# 我的日记" in migrated, migrated[:120])
 
     user_text = "# 今日记录\n\n我自己写的话。\n"
     merged = dw.upsert_block(user_text, blk)
@@ -908,6 +953,18 @@ def do_selftest() -> bool:
     again = dw.upsert_block(merged, dw.render_block("2026-11-14", [("p1", "背单词", True)]))
     check("重复写回只替换区块", again.count(dw.BLOCK_START) == 1 and "我自己写的话。" in again)
     check("复查能读到勾选", dict(dw.parse_block(again)).get("p1") is True)
+
+    # v1.7.0：英语角区块 + 独立 upsert，与计划/记忆互不干扰
+    en_blk = dw.render_english_block(3, "What did you get up to this weekend?")
+    with_en = dw.upsert_english(again, en_blk)
+    check("英语角区块 Obsidian 友好且可替换",
+          dw.EN_BLOCK_START.startswith("%%") and "> [!tip]-" in en_blk
+          and with_en.count(dw.EN_BLOCK_START) == 1
+          and dw.BLOCK_START in with_en
+          and dw.upsert_english(with_en, dw.render_english_block(4, "New one?"))
+          .count(dw.EN_BLOCK_START) == 1)
+    check("采集时三个助手区块都被剥离",
+          "What did you get up" not in dc.strip_assistant_block(with_en))
 
     sample_plans = [
         {"id": "a", "text": "昨天的", "state": "open", "first_seen": "2026-11-12"},
@@ -927,6 +984,72 @@ def do_selftest() -> bool:
     cb = dc.extract_checkboxes("- [ ] 用户自己写的\n" + blk,
                                {"path": "日/2026-11-14.md", "name": "2026-11-14.md"}, now.date())
     check("助手区块不被重复抽取", [c["text"] for c in cb] == ["用户自己写的"], str(cb))
+
+    # v1.7.0（用户报的 bug）：.pptx 等课件文件不是作业，采集层过滤 + 历史清理共用形状
+    check("课件后缀标题被识别为文件（不是作业）",
+          bool(study_collector.quiz_browser_FILE_RE.search("D1-2数列的极限.pptx"))
+          and bool(study_collector.quiz_browser_FILE_RE.search("讲义.zip"))
+          and not study_collector.quiz_browser_FILE_RE.search("第三章知识点总结"))
+    _pptx_rows, _pptx_unmap = qb.parse_active_rows(
+        [{"text": "D1-2数列的极限.pptx", "y": 100,
+          "onclick": "openCurrentUrl('https://mobilelearn.huuc.edu.cn/page/active/"
+                     "stuActiveDetail?courseid=219232606&clazzid=153566712&activeId=111111111', 2)",
+          "aria": ""},
+         {"text": "随堂小测", "y": 200,
+          "onclick": "openCurrentUrl('https://mobilelearn.huuc.edu.cn/page/active/"
+                     "stuActiveDetail?courseid=219232606&clazzid=153566712&activeId=222222222', 2)",
+          "aria": ""}],
+        {"course_id": "219232606", "class_id": "153566712", "name": "高等数学A"}, now)
+    check("随堂解析跳过课件文件、只收真作业",
+          [t["title"] for t in _pptx_rows] == ["随堂小测"], str(_pptx_rows))
+
+    # v1.7.0：每日英语（AI 不可用走离线句库；难度限幅 1-5；当天幂等）
+    class FakeEnAI:
+        def __init__(self, ret):
+            self.ret, self.calls = ret, 0
+
+        def chat_json(self, messages, **kw):
+            self.calls += 1
+            return self.ret
+
+    _saved_en_path = dc.ENGLISH_PATH
+    try:
+        import tempfile
+        from pathlib import Path as _PPath
+        with tempfile.TemporaryDirectory() as _tde:
+            dc.ENGLISH_PATH = _PPath(_tde) / "english.json"
+            _en_ai = FakeEnAI({"sentence": "How was your day so far?", "level": 3})
+            s1 = dc.ensure_daily_english(
+                now=datetime(2026, 11, 17, 0, 30, tzinfo=BJ_TZ),
+                yesterday_text="I'm fine, just tired.", client=_en_ai)
+            check("英语：AI 出句 + level 落账本",
+                  s1 == "How was your day so far?" and _en_ai.calls == 1
+                  and (dc.load_json(dc.ENGLISH_PATH) or {}).get("level") == 3, s1)
+            s2 = dc.ensure_daily_english(
+                now=datetime(2026, 11, 17, 2, 0, tzinfo=BJ_TZ), client=_en_ai)
+            check("英语：同一天幂等（不重复烧 AI）", s2 == s1 and _en_ai.calls == 1)
+            dc.save_json(dc.ENGLISH_PATH, {"date": "2026-11-16", "sentence": "old",
+                                           "level": 9})
+            s3 = dc.ensure_daily_english(
+                now=datetime(2026, 11, 17, 3, 0, tzinfo=BJ_TZ),
+                yesterday_text="", client=None)
+            check("英语：AI 挂了走离线句库 + level 限幅到 5",
+                  s3 in dc.ENGLISH_FALLBACK[5]
+                  and (dc.load_json(dc.ENGLISH_PATH) or {}).get("level") == 5, s3)
+            _pr = prompts_module.english_messages(2, "用户日记", "上一句")
+            check("英语：提示词带 level/上一句/昨天日记",
+                  "当前难度 level：2" in _pr[0]["content"]
+                  and "上一句" in _pr[0]["content"]
+                  and "用户昨天的日记" in _pr[0]["content"])
+    finally:
+        dc.ENGLISH_PATH = _saved_en_path
+
+    # v1.7.0：飞书公告只推本月起的（README/看板不受此闸）
+    check("notice_facts 源码含本月闸（publish_date >= 本月 1 号）",
+          "month_start" in inspect.getsource(dp.notice_facts))
+    # v1.7.0：天气文案写河南城建学院（用户指定地名）
+    check("天气文案用河南城建学院",
+          "河南城建学院" in inspect.getsource(dp.weather_tomorrow))
 
     # 用户硬要求：往他的 Obsidian 仓库写东西只能在凌晨，避开他白天编辑。
     check("窗口解析成分钟", dw.parse_window("00:00-05:00") == (0, 300))
