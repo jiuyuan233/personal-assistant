@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-17T12:26:13+08:00",
+  "updated_at": "2026-11-17T14:31:18+08:00",
   "count": 40,
   "repo": "jiuyuan233/obsidion-gitee",
   "items": [
@@ -175,24 +175,6 @@
       "last_seen": "2026-11-13"
     },
     {
-      "id": "-3719416394",
-      "text": "接下来的时间学习数学",
-      "due_date": null,
-      "confidence": 0.7,
-      "state": "done",
-      "tags": [
-        "学习",
-        "数学"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-15.md",
-      "source_date": "2026-10-15",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-17"
-    },
-    {
       "id": "-71d06a6fe7",
       "text": "继续戒烟",
       "due_date": null,
@@ -309,24 +291,6 @@
       "last_written": "2026-11-17"
     },
     {
-      "id": "-aac6719e5f",
-      "text": "继续练英语和盲打",
-      "due_date": null,
-      "confidence": 0.6,
-      "state": "done",
-      "tags": [
-        "学习",
-        "技能"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-09-28.md",
-      "source_date": "2026-09-28",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-17"
-    },
-    {
       "id": "-46e93b75ce",
       "text": "坚持写日记",
       "due_date": null,
@@ -340,24 +304,6 @@
       "origin": "ai",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13"
-    },
-    {
-      "id": "-04b55ae85b",
-      "text": "参加全国证券模拟大赛",
-      "due_date": null,
-      "confidence": 0.6,
-      "state": "done",
-      "tags": [
-        "竞赛",
-        "金融"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/11月.md",
-      "source_date": "",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-17"
     },
     {
       "id": "-f066a04900",
@@ -427,23 +373,6 @@
       "last_written": "2026-11-17"
     },
     {
-      "id": "-ae3f98ed3f",
-      "text": "数学提前学（内容待定）",
-      "due_date": null,
-      "confidence": 1.0,
-      "state": "done",
-      "tags": [
-        "待办"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
-      "source_date": "",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-17"
-    },
-    {
       "id": "10-ff72f57765",
       "text": "查10月份有哪些比赛可参加",
       "due_date": null,
@@ -493,6 +422,77 @@
       "last_seen": "2026-11-13",
       "written_once": true,
       "last_written": "2026-11-16"
+    },
+    {
+      "id": "-3719416394",
+      "text": "接下来的时间学习数学",
+      "due_date": null,
+      "confidence": 0.7,
+      "state": "done",
+      "tags": [
+        "学习",
+        "数学"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-15.md",
+      "source_date": "2026-10-15",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-17"
+    },
+    {
+      "id": "-aac6719e5f",
+      "text": "继续练英语和盲打",
+      "due_date": null,
+      "confidence": 0.6,
+      "state": "done",
+      "tags": [
+        "学习",
+        "技能"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-09-28.md",
+      "source_date": "2026-09-28",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-17"
+    },
+    {
+      "id": "-04b55ae85b",
+      "text": "参加全国证券模拟大赛",
+      "due_date": null,
+      "confidence": 0.6,
+      "state": "done",
+      "tags": [
+        "竞赛",
+        "金融"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/11月.md",
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-17"
+    },
+    {
+      "id": "-ae3f98ed3f",
+      "text": "数学提前学（内容待定）",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-17"
     },
     {
       "id": "-f9d8b71f05",
