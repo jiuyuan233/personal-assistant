@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-17T01:59:55+08:00",
+  "updated_at": "2026-11-17T12:26:13+08:00",
   "count": 40,
   "repo": "jiuyuan233/obsidion-gitee",
   "items": [
@@ -179,14 +179,14 @@
       "text": "接下来的时间学习数学",
       "due_date": null,
       "confidence": 0.7,
-      "state": "open",
+      "state": "done",
       "tags": [
         "学习",
         "数学"
       ],
       "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-15.md",
       "source_date": "2026-10-15",
-      "origin": "ai",
+      "origin": "checkbox",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
@@ -313,14 +313,14 @@
       "text": "继续练英语和盲打",
       "due_date": null,
       "confidence": 0.6,
-      "state": "open",
+      "state": "done",
       "tags": [
         "学习",
         "技能"
       ],
       "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-09-28.md",
       "source_date": "2026-09-28",
-      "origin": "ai",
+      "origin": "checkbox",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
@@ -346,14 +346,14 @@
       "text": "参加全国证券模拟大赛",
       "due_date": null,
       "confidence": 0.6,
-      "state": "open",
+      "state": "done",
       "tags": [
         "竞赛",
         "金融"
       ],
       "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/11月.md",
       "source_date": "",
-      "origin": "ai",
+      "origin": "checkbox",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
@@ -431,7 +431,7 @@
       "text": "数学提前学（内容待定）",
       "due_date": null,
       "confidence": 1.0,
-      "state": "open",
+      "state": "done",
       "tags": [
         "待办"
       ],
