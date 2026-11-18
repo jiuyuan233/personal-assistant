@@ -1,18 +1,16 @@
 {
-  "last_success": "2026-11-18T10:27:18+08:00",
-  "ok": false,
-  "status": "partial",
+  "last_success": "2026-11-18T11:34:14+08:00",
+  "ok": true,
+  "status": "ok",
   "courses": 14,
   "courses_ok": 14,
   "courses_failed": 0,
   "tasks": 57,
-  "pending": 18,
-  "unknown_deadline": 1,
-  "anomalies": [
-    "待完成但抓不到截止：大学生心理健康教育（智慧课程） · 绘制爱情树"
-  ],
+  "pending": 17,
+  "unknown_deadline": 0,
+  "anomalies": [],
   "urgent_sig": "",
   "urgent_count": 0,
-  "quiz_cursor": 4,
-  "last_attempt": "2026-11-18T10:27:18+08:00"
+  "quiz_cursor": 8,
+  "last_attempt": "2026-11-18T11:34:14+08:00"
 }
