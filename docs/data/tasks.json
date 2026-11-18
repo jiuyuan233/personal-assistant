@@ -1,15 +1,15 @@
 {
-  "updated_at": "2026-11-18T19:10:54+08:00",
+  "updated_at": "2026-11-18T20:19:49+08:00",
   "stats": {
-    "pending": 1,
+    "pending": 2,
     "overdue": 0,
     "today": 0,
-    "week": 1,
+    "week": 2,
     "later": 0,
     "unknown": 0,
     "upcoming": 0,
     "dropped": {
-      "not_pending": 40,
+      "not_pending": 39,
       "overdue": 15
     },
     "courses": 14
@@ -32,7 +32,26 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58558183",
       "start_time": "2026-11-18T07:19:00+08:00",
       "first_seen": "2026-11-18T07:26:26+08:00",
-      "last_seen": "2026-11-18T19:08:52+08:00"
+      "last_seen": "2026-11-18T20:13:38+08:00"
+    },
+    {
+      "id": "219232606-6609335077",
+      "kind": "work",
+      "course": "高等数学A",
+      "course_id": "219232606",
+      "class_id": "153566712",
+      "title": "4.2换元积分法（第一类换元积分法）",
+      "work_id": "58673369",
+      "label": "互评",
+      "status": "未交",
+      "state": "pending",
+      "deadline": "2026-11-20T23:54:00+08:00",
+      "deadline_exact": true,
+      "remaining_text": "剩余51小时39分钟",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58673369",
+      "start_time": "2026-11-18T20:03:00+08:00",
+      "first_seen": "2026-11-18T20:13:38+08:00",
+      "last_seen": "2026-11-18T20:13:38+08:00"
     }
   ],
   "courses": [
@@ -138,7 +157,7 @@
       "ismooc2": "1",
       "name": "高等数学A",
       "task_count": 15,
-      "pending_count": 2
+      "pending_count": 3
     },
     {
       "course_id": "205372276",
