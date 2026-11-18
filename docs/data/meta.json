@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-18T14:55:38+08:00",
+  "updated_at": "2026-11-18T15:58:30+08:00",
   "week": "第 11 周 / 共 18 周",
   "stats": {
     "pending": 1,
@@ -18,7 +18,7 @@
   },
   "sources": {
     "study": {
-      "last_success": "2026-11-18T14:53:01+08:00",
+      "last_success": "2026-11-18T15:55:50+08:00",
       "ok": true,
       "status": "ok",
       "courses": 14,
@@ -30,8 +30,8 @@
       "anomalies": [],
       "urgent_sig": "",
       "urgent_count": 0,
-      "quiz_cursor": 4,
-      "last_attempt": "2026-11-18T14:53:01+08:00"
+      "quiz_cursor": 8,
+      "last_attempt": "2026-11-18T15:55:50+08:00"
     }
   }
 }
