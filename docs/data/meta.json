@@ -1,37 +1,39 @@
 {
-  "updated_at": "2026-11-18T09:26:01+08:00",
+  "updated_at": "2026-11-18T10:32:06+08:00",
   "week": "第 11 周 / 共 18 周",
   "stats": {
-    "pending": 1,
+    "pending": 2,
     "overdue": 0,
     "today": 0,
     "week": 1,
     "later": 0,
-    "unknown": 0,
+    "unknown": 1,
     "upcoming": 0,
     "dropped": {
       "not_pending": 39,
       "overdue": 16
     },
     "courses": 14,
-    "suffix": ""
+    "suffix": "，**1 项截止未知（可能已逾期，请点进去确认）**"
   },
   "sources": {
     "study": {
-      "last_success": "2026-11-18T09:25:01+08:00",
-      "ok": true,
-      "status": "ok",
+      "last_success": "2026-11-18T10:27:18+08:00",
+      "ok": false,
+      "status": "partial",
       "courses": 14,
       "courses_ok": 14,
       "courses_failed": 0,
-      "tasks": 56,
-      "pending": 17,
-      "unknown_deadline": 0,
-      "anomalies": [],
+      "tasks": 57,
+      "pending": 18,
+      "unknown_deadline": 1,
+      "anomalies": [
+        "待完成但抓不到截止：大学生心理健康教育（智慧课程） · 绘制爱情树"
+      ],
       "urgent_sig": "",
       "urgent_count": 0,
-      "quiz_cursor": 0,
-      "last_attempt": "2026-11-18T09:25:01+08:00"
+      "quiz_cursor": 4,
+      "last_attempt": "2026-11-18T10:27:18+08:00"
     }
   }
 }
