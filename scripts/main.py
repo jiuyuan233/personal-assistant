@@ -793,7 +793,7 @@ def do_selftest() -> bool:
               dict(state="upcoming", course="测试课", title="未开始的作业", url="u2")])
     check("早报清单：待完成 1 条 + 另有 1 条未开始",
           "待完成作业 1 条" in _sf_txt and "另有 1 条未开始（老师开放后自动进入待办）" in _sf_txt
-          and "未开始的作业 · 未开始（暂不可做）" in _sf_txt and "常规作业" in _sf_txt,
+          and "未开始的作业 ·「未开始」· 暂不可做" in _sf_txt and "常规作业" in _sf_txt,
           _sf_txt[:160])
 
     # 公告时效过滤（用户 2026-11-14：「时间都截至了还给我发，改掉」）
@@ -848,6 +848,31 @@ def do_selftest() -> bool:
     check("早报公告行带开始时间（即发布日期）",
           bool(_re.search(r"开始 \d{4}-\d{2}-\d{2}", blk)) or "开始时间未知" in blk, blk[:200])
     check("早报清单含一言", "今日一言" in blk and "测试一言" in blk)
+    # v1.7.2（用户 2026-11-17）：清单里每条作业带状态标注（待互评/待做/未开始…）
+    _st_tasks = [
+        {"id": "s1", "course": "高等数学A", "title": "4.1不定积分", "kind": "eval",
+         "state": "pending", "status": "待互评", "label": "互评",
+         "deadline": (now + timedelta(days=2)).isoformat(timespec="seconds"),
+         "deadline_exact": True, "url": "https://example.com/s1"},
+        {"id": "s2", "course": "军事理论", "title": "结课测验", "kind": "work",
+         "state": "pending", "status": "", "label": "",
+         "deadline": (now + timedelta(days=3)).isoformat(timespec="seconds"),
+         "deadline_exact": True, "url": "https://example.com/s2"},
+    ]
+    _sf_txt, _ = dp.study_facts(now, _st_tasks)
+    check("早报清单每条作业带状态标注（原文优先）",
+          "「待互评」· 截止" in _sf_txt, _sf_txt[:160])
+    check("没有原文 status 时按 state 映射兜底（待完成）",
+          "「待完成」· 截止" in _sf_txt, _sf_txt[:160])
+    _noon_blk = dp.info_block("noon", now, "", tasks=_st_tasks
+                              + [{"id": "f1", "course": "高数", "title": "新作业",
+                                  "state": "pending", "status": "未交", "kind": "work",
+                                  "first_seen": now.date().isoformat(),
+                                  "deadline": (now + timedelta(days=5)).isoformat(timespec="seconds"),
+                                  "url": ""}])
+    check("午安清单（今日新发/7 天内截止）每条也带状态标注",
+          _noon_blk.count("「待互评」") >= 1 and _noon_blk.count("「未交」") >= 1
+          and _noon_blk.count("「待完成」") >= 1, _noon_blk[:200])
     check("四个时段的清单都不带课表",
           all("课表" not in dp.info_block(k, now, "", tech_provider=lambda: "")
               and "上课" not in dp.info_block(k, now, "", tech_provider=lambda: "")

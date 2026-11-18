@@ -113,11 +113,11 @@ def study_facts(now: datetime, tasks: list[dict] | None = None) -> tuple[str, li
         header += f"；另有 {len(upc)} 条未开始（老师开放后自动进入待办）"
     lines = [header + "。"]
     for t in act[:MORNING_TASK_LIMIT]:
-        lines.append(f"- {t.get('course')} · {t.get('title')} · 截止 {_when(t)}")
+        lines.append(f"- {t.get('course')} · {t.get('title')} ·「{_state_tag(t)}」· 截止 {_when(t)}")
         if t.get("url"):
             lines.append(f"  ↳ {t['url']}")
     for t in upc[:MORNING_TASK_LIMIT]:
-        lines.append(f"- {t.get('course')} · {t.get('title')} · 未开始（暂不可做）")
+        lines.append(f"- {t.get('course')} · {t.get('title')} ·「{_state_tag(t)}」· 暂不可做（未开始）")
         if t.get("url"):
             lines.append(f"  ↳ {t['url']}")
     if len(act) > MORNING_TASK_LIMIT:
@@ -538,9 +538,27 @@ def task_overview(now: datetime, tasks: list[dict] | None = None) -> str:
     return "，".join(parts) + "。"
 
 
+# v1.7.2：飞书清单里每条作业的状态标注（用户 2026-11-17 要求：「12 点那一条的
+# 作业截止提醒，需要告诉我作业是什么状态，比如待完成、待互改」）。
+# 用学习通原文 status（待做/待互评/未开始/已退回…）——比 state 枚举翻译更准；
+# 没有原文时按 state 映射兑底。
+_STATE_FALLBACK = {"pending": "待完成", "submitted": "待批阅", "done": "已完成",
+                  "upcoming": "未开始", "unknown": "状态未知"}
+
+
+def _state_tag(t: dict) -> str:
+    """一条作业的状态标签（飞书清单行用）。优先学习通原文 status。"""
+    s = (t.get("status") or "").strip()
+    return s or _STATE_FALLBACK.get(t.get("state") or "", "状态未知")
+
+
 def _task_line(t: dict) -> list[str]:
-    """一条作业两行：条目 + 可点链接（与 study_facts 的排版一致）。"""
-    out = [f"- {t.get('course')} · {t.get('title')} · 截止 {_when(t)}"]
+    """一条作业两行：条目（含状态）+ 可点链接。与 study_facts 的排版一致。
+
+    v1.7.2：条目里加状态标注（如「待互评」/「待做」/「未开始」）——用户明确
+    要在截止提醒里看到每条作业的状态，区分哪些要写哪些要去互评。
+    """
+    out = [f"- {t.get('course')} · {t.get('title')} ·「{_state_tag(t)}」· 截止 {_when(t)}"]
     if t.get("url"):
         out.append(f"  ↳ {t['url']}")
     return out
