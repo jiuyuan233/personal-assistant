@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-11-18T00:17:54+08:00",
-  "count": 40,
+  "updated_at": "2026-11-18T12:52:46+08:00",
+  "count": 42,
   "repo": "jiuyuan233/obsidion-gitee",
   "items": [
     {
@@ -394,6 +394,38 @@
       "last_seen": "2026-11-13",
       "written_once": true,
       "last_written": "2026-11-18"
+    },
+    {
+      "id": "-0dcd4f081f",
+      "text": "学车，考科目二、三",
+      "due_date": null,
+      "confidence": 0.9,
+      "state": "open",
+      "tags": [
+        "技能",
+        "生活"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/27寒假计划.md",
+      "source_date": "",
+      "origin": "ai",
+      "first_seen": "2026-11-18",
+      "last_seen": "2026-11-18"
+    },
+    {
+      "id": "-c4efbdbb58",
+      "text": "打工，具体安排待定",
+      "due_date": null,
+      "confidence": 0.4,
+      "state": "open",
+      "tags": [
+        "生活",
+        "实践"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/27寒假计划.md",
+      "source_date": "",
+      "origin": "ai",
+      "first_seen": "2026-11-18",
+      "last_seen": "2026-11-18"
     },
     {
       "id": "-c4671332f9",
