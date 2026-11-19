@@ -703,6 +703,10 @@ def run() -> dict:
                     _cc = re.sub(r"\d", "D", str(_card.get("ctx") or ""))[:60]
                     _cf = re.sub(r"\d", "D", str(_card.get("frame") or "?"))[:40]
                     log(f"[quiz]   卡片：status「{_cs}」 ctx「{_cc}」 frame「{_cf}」")
+                # v1.9.0c 诊断：frames 清单 + 各 frame 文本的状态词命中
+                # （只打词名不落原文）——定位状态文字在哪个 frame/是否渲染
+                for _fd in (res.get("frame_digest") or [])[:8]:
+                    log(f"[quiz]   frame：{re.sub(r'[0-9]', 'D', str(_fd))[:110]}")
                 line_count = int(res.get("diag", {}).get("lineCount") or 0)
                 if line_count <= 0:
                     # 内容轮询后仍 0 行：疑似没加载完/被限流（run 43807375956

@@ -576,7 +576,8 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
     - 任何异常只写 error，**不抛**（主采集保护）。
     """
     result: dict = {"ok": False, "rows_raw": [], "diag": {}, "frame_url": "",
-                    "error": "", "xhr": [], "xhr_bodies": [], "home_cards": []}
+                    "error": "", "xhr": [], "xhr_bodies": [], "home_cards": [],
+                    "frame_digest": []}
     xhr_seen: list[str] = []
     xhr_bodies: list[dict] = []
 
@@ -659,20 +660,36 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
             # frame 树，color-green 状态 span 很可能在某个嵌套 iframe 里（页面
             # 有多个 frame：stuActiveList 之外还有卡片/作业区）。每张卡带上命中
             # frame 的 path（打码 query）便于定位。
+            # v1.9.0c 诊断：遍历 frames 后仍 0 张（职涯/国安/校规/计科轮实证）
+            # ——不再猜选择器，dump 每个 frame 的 path + 文本长度 + 状态词命中
+            # （只打词名不落原文），下一轮看清状态文字到底在哪个 frame、
+            # 还是根本没渲染。
             try:
                 cards = []
+                digest = []
                 for fr in page.frames:
+                    _fpath = re.sub(r"^[a-z]+://[^/]+/", "",
+                                    (fr.url or "").split("?")[0])[:60] or "?"
                     try:
                         got = fr.evaluate(_HOME_CARD_JS) or []
                     except Exception:
-                        continue
+                        got = []
                     if got:
-                        _fpath = re.sub(r"^[a-z]+://[^/]+/", "",
-                                        (fr.url or "").split("?")[0])[:60]
                         cards.extend({**c, "frame": _fpath} for c in got)
+                    try:
+                        txt = fr.evaluate(
+                            "() => (document.body && document.body.innerText) || ''") or ""
+                    except Exception:
+                        txt = ""
+                    hits = [w for w in ("已提交", "待做", "未交", "已参与", "已完成",
+                                        "进行中", "待批阅", "已结束", "未开始")
+                            if w in txt]
+                    digest.append(f"{_fpath} {len(txt)}字 命中:{','.join(hits) or '无'}")
                 result["home_cards"] = cards
+                result["frame_digest"] = digest
             except Exception:
                 result["home_cards"] = []
+                result["frame_digest"] = []
             result["xhr"] = xhr_seen[:20]
             result["xhr_bodies"] = xhr_bodies
             ctx.close()
