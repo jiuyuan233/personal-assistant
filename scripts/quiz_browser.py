@@ -474,6 +474,26 @@ def active_list_probe(bodies: list[dict]) -> list[str]:
                     vals.append(f"{k}='{mv}'")
             if vals:
                 out.append("item: " + " ".join(vals))
+            # v1.8.4d：作业类条目（type 不在已观察到的容器类 {2签到,5讨论,
+            # 11选人,44课件}）dump **全键值**——高数轮实证 userStatus/status
+            # 对已交的知识点总结（type=42）与纯围观的签到无区分，用户完成
+            # 状态藏在未 dump 的字段（content JSON 串 / extraInfo / nameFour）
+            t_v = it.get("type")
+            if isinstance(t_v, int) and t_v not in (2, 5, 11, 44):
+                fv = []
+                for k in sorted(it.keys()):
+                    v = it.get(k)
+                    if v is None or v == "":
+                        continue
+                    if isinstance(v, (int, float)) and not isinstance(v, bool):
+                        fv.append(f"{k}={v}")
+                    elif isinstance(v, bool):
+                        fv.append(f"{k}={v}")
+                    elif isinstance(v, str):
+                        mv2 = safe_text(re.sub(r"\d", "D", v), 60)
+                        fv.append(f"{k}='{mv2}'")
+                if fv:
+                    out.append("full: " + " ".join(fv))
     return out
 
 
