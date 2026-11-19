@@ -748,13 +748,16 @@ def find_status_in_text(txt: str) -> str:
 
 
 def fetch_active_status_batch(detail_urls: list[str], cookies: list[dict],
-                              ua: str, per_page_wait: int = 3000) -> list[str]:
+                              ua: str, per_page_wait: int = 5000,
+                              diag: list | None = None) -> list[str]:
     """v1.9.2 方案 B：逐条打开活动详情页抓状态（一个 browser 多页，限速）。
 
     背景：iframe 列表的状态徽标是纯图标（无头渲染无文字，v1.9.1 locale
     修复后分组标签/倒计时已变中文但徽标仍无文字），activelist JSON 无用户
     完成状态（v1.8.4d full dump 实证）——详情页是唯一可靠状态源。
     每条间隔 2 秒（反爬约束，调用方每课限 3 条）；任何异常返回空串不抛。
+    diag（可选 list）：思修轮实证 0/3 抓到——传 list 进来收诊断行
+    （final URL + 文本长度 + 前 4 行打码摘要），定位详情页渲染了什么。
     """
     out: list[str] = []
     try:
@@ -770,6 +773,18 @@ def fetch_active_status_batch(detail_urls: list[str], cookies: list[dict],
                 try:
                     page.goto(u, wait_until="domcontentloaded", timeout=30000)
                     page.wait_for_timeout(per_page_wait)
+                    # v1.9.2c 诊断：final URL + 文本长度 + 前 4 行（打码）
+                    if diag is not None and len(diag) < 4:
+                        try:
+                            _fu = safe_text(re.sub(r"\d", "D", page.url or ""), 90)
+                            _t0 = page.evaluate(
+                                "() => (document.body && document.body.innerText) || ''") or ""
+                            _hd = " | ".join(l.strip() for l in _t0.split("\n")
+                                             if l.strip())[:120]
+                            diag.append(f"final={_fu} {len(_t0)}字 首4行:"
+                                        f"{safe_text(re.sub(chr(92) + 'd', 'D', _hd), 120)}")
+                        except Exception:
+                            diag.append("diag fail")
                     # 优先 color-green 等状态 span（用户 DOM 实证），
                     # 兜底全文本逐行找状态词
                     try:
