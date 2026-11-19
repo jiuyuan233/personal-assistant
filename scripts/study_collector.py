@@ -657,6 +657,22 @@ def run() -> dict:
                 if res.get("xhr"):
                     log(f"[quiz-xhr] {cname} 捕获 {len(res['xhr'])} 个 active JSON："
                         f"{' | '.join(res['xhr'][:6])}")
+                # v1.8.4：响应体形状 dump（打码后进日志）——DOM 文本路线已到头
+                # （2026-11-19 思修/高数两轮重采仍「无状态」实证），从 JSON 直读
+                # 是唯一根治路径。每路径只 dump 第一份；JSON 解析器上线后撤掉。
+                _shape_seen: set = set()
+                for _b in (res.get("xhr_bodies") or []):
+                    if _b["path"] in _shape_seen:
+                        continue
+                    _shape_seen.add(_b["path"])
+                    try:
+                        import json as _json
+                        _obj = _json.loads(_b["body"])
+                        log(f"[quiz-xhr] {cname} {_b['path']} 形状："
+                            f"{qb.json_shape(_obj)}")
+                    except Exception:
+                        log(f"[quiz-xhr] {cname} {_b['path']} 响应非合法 JSON"
+                            f"（{len(_b['body'])} 字节）")
                 if not res.get("ok"):
                     log(f"[quiz] {cname} 随堂采集失败：{res.get('error', '')[:120]}", level="WARN")
                     continue

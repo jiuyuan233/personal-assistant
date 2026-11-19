@@ -30,6 +30,7 @@ frame（页面菜单含用户姓名，v1.5.22 泄露过一次已删 run）全文
 from __future__ import annotations
 
 import re
+
 from datetime import datetime
 
 from utils import make_id, parse_remaining, safe_text, scrub_task_title
@@ -399,23 +400,56 @@ def _find_active_frame(page):
     return None
 
 
+def json_shape(obj, depth: int = 0) -> str:
+    """JSON → 打码形状串（只进公开日志的安全形状）。
+
+    v1.8.4：为「XHR JSON 结构化拦截」收集接口真实形状——dict 列键、list 计数
+    +首元素、字符串数字掩 D 截 30 字、数字/布尔只留类型。递归限深 4。
+    响应体只在内存里过一遍手，落日志前全部走这里，明文一个字不出 runner。
+    """
+    if depth > 4:
+        return "…"
+    if isinstance(obj, dict):
+        try:
+            inner = ", ".join(f"{k}:{json_shape(v, depth + 1)}"
+                              for k, v in list(obj.items())[:12])
+        except Exception:
+            inner = "…"
+        return "{" + safe_text(inner, 220) + "}"
+    if isinstance(obj, list):
+        if not obj:
+            return "[]"
+        return f"[{len(obj)}× {json_shape(obj[0], depth + 1)}]"
+    if isinstance(obj, str):
+        return "'" + safe_text(re.sub(r"\d", "D", obj), 30) + "'"
+    if obj is None:
+        return "null"
+    if isinstance(obj, bool):
+        return str(obj)
+    return "num"
+
+
 def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> dict:
     """一门课的随堂采集：打开课程页 → 等 stuActiveList iframe 渲染 → 提取行。
 
-    返回 {"ok", "rows_raw", "diag", "frame_url", "error", "xhr"}：
+    返回 {"ok", "rows_raw", "diag", "frame_url", "error", "xhr", "xhr_bodies"}：
     - ok=True 且找到 frame；**内容轮询最长 20s**（Vue 数据是慢 XHR：v1.5.22
       的 27s 固定等待下能渲染、13s 下时有时无，run 43807375956 实测 思修
       一轮 316 字、一轮 0 字——必须等 innerText 出现而不是赌固定时长）；
     - rows_raw 是 EXTRACT_JS 的行级结构化数据，解析在调用方（纯函数）；
-    - xhr 是 v1.8.0 的**纯观测**：记录页面加载期间所有 active 相关 JSON
-      XHR 的 URL 路径 + 字节大小（不含 query，不落值）。为下一步「XHR JSON
-      结构化拦截」收集真实接口形状——先 dump 再动手，不许猜（v1.2.3 教训）。
-      观测本身零风险：不改变任何解析行为，回调异常全吞。
+    - xhr 是 active JSON 接口的路径+状态码（v1.8.0 观测）；
+    - xhr_bodies 是 v1.8.4 的**响应体捕获**（每路径最多 2 份，仅内存）：
+      2026-11-19 实证 DOM 文本路线到头了——用户 DOM 样本（color-green span
+      文字状态）来自课程主页，而采集读的 stuActiveList iframe 里同一活动
+      无状态文本（思修 17:52 / 高数 18:47 两轮重采仍「无状态」）。下一步
+      从 activelist/getStatusData 的 JSON 直读状态。**落日志前必须过
+      json_shape() 打码**，响应体本身绝不落盘/落日志。
     - 任何异常只写 error，**不抛**（主采集保护）。
     """
     result: dict = {"ok": False, "rows_raw": [], "diag": {}, "frame_url": "",
-                    "error": "", "xhr": []}
+                    "error": "", "xhr": [], "xhr_bodies": []}
     xhr_seen: list[str] = []
+    xhr_bodies: list[dict] = []
 
     def _on_response(resp) -> None:
         try:
@@ -428,6 +462,14 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
             # 只记路径与状态码：query 串里有每生一份的参数，一个字都不落
             path = re.sub(r"^[a-z]+://[^/]+/", "", url.split("?")[0])[:80]
             xhr_seen.append(f"{path} {resp.status}")
+            # v1.8.4：响应体捕获（内存驻留，打码后才可进日志）
+            if sum(1 for b in xhr_bodies if b["path"] == path) < 2:
+                try:
+                    body = resp.text()
+                    if body and len(body) < 200000:
+                        xhr_bodies.append({"path": path, "body": body})
+                except Exception:
+                    pass
         except Exception:
             pass
 
@@ -484,6 +526,7 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
                 result.update({"ok": True, "rows_raw": rows, "diag": data,
                                "frame_url": frame.url})
             result["xhr"] = xhr_seen[:20]
+            result["xhr_bodies"] = xhr_bodies
             ctx.close()
             browser.close()
     except Exception as e:

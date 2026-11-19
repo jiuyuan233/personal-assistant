@@ -292,8 +292,12 @@ def reason_detail(reason: str, t: dict, now: datetime,
         return "**人工豁免**：{}（名单在 data/sources.json → study.ignored_tasks，想恢复删掉那条即可）".format(
             esc(why) or "老师作废/明确不用做的任务")
     if reason == "quiz_ended" and dt:
-        return ("**随堂已结束**：当堂活动结束时间 {}，页面无状态词 —— "
-                "这是「活动结束」不是「作业逾期」，不进逾期统计").format(
+        # v1.8.3（用户反馈）：旧文案「这是活动结束不是作业逾期」是解释性废话，
+        # 没回答用户真正关心的「我交没交过」。改直说：学习通这条没给完成状态、
+        # 去哪确认。有状态的随堂不会走到这里（走「非待完成：状态「xxx」」，
+        # 与作业同款——v1.8.1 状态修复生效后自动归位）。
+        return ("**随堂已结束**：活动结束于 {}；学习通未返回完成状态，"
+                "交没交过请点标题进原页确认（已交/已参与则无需处理）").format(
                     dt.strftime("%Y-%m-%d %H:%M"))
     if reason == "overdue" and dt:
         if t.get("kind") == "eval":

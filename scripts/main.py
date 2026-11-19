@@ -1447,6 +1447,16 @@ def do_selftest() -> bool:
               f"{f0['id']}/{f1['id']}")
     masked = qb.masked_diag({"firstLines": ["学号12345 某某 undisclosed"]}, [])
     check("随堂诊断数字打码", masked and "12345" not in masked[0] and "D" in masked[0], str(masked))
+    # v1.8.4：XHR 响应体形状打码——JSON 直读状态的前置观测，明文数字绝不出 runner
+    _shape = qb.json_shape({"status": 2, "name": "张三丰123", "activeList":
+                            [{"id": 918273, "title": "第三章知识总结", "status": 4}],
+                            "ok": True, "extra": None})
+    check("XHR 形状 dump 数字全掩、结构保留",
+          "918273" not in _shape and "123" not in _shape and "张三丰DDD" in _shape
+          and "activeList" in _shape and "'第三章知识总结'" in _shape, _shape)
+    check("XHR 形状 dump 深度与列表折叠",
+          qb.json_shape([{"a": [{"b": 1}]}] * 5) == "[5× {a:[1× {b:num}]}]",
+          qb.json_shape([{"a": [{"b": 1}]}] * 5))
     old_q = [{"id": "a", "kind": "quiz", "course_id": "1", "class_id": "1", "title": "A", "state": "pending"},
              {"id": "b", "kind": "quiz", "course_id": "2", "class_id": "2", "title": "B", "state": "pending"}]
     m1 = _mq(old_q, [{"id": "a2", "kind": "quiz", "course_id": "1", "class_id": "1",
