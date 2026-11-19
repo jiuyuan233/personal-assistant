@@ -1345,9 +1345,32 @@ def do_selftest() -> bool:
           and qb.classify_quiz("已参与") == "done"
           and qb.classify_quiz("未开始") == "upcoming"
           and qb.classify_quiz("某个没见过的词") == "unknown")
+    # v1.8.1（用户 DOM 实证）：`<span class="color-green"><i class="icon-finish">
+    # </i>已提交，待教师公布正确答案</span>` —— 14 字长状态文本，旧逻辑
+    # len<=12 + 整串匹配双杀全漏（随堂 status 全空的真正根因）
+    check("随堂长状态文本子串识别（真实 DOM 样本）",
+          qb.classify_quiz_line("已提交，待教师公布正确答案") == "done"
+          and qb.classify_quiz_line("已提交，待教师公布正确答案") != "unknown")
+    check("子串扫描不误伤：没见过的长状态仍是 unknown（进 unmapped 补词表）",
+          qb.classify_quiz_line("老师还没批改完请大家稍等") == "unknown")
+    check("子串扫描长词优先（「未提交」不被「未交」抢命中）",
+          qb.classify_quiz_line("作业未提交") == "pending")
     qdl, qex = qb.parse_quiz_time("剩余2天3小时", now)
     check("随堂倒计时推算（非精确）",
           qdl == "2026-11-15T01:00:00+08:00" and qex is False, str(qdl))
+    # v1.8.1 端到端：长状态文本行进 parse_active_rows 后 status/state 都不能丢
+    longrows, longunmap = qb.parse_active_rows(
+        [{"text": "第三章知识总结\n已提交，待教师公布正确答案\nEnd time：10-25 23:59", "y": 100,
+          "cls": "color-green",
+          "onclick": "openCurrentUrl('https://mobilelearn.huuc.edu.cn/page/active/"
+                     "stuActiveDetail?courseid=219232606&clazzid=153566712&activeId=333333333', 2)",
+          "aria": ""}],
+        {"course_id": "219232606", "class_id": "153566712", "name": "高等数学A"}, now)
+    check("随堂长状态端到端：status 原文入账、state 判 done（不再默认 pending）",
+          len(longrows) == 1 and not longunmap
+          and longrows[0]["status"] == "已提交，待教师公布正确答案"
+          and longrows[0]["state"] == "done",
+          str(longrows[:1]) + str(longunmap))
     qdl2, qex2 = qb.parse_quiz_time("12-05 10:00", now)
     check("随堂绝对时间就近补年", qdl2 == "2026-12-05T10:00:00+08:00" and qex2 is False, str(qdl2))
     qdl3, qex3 = qb.parse_quiz_time("2026-11-15 09:00", now)

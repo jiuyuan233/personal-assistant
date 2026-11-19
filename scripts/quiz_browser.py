@@ -79,6 +79,38 @@ def classify_quiz(status: str) -> str:
     return "unknown"
 
 
+# v1.8.1（用户 2026-11-19 提供 DOM 实证）：随堂状态徽标是
+# `<span class="color-green"><i class="icon-finish"></i>已提交，待教师公布正确答案</span>`
+# ——状态是**文字**但常常超过 12 字且不是词表整词，旧逻辑整串精确匹配全漏。
+# 子串扫描按词长降序（长词优先，防止「未交」抢先命中「未提交」这类前缀包含）。
+_QUIZ_ALL_WORDS = sorted(QUIZ_DONE | QUIZ_SUBMITTED | QUIZ_PENDING,
+                         key=len, reverse=True)
+_STATUS_LINE_MAX = 30  # 状态行长度上限：12 → 30（真实样本 14 字）；再长的是标题
+
+
+def classify_quiz_line(text: str) -> str:
+    """一行文本的状态分类：整词精确优先，再按词表子串扫描。
+
+    「已提交，待教师公布正确答案」→ 命中「已提交」→ done。
+    标题等长文本不该走这里（调用方先限长度）——「已结束的补交通道」这种
+    标题含状态词会被误判，所以只对 ≤30 字的短行开放子串匹配。
+    """
+    s = (text or "").strip()
+    if not s:
+        return "unknown"
+    exact = classify_quiz(s)
+    if exact != "unknown":
+        return exact
+    for w in _QUIZ_ALL_WORDS:
+        if w in s:
+            if w in QUIZ_DONE:
+                return "done"
+            if w in QUIZ_SUBMITTED:
+                return "submitted"
+            return "pending"
+    return "unknown"
+
+
 _MDHM_RE = re.compile(r"(?:(\d{4})[-/年])?(\d{1,2})[-/月](\d{1,2})日?\s*(\d{1,2}):(\d{2})")
 # v1.6.1：中文显示层时间「11月03日 19时33分」（真实样本 run 43805479954）
 _MDHM2_RE = re.compile(r"(\d{1,2})月(\d{1,2})日\s*(\d{1,2})时(\d{1,2})分")
@@ -222,7 +254,9 @@ def parse_active_rows(rows_raw: list[dict], course: dict, now: datetime,
         title_candidates: list[str] = []
         time_lines: list[str] = []
         for l in lines:
-            if not status and len(l) <= 12 and classify_quiz(l) != "unknown":
+            # v1.8.1：长度 12→30 + 子串扫描（classify_quiz_line）。真实 DOM：
+            # 「已提交，待教师公布正确答案」14 字，旧逻辑 len<=12 整串匹配双杀全漏
+            if not status and len(l) <= _STATUS_LINE_MAX and classify_quiz_line(l) != "unknown":
                 status = l
                 continue
             if _time_like(l):
@@ -232,7 +266,7 @@ def parse_active_rows(rows_raw: list[dict], course: dict, now: datetime,
         aria = (cl.get("aria") or "").strip()
         if not status and ";" in aria:
             parts = [p.strip() for p in aria.split(";")]
-            if len(parts) >= 2 and classify_quiz(parts[1]) != "unknown":
+            if len(parts) >= 2 and classify_quiz_line(parts[1]) != "unknown":
                 status = parts[1]
         if not title_candidates and aria:
             title_candidates = [aria.split(";")[0].strip()]
@@ -251,7 +285,9 @@ def parse_active_rows(rows_raw: list[dict], course: dict, now: datetime,
         # 零信息行（页头/标签条）：无时间无状态无深链，不是任务
         if not (time_lines or status or re.search(r"https?://", cl.get("onclick") or "")):
             continue
-        state = classify_quiz(status) if status else "pending"
+        # v1.8.1：state 用子串版（长状态文本「已提交，待教师公布正确答案」
+        # 整串匹配是 unknown，会被强制 pending —— 正是状态丢失的另一半根因）
+        state = classify_quiz_line(status) if status else "pending"
         if state == "unknown" and status:
             unmapped.append(status)
             state = "pending"
