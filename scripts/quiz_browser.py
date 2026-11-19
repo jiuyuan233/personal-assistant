@@ -430,12 +430,14 @@ def json_shape(obj, depth: int = 0) -> str:
 
 
 def active_list_probe(bodies: list[dict]) -> list[str]:
-    """v1.8.4b：从捕获的响应体提取 activeList 的键名与枚举值（打码）。
+    """v1.8.4b/c：从捕获的响应体提取 activeList 的键名与枚举值（打码）。
 
     形状 dump（json_shape）把数字全掩成 num，看不到 userStatus 的实际枚举值。
-    这里专门为「状态映射标定」收集：全键名列表（键名不敏感）+ 前几条的
-    枚举值（userStatus/type/activeType 是 0-99 的枚举，非学号/ID 类敏感数字），
-    nameOne/nameTwo 数字掩 D 截 24 字——用于和高数三条「已提交」地面真值对齐。
+    2026-11-19 高数标定轮实证：条目键全集含独立 **status** 键（可能是文字
+    状态原文，如「已提交，待教师公布正确答案」）——c 版把 status 值也打出来、
+    条目从 4 条扩到 25 条（高数轮知识点总结不在前 4，必须看全量）。
+    枚举值（userStatus/type/activeType/status 若为 int）是 0-99 的枚举，
+    非学号/ID 类敏感数字；字符串一律数字掩 D 截断。
     """
     out: list[str] = []
     for b in bodies or []:
@@ -451,7 +453,7 @@ def active_list_probe(bodies: list[dict]) -> list[str]:
             continue
         keys = ",".join(sorted(items[0].keys()))
         out.append("keys: " + safe_text(keys, 400))
-        for it in items[:4]:
+        for it in items[:25]:
             if not isinstance(it, dict):
                 continue
             vals = []
@@ -459,6 +461,12 @@ def active_list_probe(bodies: list[dict]) -> list[str]:
                 v = it.get(k)
                 if isinstance(v, int) and not isinstance(v, bool):
                     vals.append(f"{k}={v}")
+            v = it.get("status")
+            if isinstance(v, int) and not isinstance(v, bool):
+                vals.append(f"status={v}")
+            elif isinstance(v, str) and v.strip():
+                sv = safe_text(re.sub(r"\d", "D", v), 20)
+                vals.append(f"status='{sv}'")
             for k in ("nameOne", "nameTwo"):
                 v = it.get(k)
                 if isinstance(v, str) and v.strip():
