@@ -607,7 +607,13 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
         from playwright.sync_api import sync_playwright
         with sync_playwright() as pw:
             browser = pw.chromium.launch(headless=True)
-            ctx = browser.new_context(user_agent=ua)
+            # v1.9.1（2026-11-19 破案）：**locale 必须显式 zh-CN**。Playwright
+            # 默认 en-US，学习通按 Accept-Language 渲染 UI 文字——无头浏览器里
+            # 状态徽标全是英文（iframe 行实证 "In progress（D）/Ended（D）"），
+            # 中文词表全 miss → 状态丢失。用户浏览器是 zh-CN，看到的是
+            # 「已提交，待教师公布正确答案」中文原文。一行修复，随堂状态
+            # 从此走 v1.8.1 的 classify_quiz_line 中文词表直接生效。
+            ctx = browser.new_context(user_agent=ua, locale="zh-CN")
             if cookies:
                 ctx.add_cookies(cookies)
             page = ctx.new_page()
