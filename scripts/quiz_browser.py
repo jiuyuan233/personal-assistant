@@ -894,11 +894,15 @@ def fetch_status_by_click(mid_url: str, titles: list[str], cookies: list[dict],
                     if frame is None:
                         out.append("")
                         continue
-                    # 等列表渲染出目标标题（最长 15s）
+                    # 等列表渲染出目标标题（最长 15s）。v1.9.5：长标题在
+                    # iframe 里被 CSS 截断（带省略号，高数轮实证完整标题匹配
+                    # 不到「第一章知识点总结（自己手写…」），改用**前 12 字
+                    # 前缀**匹配（同课随堂标题前 12 字撞车概率极低）
+                    probe = (title or "").strip()[:12]
                     hit = None
                     for _ in range(15):
                         try:
-                            hit = frame.get_by_text(title, exact=False).first
+                            hit = frame.get_by_text(probe, exact=False).first
                             hit.wait_for(state="visible", timeout=1000)
                             break
                         except Exception:
@@ -911,7 +915,7 @@ def fetch_status_by_click(mid_url: str, titles: list[str], cookies: list[dict],
                         continue
                     n_before = len(ctx.pages)
                     hit.click(timeout=5000)
-                    page.wait_for_timeout(4000)  # 详情视图渲染（本页或新 tab）
+                    page.wait_for_timeout(8000)  # 详情视图渲染（v1.9.5：4s→8s，高数轮实证 4s 不够）
                     # v1.9.4：新标签页优先（用户截图详情是完整页面）
                     furl = ""
                     if len(ctx.pages) > n_before:
