@@ -705,6 +705,33 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
     return result
 
 
+def active_ids_by_title(bodies: list[dict]) -> dict[str, str]:
+    """v1.9.2b：从 activelist 响应体提取 标题→活动id 映射（内存用，不落盘）。
+
+    高数轮实证：iframe 行的 onclick 常无深链（url 退化为课程级 frame_url），
+    详情页 URL 拼不出来；activelist JSON 的每条活动有 id + nameOne——
+    按标题归一化匹配拿 id，拼 stuActiveDetail?activeId= 深链。
+    """
+    out: dict[str, str] = {}
+    for b in bodies or []:
+        if "activelist" not in (b.get("path") or ""):
+            continue
+        try:
+            import json as _j
+            obj = _j.loads(b["body"])
+            items = ((obj.get("data") or {}).get("activeList")) or []
+        except Exception:
+            continue
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            name = _norm_title(it.get("nameOne") or "")
+            aid = str(it.get("id") or "").strip()
+            if name and aid:
+                out.setdefault(name, aid)
+    return out
+
+
 def find_status_in_text(txt: str) -> str:
     """v1.9.2 方案 B：从活动详情页全文里找状态行。
 

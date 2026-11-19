@@ -1419,6 +1419,19 @@ def do_selftest() -> bool:
     check("详情页状态行提取：无状态词返回空、长行不当状态",
           qb.find_status_in_text("活动详情页\n这里是一段很长的说明文字不是状态行") == ""
           and qb.find_status_in_text("待做") == "待做")
+    # v1.9.2b：activelist 的 标题→活动id 映射（onclick 无深链时拼详情页 URL 用）
+    _aid = qb.active_ids_by_title([
+        {"path": "v2/apis/active/student/activelist",
+         "body": '{"data":{"activeList":[{"id":7000180286535,'
+                 '"nameOne":"第三章知识点总结（手写+学号姓名）","type":42},'
+                 '{"id":7000177853304,"nameOne":"第二章知识点总结","type":42}]}}'}])
+    check("activelist 标题→活动id 映射（全半角归一键）",
+          _aid.get("第三章知识点总结(手写+学号姓名)") == "7000180286535"
+          and _aid.get("第二章知识点总结") == "7000177853304", str(_aid))
+    check("activelist 映射：非 activelist 路径/坏 JSON 全吞",
+          qb.active_ids_by_title([{"path": "other/api", "body": "{}"}]) == {}
+          and qb.active_ids_by_title([{"path": "v2/apis/active/student/activelist",
+                                      "body": "not json"}]) == {})
     qdl2, qex2 = qb.parse_quiz_time("12-05 10:00", now)
     check("随堂绝对时间就近补年", qdl2 == "2026-12-05T10:00:00+08:00" and qex2 is False, str(qdl2))
     qdl3, qex3 = qb.parse_quiz_time("2026-11-15 09:00", now)

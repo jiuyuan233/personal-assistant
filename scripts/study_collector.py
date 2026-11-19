@@ -707,14 +707,28 @@ def run() -> dict:
                 # （只打词名不落原文）——定位状态文字在哪个 frame/是否渲染
                 for _fd in (res.get("frame_digest") or [])[:8]:
                     log(f"[quiz]   frame：{re.sub(r'[0-9]', 'D', str(_fd))[:110]}")
-                # v1.9.2 方案 B：详情页状态补全——iframe 徽标纯图标（无头渲染
+                # v1.9.2b 方案 B：详情页状态补全——iframe 徽标纯图标（无头渲染
                 # 无文字）、activelist JSON 无用户状态（full dump 实证），详情页
                 # 是唯一可靠状态源（用户 DOM 实证：点开活动看到
-                # 「已提交，待教师公布正确答案」）。每课限 3 条（反爬），
-                # 内存 url 是含 activeId 的深链（strip_personal_fields 之前）
-                _need = [t for t in tasks_q
-                         if not (t.get("status") or "").strip()
-                         and "activeId=" in (t.get("url") or "")]
+                # 「已提交，待教师公布正确答案」）。每课限 3 条（反爬）。
+                # 详情页 URL 两个来源：① 行 onclick 深链（url 含 activeId）；
+                # ② onclick 常无深链（高数轮实证）——用 activelist JSON 的
+                # nameOne→id 映射（active_ids_by_title）按标题拼 stuActiveDetail
+                # 深链（activeId 是活动级 ID，与 workId 同公开级，仅内存用）
+                _aid_map = qb.active_ids_by_title(res.get("xhr_bodies") or [])
+                _need = []
+                for t in tasks_q:
+                    if (t.get("status") or "").strip():
+                        continue
+                    if "activeId=" in (t.get("url") or ""):
+                        _need.append(t)
+                        continue
+                    _aid = _aid_map.get(qb._norm_title(t.get("title") or ""))
+                    if _aid:
+                        t["url"] = (f"https://mobilelearn.huuc.edu.cn/page/active/"
+                                    f"stuActiveDetail?courseid={c['course_id']}"
+                                    f"&clazzid={c['class_id']}&activeId={_aid}&ut=s")
+                        _need.append(t)
                 if _need:
                     _got = qb.fetch_active_status_batch(
                         [t["url"] for t in _need[:3]], q_cookies, UA)
