@@ -1419,6 +1419,17 @@ def do_selftest() -> bool:
     check("详情页状态行提取：无状态词返回空、长行不当状态",
           qb.find_status_in_text("活动详情页\n这里是一段很长的说明文字不是状态行") == ""
           and qb.find_status_in_text("待做") == "待做")
+    # v1.9.4：分组标签排除——「进行中（N）/已结束（N）」是组计数徽标不是用户状态
+    # （思修轮点击式实证抓到过并污染落盘，需主动清洗）
+    check("分组标签识别（进行中（N）是标签、真实状态词不是）",
+          qb.is_group_tag("进行中（1）") and qb.is_group_tag("已结束（12）")
+          and qb.is_group_tag("未提交(3)") and not qb.is_group_tag("待做")
+          and not qb.is_group_tag("已提交，待教师公布正确答案"),
+          "is_group_tag 判定")
+    check("状态行提取跳过分组标签",
+          qb.find_status_in_text("进行中（1）\n已结束（12）\n待做") == "待做"
+          and qb.find_status_in_text("进行中（1）\n已结束（12）") == "",
+          "组标签不得当状态")
     # v1.9.2b：activelist 的 标题→活动id 映射（onclick 无深链时拼详情页 URL 用）
     _aid = qb.active_ids_by_title([
         {"path": "v2/apis/active/student/activelist",

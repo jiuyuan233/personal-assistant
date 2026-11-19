@@ -732,17 +732,30 @@ def active_ids_by_title(bodies: list[dict]) -> dict[str, str]:
     return out
 
 
+# v1.9.4：分组标签形状——「进行中（1）/已结束（12）」是列表的组计数徽标
+# （思修轮点击式实证抓到过，是组标签不是该活动的用户状态），一律排除
+GROUP_TAG_RE = re.compile(r"^(?:进行中|已结束|已提交|待做|未交|未提交|待完成|待批阅)"
+                          r"[^）)]*?[（(]\s*\d+\s*[）)]$")
+
+
+def is_group_tag(s: str) -> bool:
+    return bool(GROUP_TAG_RE.match((s or "").strip()))
+
+
 def find_status_in_text(txt: str) -> str:
     """v1.9.2 方案 B：从活动详情页全文里找状态行。
 
     详情页一定显示用户状态（用户 DOM 实证：color-green span
     「已提交，待教师公布正确答案」就在点开的详情视图里）。逐行扫：
     ≤30 字、classify_quiz_line 认识的行即状态行；找不到返回空串。
+    v1.9.4：排除「进行中（N）」等分组标签（组计数徽标不是用户状态）。
     纯函数，selftest 可测。
     """
     for line in (txt or "").split("\n"):
         line = line.strip()
-        if line and len(line) <= 30 and classify_quiz_line(line) != "unknown":
+        if not line or len(line) > 30 or is_group_tag(line):
+            continue
+        if classify_quiz_line(line) != "unknown":
             return line
     return ""
 
@@ -820,9 +833,10 @@ def cookies_from_session(session) -> list[dict]:
 def _status_from_frames(page) -> tuple[str, str]:
     """遍历页面全部 frames 找状态：优先 color-green span，兜底逐行状态词。
 
-    返回 (status, frame_url)。点击后的详情视图可能替换 iframe 内容或
-    新增 frame（用户实证 URL 仍是 mycourse/stu，SPA 内部导航），所以
-    每次点击后全量扫一遍 frames。
+    返回 (status, frame_url)。点击后的详情视图可能替换 iframe 内容、
+    新增 frame 或开新标签页（用户实证 URL 仍是 mycourse/stu），所以每次
+    点击后全量扫一遍 frames。v1.9.4：color-green 通道也排除分组标签
+    （「进行中（N）」实证出现过，是组计数徽标不是用户状态）。
     """
     for fr in page.frames:
         try:
@@ -830,7 +844,7 @@ def _status_from_frames(page) -> tuple[str, str]:
                 "() => { const el = document.querySelector("
                 "'span[class*=\"color-\"]'); "
                 "return el ? (el.innerText || '').trim() : ''; }")
-            if s and classify_quiz_line(s) != "unknown":
+            if s and not is_group_tag(s) and classify_quiz_line(s) != "unknown":
                 return s, fr.url or ""
         except Exception:
             pass
@@ -848,7 +862,7 @@ def _status_from_frames(page) -> tuple[str, str]:
 
 def fetch_status_by_click(mid_url: str, titles: list[str], cookies: list[dict],
                           ua: str, diag: list | None = None) -> list[str]:
-    """v1.9.3 点击式状态抓取：在课程页 iframe 里点击活动行，从详情视图提状态。
+    """v1.9.3/9.4 点击式状态抓取：在课程页 iframe 里点击活动行，从详情视图提状态。
 
     用户实证（2026-11-19 截图 + 地址栏）：点开「第三章知识点总结」后 URL
     仍是 mycourse/stu（SPA 内部导航，无独立详情 URL），状态栏
@@ -856,6 +870,9 @@ def fetch_status_by_click(mid_url: str, titles: list[str], cookies: list[dict],
     没人点击所以永远看不到；拼 stuActiveDetail 直开被服务端拒绝
     （v1.9.2e 实证）。方案：**完全模拟用户**——打开课程页 → 在
     stuActiveList iframe 里按标题点击 → 从点击后的 frames 提取状态。
+    v1.9.4：详情视图可能开**新标签页**（用户截图是完整页面）——点击后
+    检查 ctx.pages 增量，先扫新 tab 再扫原页面；组标签（进行中（N））
+    已在 _status_from_frames/find_status_in_text 排除（思修轮污染教训）。
     每条抓完重开课程页回列表（SPA 返回不可靠），每课限 3 条（调用方约束）。
     diag（可选）：收「点击命中/状态命中 frame」诊断行，稳定后撤。
     """
@@ -892,13 +909,34 @@ def fetch_status_by_click(mid_url: str, titles: list[str], cookies: list[dict],
                             diag.append(f"标题未渲染：{safe_text(title, 30)}")
                         out.append("")
                         continue
+                    n_before = len(ctx.pages)
                     hit.click(timeout=5000)
-                    page.wait_for_timeout(4000)  # 详情视图渲染
-                    status, furl = _status_from_frames(page)
+                    page.wait_for_timeout(4000)  # 详情视图渲染（本页或新 tab）
+                    # v1.9.4：新标签页优先（用户截图详情是完整页面）
+                    furl = ""
+                    if len(ctx.pages) > n_before:
+                        for extra in ctx.pages[n_before:]:
+                            try:
+                                s, fu = _status_from_frames(extra)
+                                if s:
+                                    status, furl = s, fu
+                                    break
+                            except Exception:
+                                pass
+                    if not status:
+                        status, furl = _status_from_frames(page)
+                    # 关闭多余 tab 防累积（每条重开课程页，旧 tab 无用）
+                    for extra in list(ctx.pages[1:]):
+                        try:
+                            extra.close()
+                        except Exception:
+                            pass
                     if diag is not None and len(diag) < 4:
                         _fp = safe_text(re.sub(r"\d", "D", furl or ""), 80)
                         _ss = safe_text(re.sub(r"\d", "D", status or "未命中"), 40)
-                        diag.append(f"click ok 状态「{_ss}」 来源 frame「{_fp}」")
+                        _tab = "新tab" if len(ctx.pages) > 1 else "本页"
+                        diag.append(f"click ok（{_tab}） 状态「{_ss}」"
+                                    f" 来源「{_fp}」")
                 except Exception:
                     status = ""
                 out.append(status)

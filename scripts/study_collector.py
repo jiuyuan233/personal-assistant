@@ -812,6 +812,19 @@ def run() -> dict:
     if len(merged) < _before_quiz:
         log(f"清理课堂活动容器条目（主题讨论/提问/标题退化成课程名）："
             f"{_before_quiz - len(merged)} 条")
+    # v1.9.4（思修轮污染教训）：v1.9.3 把「进行中（N）」组标签当状态落了盘，
+    # merge 的「空状态不覆盖旧值」又会把它固化——这里把组标签 status 清回空，
+    # 让下一轮点击式抓取能重新补真实状态（一次性迁移，幂等无害）。
+    from quiz_browser import is_group_tag as _is_gt
+    _gt_n = 0
+    for t in merged:
+        if t.get("kind") == "quiz" and _is_gt(t.get("status") or ""):
+            t["status"] = ""
+            if t.get("state") not in ("pending", "upcoming"):
+                t["state"] = "pending"
+            _gt_n += 1
+    if _gt_n:
+        log(f"清洗组标签污染 status（进行中（N）等组计数徽标）：{_gt_n} 条")
     # 审计 §2.5 / §7.2：data/ 是公开仓库的一部分，不是本地缓存。
     # cpi / answerId / enc 每生一份，落盘前必须抹掉；完整深链只在本轮内存里用于抓详情页。
     link_mode = cfg.get("public_links") or "course"
