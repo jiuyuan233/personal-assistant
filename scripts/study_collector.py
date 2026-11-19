@@ -692,6 +692,16 @@ def run() -> dict:
                     if _filled:
                         log(f"[quiz] {cname} 主页卡片回填状态 {_filled} 条"
                             f"（卡片 {len(_hc)} 张）")
+                # v1.9.0a 诊断（回填失败时排查用，抓到状态就撤）：卡片数与
+                # 打码摘要——思修轮实证回填 0 且无日志行，需看清主页到底
+                # 渲染了什么（选择器命中？卡片区只显示作业类？）
+                else:
+                    log(f"[quiz] {cname} 主页卡片 0 张（选择器未命中或卡片区"
+                        f"未渲染）", level="WARN")
+                for _card in (_hc or [])[:6]:
+                    _cs = re.sub(r"\d", "D", str(_card.get("status") or ""))[:40]
+                    _cc = re.sub(r"\d", "D", str(_card.get("ctx") or ""))[:60]
+                    log(f"[quiz]   卡片：status「{_cs}」 ctx「{_cc}」")
                 line_count = int(res.get("diag", {}).get("lineCount") or 0)
                 if line_count <= 0:
                     # 内容轮询后仍 0 行：疑似没加载完/被限流（run 43807375956
