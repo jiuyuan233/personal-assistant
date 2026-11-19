@@ -432,6 +432,24 @@ def do_selftest() -> bool:
           "[未开始的那条](u)（作业·未开始）" in _uc_line
           and "[未开始的那条](u)（作业·⚠️" not in _uc_line,
           _uc_line[:160])
+    # v1.8.2（用户需求：随堂也要标注完成状态，不能只有截止）：与飞书 v1.7.2
+    # 同口径——学习通原文优先；随堂空状态标「状态未知」；无状态普通作业两段式
+    _st_rows = rr.course_rows(
+        [{"course_id": "c1", "class_id": "", "name": "示例课", "task_count": 4}],
+        [mk(title="待做随堂", kind="quiz", status="待做"),
+         mk(title="没状态的随堂", kind="quiz", status=""),
+         mk(title="退回的作业", kind="work", status="已退回"),
+         mk(title="无状态作业", kind="work", status="")])
+    _st_join = "\n".join(_st_rows)
+    check("清单单元格带状态段（学习通原文优先）",
+          "（随堂·待做·" in _st_join and "（作业·已退回·" in _st_join,
+          _st_join[:200])
+    check("随堂空状态标「状态未知」",
+          "（随堂·状态未知·" in _st_join, _st_join[:200])
+    check("无状态普通作业保持两段式（补 state 翻译是噪音）",
+          "（随堂·状态未知·" in _st_join and _st_join.count("无状态作业](u)（作业·") == 1
+          and "无状态作业](u)（作业·状态" not in _st_join,
+          _st_join[_st_join.find("无状态作业"):][:80])
     check("未开始计数另附在待完成列",
           any("1（另 1 项未开始）" in r for r in _uc_rows), str(_uc_rows))
     _uc_stats = rr.render_tasks(sample, now)[2]

@@ -175,6 +175,24 @@ def ordered_courses(courses: list[dict],
                                            c.get("name") or ""))
 
 
+def _status_tag(t: dict) -> str:
+    """v1.8.2：清单单元格的状态段（用户需求：随堂也要标注完成状态，不能只有截止）。
+
+    与飞书推送 v1.7.2 同口径：优先**学习通原文 status**（比 state 枚举翻译准，
+    「已退回」「待互评」这类词只有原文能区分）；随堂抓不到状态标「状态未知」
+    ——End time 只是当堂活动结束时间，做没做过系统不知道，提示用户点进去确认。
+    长状态词截断（清单里 pending 的一般是短词，防溢出兜底）。
+    """
+    if t.get("state") == "upcoming":
+        return "未开始"
+    s = (t.get("status") or "").strip()
+    if s:
+        return s[:12] + ("…" if len(s) > 12 else "")
+    if t.get("kind") == "quiz":
+        return "状态未知"
+    return ""
+
+
 def course_rows(courses: list[dict], kept: list[dict],
                 latest: dict[tuple[str, str], str] | None = None) -> list[str]:
     """全部课程都列出来，按最新发布时间降序（v1.7.0）；没任务的写「无」。"""
@@ -201,9 +219,18 @@ def course_rows(courses: list[dict], kept: list[dict],
             when = dt.strftime("%m-%d %H:%M") if dt else "⚠️截止未知"
             if dt and not t.get("deadline_exact"):
                 when += " ≈"
-            cells.append("{}（{}·{}）".format(
-                md_link(t.get("title"), t.get("url")),
-                KIND_CN.get(t.get("kind"), t.get("kind") or ""), when))
+            # v1.8.2：状态段（标题（类型·状态·截止））——原文优先，随堂空状态
+            # 标「状态未知」；无状态的普通作业保持两段式（status 空显示「待完成」
+            # 纯噪音，state 翻译不补）
+            tag = _status_tag(t)
+            if tag:
+                cells.append("{}（{}·{}·{}）".format(
+                    md_link(t.get("title"), t.get("url")),
+                    KIND_CN.get(t.get("kind"), t.get("kind") or ""), tag, when))
+            else:
+                cells.append("{}（{}·{}）".format(
+                    md_link(t.get("title"), t.get("url")),
+                    KIND_CN.get(t.get("kind"), t.get("kind") or ""), when))
         act_n = sum(1 for t in items if t.get("state") != "upcoming")
         upc_n = len(items) - act_n
         # 待完成列只数能做的；未开始另附计数，不混在一起（用户要求状态区分开）
