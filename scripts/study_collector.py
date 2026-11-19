@@ -684,6 +684,14 @@ def run() -> dict:
                 rows_raw = res.get("rows_raw") or []
                 tasks_q, unmapped = qb.parse_active_rows(
                     rows_raw, c, now, res.get("frame_url") or "")
+                # v1.9.0：主页活动卡片状态回填——iframe 全列表无状态文本、
+                # 主页卡片有（用户 DOM 实证 color-green span），按标题合并
+                _hc = res.get("home_cards") or []
+                if _hc:
+                    _filled = qb.merge_home_status(tasks_q, _hc)
+                    if _filled:
+                        log(f"[quiz] {cname} 主页卡片回填状态 {_filled} 条"
+                            f"（卡片 {len(_hc)} 张）")
                 line_count = int(res.get("diag", {}).get("lineCount") or 0)
                 if line_count <= 0:
                     # 内容轮询后仍 0 行：疑似没加载完/被限流（run 43807375956

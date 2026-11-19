@@ -497,6 +497,67 @@ def active_list_probe(bodies: list[dict]) -> list[str]:
     return out
 
 
+# v1.9.0：主页活动卡片提取——用户 2026-11-19 DOM 实证：课程主页
+# （Playwright goto 的同一页面）的活动卡片带状态文字
+# `<span class="color-green"><i class="icon-finish"></i>已提交，待教师公布正确答案</span>`，
+# 而 stuActiveList iframe 里同一活动无状态文本。iframe 是全列表、主页是带状态
+# 的卡片视图，两边按标题合并即可拿到状态（merge_home_status）。
+_HOME_CARD_JS = """
+() => {
+  const out = [];
+  const seen = new Set();
+  for (const el of document.querySelectorAll('span[class*="color-"], [class*="icon-"]')) {
+    const txt = (el.innerText || '').trim();
+    if (!txt || txt.length > 40 || seen.has(txt)) continue;
+    seen.add(txt);
+    let card = el.parentElement;
+    let ctx = '';
+    for (let i = 0; i < 6 && card; i++) {
+      const t = (card.innerText || '').trim();
+      if (t && t.length > txt.length + 10) { ctx = t; break; }
+      card = card.parentElement;
+    }
+    out.push({status: txt.slice(0, 40), ctx: ctx.slice(0, 200)});
+  }
+  return out;
+}
+"""
+
+
+def _norm_title(s: str) -> str:
+    """标题归一化比对：全角→半角括号、去空白（主页卡片与 iframe 行的标题可能有全半角差异）。"""
+    return ((s or "").replace("（", "(").replace("）", ")")
+            .replace(" ", "").replace("　", "").strip())
+
+
+def merge_home_status(tasks: list[dict], home_cards: list[dict]) -> int:
+    """v1.9.0：主页活动卡片的状态回填到 iframe 解析出的任务上。
+
+    iframe（全列表）无状态文本、主页卡片有（用户 DOM 实证），按标题包含
+    匹配合并。只回填 status 为空的任务（不覆盖已有状态）；卡片状态必须过
+    classify_quiz_line（防主页 UI 噪音 span 误当状态）。返回回填条数。
+    """
+    filled = 0
+    cards = []
+    for c in home_cards or []:
+        s = (c.get("status") or "").strip()
+        if s and classify_quiz_line(s) != "unknown":
+            cards.append((s, _norm_title(c.get("ctx") or "")))
+    for t in tasks:
+        if (t.get("status") or "").strip():
+            continue
+        nt = _norm_title(t.get("title") or "")
+        if not nt:
+            continue
+        for s, nctx in cards:
+            if nctx and nt in nctx:
+                t["status"] = s
+                t["state"] = classify_quiz_line(s)
+                filled += 1
+                break
+    return filled
+
+
 def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> dict:
     """一门课的随堂采集：打开课程页 → 等 stuActiveList iframe 渲染 → 提取行。
 
@@ -515,7 +576,7 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
     - 任何异常只写 error，**不抛**（主采集保护）。
     """
     result: dict = {"ok": False, "rows_raw": [], "diag": {}, "frame_url": "",
-                    "error": "", "xhr": [], "xhr_bodies": []}
+                    "error": "", "xhr": [], "xhr_bodies": [], "home_cards": []}
     xhr_seen: list[str] = []
     xhr_bodies: list[dict] = []
 
@@ -593,6 +654,12 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
                     rows = data.get("rows") or []
                 result.update({"ok": True, "rows_raw": rows, "diag": data,
                                "frame_url": frame.url})
+            # v1.9.0：主页活动卡片提取（状态在主页卡片上，不在 iframe——
+            # 用户 DOM 实证）。无论 frame 找没找到都试一次主页，异常全吞
+            try:
+                result["home_cards"] = page.evaluate(_HOME_CARD_JS) or []
+            except Exception:
+                result["home_cards"] = []
             result["xhr"] = xhr_seen[:20]
             result["xhr_bodies"] = xhr_bodies
             ctx.close()

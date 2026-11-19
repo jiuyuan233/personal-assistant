@@ -1389,6 +1389,29 @@ def do_selftest() -> bool:
           and longrows[0]["status"] == "已提交，待教师公布正确答案"
           and longrows[0]["state"] == "done",
           str(longrows[:1]) + str(longunmap))
+    # v1.9.0：主页卡片状态回填（用户 DOM 实证：color-green span 在课程主页，
+    # iframe 全列表无状态文本——两边按标题合并）
+    htasks = [{"id": "h1", "kind": "quiz", "course_id": "1", "class_id": "1",
+               "title": "第三章知识点总结（手写+学号姓名）",
+               "state": "pending", "status": ""}]
+    hc = [{"status": "已提交，待教师公布正确答案",
+           "ctx": "第三章知识点总结（手写+学号姓名）\n已提交，待教师公布正确答案\n"
+                  "10-25 23:59 至 11-15 23:59"}]
+    n_fill = qb.merge_home_status(htasks, hc)
+    check("主页卡片回填：已交的随堂拿到真实状态并判 done",
+          n_fill == 1 and htasks[0]["status"] == "已提交，待教师公布正确答案"
+          and htasks[0]["state"] == "done", str(htasks[0]))
+    check("主页卡片：噪音 span 被忽略、已有状态不被覆盖",
+          qb.merge_home_status(htasks, [{"status": "随便一句话", "ctx": "第三章"}]) == 0
+          and htasks[0]["status"] == "已提交，待教师公布正确答案",
+          str(htasks[0]))
+    h2 = [{"id": "h2", "kind": "quiz", "course_id": "1", "class_id": "1",
+           "title": "全角（标题）测试", "state": "pending", "status": ""}]
+    n2 = qb.merge_home_status(h2, [{"status": "待做",
+                                    "ctx": "全角(标题)测试 待做 11-20 23:59"}])
+    check("主页卡片：全半角括号归一后仍能匹配",
+          n2 == 1 and h2[0]["status"] == "待做" and h2[0]["state"] == "pending",
+          str(h2[0]))
     qdl2, qex2 = qb.parse_quiz_time("12-05 10:00", now)
     check("随堂绝对时间就近补年", qdl2 == "2026-12-05T10:00:00+08:00" and qex2 is False, str(qdl2))
     qdl3, qex3 = qb.parse_quiz_time("2026-11-15 09:00", now)
