@@ -86,6 +86,27 @@ _MDHM2_RE = re.compile(r"(\d{1,2})月(\d{1,2})日\s*(\d{1,2})时(\d{1,2})分")
 _NOISE_TITLE_RE = re.compile(r"^[\d（）()：:、\s]*$")
 # 课堂互动类活动不是作业（签到/选人/投票/抢答/问卷），不进任务清单
 _CLASSROOM_RE = re.compile(r"(签到|选人|投票|抢答|问卷)")
+# v1.8.0（用户 2026-11-19 定论）：「主题讨论」「提问」这类**整词短标题**是老师
+# 当堂发起的活动容器名，不是要动手写的作业（思修/国安「主题讨论」、高数「提问」
+# 实测全是被误判"逾期"的课堂活动）。只拦整词——含「讨论」的长标题（如真实
+# 讨论课作业）不拦，交给判定层的 quiz_ended 规则兜底。
+# 公开名：study_collector 的存量清理与 selftest 复用同一形状，不许两处漂移。
+CLASSROOM_EXACT_RE = re.compile(r"^(?:主题)?讨论$|^提问$")
+# v1.8.0：标题退化 = 标题就是课程名本身（带书名号）。真实样本：体育课签到行
+# 《…星期一下午七八体育课》、英语《新世纪大学英语综合教程（一）》——活动
+# 类型在采集层就丢了、标题拿课程名兜底。这种行是签到/课次容器，不是作业。
+_BOOK_WRAP_RE = re.compile(r"^《[^《》]{4,}》$")
+
+
+def title_is_course_name(title: str, course_name: str) -> bool:
+    """标题是否退化成课程名（书名号包裹或裸同文）。全角/半角括号归一后比对。"""
+    t = (title or "").strip()
+    c = (course_name or "").strip().strip("《》")
+    if _BOOK_WRAP_RE.fullmatch(t):
+        t = t[1:-1]
+    t = t.replace("（", "(").replace("）", ")")
+    c = c.replace("（", "(").replace("）", ")")
+    return bool(t) and bool(c) and len(t) >= 4 and t == c
 # v1.7.0（用户报的 bug）：老师发的课件/文件不是作业——「D1-2数列的极限.pptx」
 # 这种带文件后缀的标题一律不收（用户原话：任务名称后面有文件后缀的就是文件，
 # 不是要动手写的作业；旧版把文件当作业还标了逾期）
@@ -221,6 +242,10 @@ def parse_active_rows(rows_raw: list[dict], course: dict, now: datetime,
             continue
         if _CLASSROOM_RE.search(title):
             continue  # 签到/选人等课堂互动，不是作业
+        if CLASSROOM_EXACT_RE.fullmatch(title):
+            continue  # v1.8.0：主题讨论/提问等整词短标题 = 课堂活动容器
+        if title_is_course_name(title, course.get("name") or ""):
+            continue  # v1.8.0：标题退化成课程名 = 签到/课次容器，不是作业
         if _FILE_SUFFIX_RE.search(title):
             continue  # v1.7.0：.pptx 等课件文件，老师发的材料不是作业
         # 零信息行（页头/标签条）：无时间无状态无深链，不是任务
@@ -341,14 +366,35 @@ def _find_active_frame(page):
 def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> dict:
     """一门课的随堂采集：打开课程页 → 等 stuActiveList iframe 渲染 → 提取行。
 
-    返回 {"ok", "rows_raw", "diag", "frame_url", "error"}：
+    返回 {"ok", "rows_raw", "diag", "frame_url", "error", "xhr"}：
     - ok=True 且找到 frame；**内容轮询最长 20s**（Vue 数据是慢 XHR：v1.5.22
       的 27s 固定等待下能渲染、13s 下时有时无，run 43807375956 实测 思修
       一轮 316 字、一轮 0 字——必须等 innerText 出现而不是赌固定时长）；
     - rows_raw 是 EXTRACT_JS 的行级结构化数据，解析在调用方（纯函数）；
+    - xhr 是 v1.8.0 的**纯观测**：记录页面加载期间所有 active 相关 JSON
+      XHR 的 URL 路径 + 字节大小（不含 query，不落值）。为下一步「XHR JSON
+      结构化拦截」收集真实接口形状——先 dump 再动手，不许猜（v1.2.3 教训）。
+      观测本身零风险：不改变任何解析行为，回调异常全吞。
     - 任何异常只写 error，**不抛**（主采集保护）。
     """
-    result: dict = {"ok": False, "rows_raw": [], "diag": {}, "frame_url": "", "error": ""}
+    result: dict = {"ok": False, "rows_raw": [], "diag": {}, "frame_url": "",
+                    "error": "", "xhr": []}
+    xhr_seen: list[str] = []
+
+    def _on_response(resp) -> None:
+        try:
+            url = resp.url or ""
+            if "active" not in url.lower():
+                return
+            ct = (resp.headers or {}).get("content-type") or ""
+            if "json" not in ct.lower():
+                return
+            # 只记路径与状态码：query 串里有每生一份的参数，一个字都不落
+            path = re.sub(r"^[a-z]+://[^/]+/", "", url.split("?")[0])[:80]
+            xhr_seen.append(f"{path} {resp.status}")
+        except Exception:
+            pass
+
     try:
         from playwright.sync_api import sync_playwright
         with sync_playwright() as pw:
@@ -357,6 +403,7 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
             if cookies:
                 ctx.add_cookies(cookies)
             page = ctx.new_page()
+            page.on("response", _on_response)
             # stucoursemiddle 302 → mycourse/stu 课程页（frame 的宿主）
             page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
             page.wait_for_timeout(6000)
@@ -400,6 +447,7 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
                     rows = data.get("rows") or []
                 result.update({"ok": True, "rows_raw": rows, "diag": data,
                                "frame_url": frame.url})
+            result["xhr"] = xhr_seen[:20]
             ctx.close()
             browser.close()
     except Exception as e:

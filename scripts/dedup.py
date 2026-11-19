@@ -121,6 +121,13 @@ def merge_tasks(old_list: list[dict], new_list: list[dict], now: datetime) -> li
                 new["deadline_exact"] = True
             if not new.get("description") and old.get("description"):
                 new["description"] = old["description"]
+            # v1.8.0：新值状态抓空时保留旧的非空状态 —— 列表页某一轮渲染
+            # 抖动（状态徽标是图标/颜色而非文字）会把上一轮抓到的「已完成」
+            # 冲掉，冲掉后无状态默认 pending → 又变回"逾期"假账
+            if not (new.get("status") or "").strip() and (old.get("status") or "").strip():
+                new["status"] = old["status"]
+                if old.get("state") and old.get("state") != "unknown":
+                    new["state"] = old["state"]
         else:
             new["first_seen"] = stamp
             fresh += 1
@@ -168,6 +175,12 @@ def merge_quiz(old_list: list[dict], new_list: list[dict],
             if old.get("deadline_exact") and not new.get("deadline_exact"):
                 new["deadline"] = old["deadline"]
                 new["deadline_exact"] = True
+            # v1.8.0：同 merge_tasks —— 随堂状态徽标时常渲染成图标/颜色，
+            # 某一轮抓空会把旧的非空状态冲掉，冲掉即回退成 pending 假账
+            if not (new.get("status") or "").strip() and (old.get("status") or "").strip():
+                new["status"] = old["status"]
+                if old.get("state") and old.get("state") != "unknown":
+                    new["state"] = old["state"]
         else:
             new["first_seen"] = stamp
             fresh += 1

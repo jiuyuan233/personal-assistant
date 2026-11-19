@@ -402,9 +402,27 @@ def do_selftest() -> bool:
           and rr.drop_reason(mk(start_time=iso(now - timedelta(days=8))), now) is None)
     check("一周规则已废除：first_seen 9 天前仍留在清单",
           rr.drop_reason(mk(first_seen=iso(now - timedelta(days=9))), now) is None)
-    check("剔除原因两类（逾期/非待完成；未开始是显示分类不是剔除）",
-          rr.REASON_ORDER == ("overdue", "not_pending"),
+    check("剔除原因四类（人工豁免/非待完成/随堂已结束/已逾期；未开始是显示分类不是剔除）",
+          rr.REASON_ORDER == ("ignored", "not_pending", "quiz_ended", "overdue"),
           str(rr.REASON_ORDER))
+    # v1.8.0（用户核查 16 条"逾期"定论，真欠仅 1 条互评）：随堂无状态过点
+    # 判「随堂已结束」而非「逾期」——End time 是下课时间不是作业截止；
+    # 有状态词的随堂照旧判逾期（页面明确「待做」过期才是真欠）。
+    check("随堂无状态且过点判「随堂已结束」不判逾期",
+          rr.drop_reason(mk(kind="quiz", status="",
+                            deadline=iso(now - timedelta(hours=1))), now) == "quiz_ended")
+    check("随堂有状态词且过点仍判逾期",
+          rr.drop_reason(mk(kind="quiz", status="待做",
+                            deadline=iso(now - timedelta(hours=1))), now) == "overdue")
+    check("随堂无状态未过点留在清单（老师会把作业当随堂发）",
+          rr.drop_reason(mk(kind="quiz", status="",
+                            deadline=iso(now + timedelta(hours=1))), now) is None)
+    check("普通作业无状态过点仍判逾期（真实欠交）",
+          rr.drop_reason(mk(kind="work", status="",
+                            deadline=iso(now - timedelta(hours=1))), now) == "overdue")
+    check("豁免名单命中判「人工豁免」（建环 58204754 老师作废）",
+          rr.drop_reason(mk(work_id="58204754",
+                            deadline=iso(now - timedelta(hours=1))), now) == "ignored")
     # 未开始在清单里的显示：单元格标「未开始」、计数另附、不计「截止未知」
     _uc_rows = rr.course_rows(
         [{"course_id": "c1", "class_id": "", "name": "示例课", "task_count": 2}],
@@ -1418,6 +1436,44 @@ def do_selftest() -> bool:
                           {"id": "y", "kind": "work", "state": "pending", "title": "A"}], now)
     check("作业合并：批内同 id 重复行只留一条",
           sum(1 for t in m6 if t["id"] == "y") == 1, str(m6))
+    # v1.8.0：新值状态抓空不冲掉旧的非空状态（状态徽标是图标/颜色时的渲染抖动防护）
+    m7 = _mq([{"id": "a", "kind": "quiz", "course_id": "1", "class_id": "1", "title": "A",
+               "state": "done", "status": "已完成"}],
+             [{"id": "a", "kind": "quiz", "course_id": "1", "class_id": "1",
+               "title": "A", "state": "pending", "status": ""}], {("1", "1")}, now)
+    check("随堂合并：新值状态空不冲掉旧非空状态",
+          m7[0]["status"] == "已完成" and m7[0]["state"] == "done", str(m7[0]))
+    m8 = merge_tasks([{"id": "y", "kind": "work", "state": "done", "status": "已完成",
+                       "title": "A"}],
+                     [{"id": "y", "kind": "work", "state": "pending", "status": "",
+                       "title": "A"}], now)
+    check("作业合并：新值状态空不冲掉旧非空状态",
+          m8[0]["status"] == "已完成" and m8[0]["state"] == "done", str(m8[0]))
+    # v1.8.0：课堂活动容器过滤——整词「（主题）讨论/提问」、标题退化成课程名
+    check("课堂活动整词过滤（主题讨论/提问整词，长标题不误伤）",
+          bool(qb.CLASSROOM_EXACT_RE.fullmatch("主题讨论"))
+          and bool(qb.CLASSROOM_EXACT_RE.fullmatch("提问"))
+          and bool(qb.CLASSROOM_EXACT_RE.fullmatch("讨论"))
+          and not qb.CLASSROOM_EXACT_RE.fullmatch("关于生态文明的课堂讨论作业"))
+    check("标题退化成课程名识别（书名号/全半角归一）",
+          qb.title_is_course_name("《新世纪大学英语综合教程（一）》",
+                                  "新世纪大学英语综合教程(一)")
+          and qb.title_is_course_name("2026-2027第一学期星期一下午七八体育课",
+                                      "2026-2027第一学期星期一下午七八体育课")
+          and not qb.title_is_course_name("第一章知识点总结", "高等数学A"))
+    vrows, vunmap = qb.parse_active_rows(
+        [{"text": "主题讨论", "y": 100,
+          "onclick": "openCurrentUrl('https://mobilelearn.huuc.edu.cn/page/active/"
+                     "stuActiveDetail?courseid=1&clazzid=1&activeId=111', 2)", "aria": ""},
+         {"text": "End time：10-14 20:18", "y": 102, "onclick": "", "aria": ""},
+         {"text": "《新世纪大学英语综合教程（一）》", "y": 200,
+          "onclick": "openCurrentUrl('https://mobilelearn.huuc.edu.cn/page/active/"
+                     "stuActiveDetail?courseid=1&clazzid=1&activeId=222', 2)", "aria": ""},
+         {"text": "End time：11-17 19:48", "y": 202, "onclick": "", "aria": ""}],
+        {"course_id": "201780805", "class_id": "156290484",
+         "name": "新世纪大学英语综合教程(一)"}, now)
+    check("采集层拦下课堂活动容器（讨论整词/课程名标题，0 条入库）",
+          len(vrows) == 0 and not vunmap, f"{len(vrows)}/{vunmap}")
     check("README 与网页看板都有随堂标签",
           rr.KIND_CN.get("quiz") == "随堂"
           and "quiz: '随堂'" in (rr.REPO_ROOT / "docs" / "js" / "app.js").read_text(encoding="utf-8"))

@@ -652,6 +652,11 @@ def run() -> dict:
                            f"&ismooc2={c.get('ismooc2', '1')}")
                 res = qb.collect_quiz(c, mid_url, q_cookies, UA)
                 cname = c.get("name") or "?"
+                # v1.8.0 XHR 观测（纯记录，不改行为）：为「XHR JSON 结构化拦截」
+                # 收集 active 相关接口的真实形状，攒够样本下一轮再动手，不许猜
+                if res.get("xhr"):
+                    log(f"[quiz-xhr] {cname} 捕获 {len(res['xhr'])} 个 active JSON："
+                        f"{' | '.join(res['xhr'][:6])}")
                 if not res.get("ok"):
                     log(f"[quiz] {cname} 随堂采集失败：{res.get('error', '')[:120]}", level="WARN")
                     continue
@@ -720,6 +725,23 @@ def run() -> dict:
               if not quiz_browser_FILE_RE.search((t.get("title") or "").strip())]
     if len(merged) < _before_files:
         log(f"清理课件类条目（.pptx 等文件后缀，非作业）：{_before_files - len(merged)} 条")
+    # v1.8.0（用户核查 16 条"逾期"定论）：随堂里的课堂活动容器不是作业——
+    # 整词「（主题）讨论/提问」的活动行、标题退化成课程名的签到/课次行。
+    # 采集层已拦新条目，这里清历史入库的存量（与课件清理同思路，一次性迁移）。
+    from quiz_browser import CLASSROOM_EXACT_RE, title_is_course_name
+    _before_quiz = len(merged)
+
+    def _is_quiz_container(t: dict) -> bool:
+        if t.get("kind") != "quiz":
+            return False
+        title = (t.get("title") or "").strip()
+        return bool(CLASSROOM_EXACT_RE.fullmatch(title)
+                    or title_is_course_name(title, t.get("course") or ""))
+
+    merged = [t for t in merged if not _is_quiz_container(t)]
+    if len(merged) < _before_quiz:
+        log(f"清理课堂活动容器条目（主题讨论/提问/标题退化成课程名）："
+            f"{_before_quiz - len(merged)} 条")
     # 审计 §2.5 / §7.2：data/ 是公开仓库的一部分，不是本地缓存。
     # cpi / answerId / enc 每生一份，落盘前必须抹掉；完整深链只在本轮内存里用于抓详情页。
     link_mode = cfg.get("public_links") or "course"

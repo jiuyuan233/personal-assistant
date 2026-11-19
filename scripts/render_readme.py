@@ -30,9 +30,17 @@ EXCLUDED_DOC = REPO_ROOT / "docs" / "已剔除任务.md"
 
 KIND_CN = {"work": "作业", "eval": "互评", "exam": "考试", "quiz": "随堂"}
 # v1.6.6（用户澄清定稿）：「未开始」的任务**留在清单里显示**，状态标「未开始」——
-# 不是剔除对象。剔除仍然只有两类：逾期、非待完成。
-REASON_CN = {"overdue": "已逾期", "not_pending": "非待完成"}
-REASON_ORDER = ("overdue", "not_pending")
+# 不是剔除对象。
+# v1.8.0（用户 2026-11-19 核查 16 条"逾期"定论：真欠的只有 1 条互评，其余 15 条
+# 全是误判）：剔除原因从两类扩到四类 ——
+# - 「随堂已结束」：随堂列表页只给 End time（当堂活动的下课时间），无状态词的
+#   随堂过点是「活动结束」不是「作业逾期」，历史讨论/已交但状态没抓到的随堂
+#   都会落在这里，不再制造"逾期 30 天"的假账；
+# - 「人工豁免」：老师作废/课上明确说不用做的任务没法自动判断（提示词管不住
+#   的用代码守），用户在 sources.json → study.ignored_tasks 里自己维护名单。
+REASON_CN = {"ignored": "人工豁免", "not_pending": "非待完成",
+             "quiz_ended": "随堂已结束", "overdue": "已逾期"}
+REASON_ORDER = ("ignored", "not_pending", "quiz_ended", "overdue")
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 NOTICE_LIMIT = 12
 PLAN_LIMIT = 15
@@ -62,27 +70,56 @@ def task_start(t: dict) -> datetime | None:
     return parse_datetime(t.get("start_time")) or parse_datetime(t.get("first_seen"))
 
 
+_ignored_cache: dict[str, str] = {}
+
+
+def ignored_tasks() -> dict[str, str]:
+    """人工豁免名单（data/sources.json → study.ignored_tasks）：work_id → 原因。
+
+    老师作废/课上明确说不用做的任务系统没法自动判断，用户自己在唯一允许
+    手工编辑的 sources.json 里维护；豁免的任务不进清单、不算逾期，只留在
+    「已剔除任务」文档的「人工豁免」类。进程内缓存一份（finalize 高频跑）。
+    """
+    global _ignored_cache
+    if not _ignored_cache:
+        cfg = load_json(DATA_DIR / "sources.json") or {}
+        lst = ((cfg.get("study") or {}).get("ignored_tasks")) or []
+        _ignored_cache = {str(x.get("work_id")): (x.get("reason") or "")
+                          for x in lst if x.get("work_id")}
+    return _ignored_cache
+
+
 def drop_reason(t: dict, now: datetime) -> str | None:
-    """剔除原因键；None = 可做或待显示。判定顺序即优先级：非待完成 → 逾期。
+    """剔除原因键；None = 可做或待显示。判定顺序即优先级：
+    人工豁免 → 非待完成 → 逾期（随堂无状态单判「已结束」）。
 
     清单与「已剔除任务」文档共用这一个判定，避免两处口径漂移。
     v1.6.6：未开始（upcoming）**不算剔除**——留左清单里，单元格标「未开始」；
     老师开放作答后状态变成 pending，自然变成普通待完成。
+    v1.8.0：随堂（kind=quiz）页面无状态词且 End time 已过 → 判「随堂已结束」
+    而非「逾期」——End time 是当堂活动的下课时间，不是作业截止。**有状态词的
+    随堂照旧**：页面明确显示「待做/未交」且过期才是真逾期；无状态且未过点的
+    随堂也照旧留在清单（老师确实会把作业当随堂发，v1.6.0 收录随堂的原因）。
     """
+    if str(t.get("work_id") or "") in ignored_tasks():
+        return "ignored"
     if t.get("state") == "upcoming":
         return None
     if t.get("state") != "pending":
         return "not_pending"
     dt = parse_datetime(t.get("deadline"))
     if dt and dt < now:
+        if t.get("kind") == "quiz" and not (t.get("status") or "").strip():
+            return "quiz_ended"
         return "overdue"
     return None
 
 
 def actionable(tasks: list[dict], now: datetime) -> tuple[list[dict], dict]:
-    """只留能做的和未开始的。已完成/已批阅/已逾期剔除；未开始（upcoming）保留显示。"""
+    """只留能做的和未开始的。人工豁免/已完成/已批阅/已结束/已逾期剔除；
+    未开始（upcoming）保留显示。"""
     kept: list[dict] = []
-    dropped = {"not_pending": 0, "overdue": 0}
+    dropped = {k: 0 for k in REASON_ORDER}
     for t in tasks:
         reason = drop_reason(t, now)
         if reason:
@@ -203,10 +240,13 @@ def render_tasks(tasks: list[dict], now: datetime) -> tuple[str, str, dict]:
         else:
             counts["later"] += 1
 
-    note = ("> 已剔除：逾期 {} 项 · 非待完成 {} 项。"
+    # v1.8.0：剔除摘要四类动态拼，零计数的不占位（原来固定写"逾期 X · 非待完成 X"）
+    parts = " · ".join(f"{REASON_CN[k]} {dropped.get(k, 0)} 项"
+                       for k in REASON_ORDER if dropped.get(k))
+    note = ("> 已剔除：{}。"
             "课程按「最后一次发布作业的时间」降序排（谁的消息最新谁靠前），共 {} 门。\n"
             "> 📄 [逐项查看已剔除任务与原因](docs/已剔除任务.md)\n").format(
-                dropped["overdue"], dropped["not_pending"], len(courses))
+                parts or "无", len(courses))
     suffix = f"，其中 **{counts['today']} 项今天截止**" if counts["today"] else ""
     if counts["unknown"]:
         suffix += f"，**{counts['unknown']} 项截止未知（可能已逾期，请点进去确认）**"
@@ -220,7 +260,20 @@ def render_tasks(tasks: list[dict], now: datetime) -> tuple[str, str, dict]:
 def reason_detail(reason: str, t: dict, now: datetime,
                   dt: datetime | None, st: datetime | None) -> str:
     """把剔除原因写成能看懂的一句话，带上具体天数/状态，而不是只给个分类名。"""
+    if reason == "ignored":
+        why = ignored_tasks().get(str(t.get("work_id") or ""), "")
+        return "**人工豁免**：{}（名单在 data/sources.json → study.ignored_tasks，想恢复删掉那条即可）".format(
+            esc(why) or "老师作废/明确不用做的任务")
+    if reason == "quiz_ended" and dt:
+        return ("**随堂已结束**：当堂活动结束时间 {}，页面无状态词 —— "
+                "这是「活动结束」不是「作业逾期」，不进逾期统计").format(
+                    dt.strftime("%Y-%m-%d %H:%M"))
     if reason == "overdue" and dt:
+        if t.get("kind") == "eval":
+            # v1.8.0：互评到期 ≠ 作业逾期（作业本体可能已交），措辞分开
+            return ("**互评窗口已结束**：互评截止 {}，已过 {} 天"
+                    "（作业本体已交则不影响，漏互评会扣互评分）").format(
+                        dt.strftime("%Y-%m-%d %H:%M"), (now - dt).days)
         return f"**已逾期**：截止 {dt:%Y-%m-%d %H:%M}，已过 {(now - dt).days} 天，做不了了"
     return "**非待完成**：状态「{}」".format(esc(t.get("status") or t.get("state") or "未知"))
 
