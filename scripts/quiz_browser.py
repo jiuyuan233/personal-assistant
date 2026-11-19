@@ -780,9 +780,9 @@ def fetch_active_status_batch(detail_urls: list[str], cookies: list[dict],
                             _t0 = page.evaluate(
                                 "() => (document.body && document.body.innerText) || ''") or ""
                             _hd = " | ".join(l.strip() for l in _t0.split("\n")
-                                             if l.strip())[:120]
+                                             if l.strip())[:250]
                             diag.append(f"final={_fu} {len(_t0)}字 首4行:"
-                                        f"{safe_text(re.sub(chr(92) + 'd', 'D', _hd), 120)}")
+                                        f"{safe_text(re.sub(chr(92) + 'd', 'D', _hd), 250)}")
                         except Exception:
                             diag.append("diag fail")
                     # 优先 color-green 等状态 span（用户 DOM 实证），
