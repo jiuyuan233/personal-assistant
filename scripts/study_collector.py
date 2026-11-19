@@ -734,9 +734,10 @@ def run() -> dict:
                     _got = qb.fetch_active_status_batch(
                         [t["url"] for t in _need[:3]], q_cookies, UA, diag=_diag)
                     # v1.9.2c 诊断（思修轮实证 0/3——抓到状态就撤）：详情页
-                    # 渲染了什么（final URL + 文本长度 + 前 4 行打码）
+                    # 渲染了什么（final URL + 文本长度 + 前 4 行打码）。
+                    # 截 300 字：错误 message 全文才能看清缺什么参数
                     for _d in _diag[:3]:
-                        log(f"[quiz]   详情页诊断：{_d[:150]}")
+                        log(f"[quiz]   详情页诊断：{_d[:300]}")
                     _ok_n = 0
                     for t, s in zip(_need[:3], _got):
                         if s:
