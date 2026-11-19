@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-19T00:18:06+08:00",
+  "updated_at": "2026-11-19T16:50:05+08:00",
   "count": 42,
   "repo": "jiuyuan233/obsidion-gitee",
   "items": [
@@ -8,14 +8,14 @@
       "text": "每周周日固定做周清",
       "due_date": null,
       "confidence": 0.8,
-      "state": "open",
+      "state": "done",
       "tags": [
         "习惯",
         "复盘"
       ],
       "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/AAAREADME.md",
       "source_date": "",
-      "origin": "ai",
+      "origin": "checkbox",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
@@ -247,7 +247,7 @@
       "text": "阅读free第一章",
       "due_date": null,
       "confidence": 1.0,
-      "state": "open",
+      "state": "done",
       "tags": [
         "待办"
       ],
@@ -264,7 +264,7 @@
       "text": "学习free第一章",
       "due_date": null,
       "confidence": 1.0,
-      "state": "open",
+      "state": "done",
       "tags": [
         "待办"
       ],
@@ -281,14 +281,14 @@
       "text": "准备学高数",
       "due_date": null,
       "confidence": 0.8,
-      "state": "open",
+      "state": "done",
       "tags": [
         "学习",
         "高数"
       ],
       "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-09-28.md",
       "source_date": "2026-09-28",
-      "origin": "ai",
+      "origin": "checkbox",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
@@ -314,14 +314,14 @@
       "text": "学斯维尔软件（建模/算量）",
       "due_date": null,
       "confidence": 0.5,
-      "state": "open",
+      "state": "done",
       "tags": [
         "技能",
         "软件"
       ],
       "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/11月.md",
       "source_date": "",
-      "origin": "ai",
+      "origin": "checkbox",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
@@ -383,13 +383,13 @@
       "text": "查10月份有哪些比赛可参加",
       "due_date": null,
       "confidence": 0.5,
-      "state": "open",
+      "state": "done",
       "tags": [
         "竞赛"
       ],
       "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
       "source_date": "",
-      "origin": "ai",
+      "origin": "checkbox",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13",
       "written_once": true,
