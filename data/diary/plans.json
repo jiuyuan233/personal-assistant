@@ -1,26 +1,8 @@
 {
-  "updated_at": "2026-11-19T16:50:05+08:00",
+  "updated_at": "2026-11-19T18:48:49+08:00",
   "count": 42,
   "repo": "jiuyuan233/obsidion-gitee",
   "items": [
-    {
-      "id": "-2aa48d1eba",
-      "text": "每周周日固定做周清",
-      "due_date": null,
-      "confidence": 0.8,
-      "state": "done",
-      "tags": [
-        "习惯",
-        "复盘"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/AAAREADME.md",
-      "source_date": "",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-19"
-    },
     {
       "id": "-d21b091330",
       "text": "建立每天固定的模式",
@@ -243,58 +225,6 @@
       "last_seen": "2026-11-13"
     },
     {
-      "id": "free-f5587b47b1",
-      "text": "阅读free第一章",
-      "due_date": null,
-      "confidence": 1.0,
-      "state": "done",
-      "tags": [
-        "待办"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-04.md",
-      "source_date": "2026-10-04",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-19"
-    },
-    {
-      "id": "free-21e5de2715",
-      "text": "学习free第一章",
-      "due_date": null,
-      "confidence": 1.0,
-      "state": "done",
-      "tags": [
-        "待办"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-01.md",
-      "source_date": "2026-10-01",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-19"
-    },
-    {
-      "id": "-869ac21c54",
-      "text": "准备学高数",
-      "due_date": null,
-      "confidence": 0.8,
-      "state": "done",
-      "tags": [
-        "学习",
-        "高数"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-09-28.md",
-      "source_date": "2026-09-28",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-19"
-    },
-    {
       "id": "-46e93b75ce",
       "text": "坚持写日记",
       "due_date": null,
@@ -308,24 +238,6 @@
       "origin": "ai",
       "first_seen": "2026-11-13",
       "last_seen": "2026-11-13"
-    },
-    {
-      "id": "-f066a04900",
-      "text": "学斯维尔软件（建模/算量）",
-      "due_date": null,
-      "confidence": 0.5,
-      "state": "done",
-      "tags": [
-        "技能",
-        "软件"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/11月.md",
-      "source_date": "",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-19"
     },
     {
       "id": "-fab34dd012",
@@ -369,23 +281,6 @@
       "state": "open",
       "tags": [
         "待办"
-      ],
-      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
-      "source_date": "",
-      "origin": "checkbox",
-      "first_seen": "2026-11-13",
-      "last_seen": "2026-11-13",
-      "written_once": true,
-      "last_written": "2026-11-19"
-    },
-    {
-      "id": "10-ff72f57765",
-      "text": "查10月份有哪些比赛可参加",
-      "due_date": null,
-      "confidence": 0.5,
-      "state": "done",
-      "tags": [
-        "竞赛"
       ],
       "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
       "source_date": "",
@@ -462,6 +357,111 @@
       "last_seen": "2026-11-13",
       "written_once": true,
       "last_written": "2026-11-16"
+    },
+    {
+      "id": "-2aa48d1eba",
+      "text": "每周周日固定做周清",
+      "due_date": null,
+      "confidence": 0.8,
+      "state": "done",
+      "tags": [
+        "习惯",
+        "复盘"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/AAAREADME.md",
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-19"
+    },
+    {
+      "id": "free-f5587b47b1",
+      "text": "阅读free第一章",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-04.md",
+      "source_date": "2026-10-04",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-19"
+    },
+    {
+      "id": "free-21e5de2715",
+      "text": "学习free第一章",
+      "due_date": null,
+      "confidence": 1.0,
+      "state": "done",
+      "tags": [
+        "待办"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-10-01.md",
+      "source_date": "2026-10-01",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-19"
+    },
+    {
+      "id": "-869ac21c54",
+      "text": "准备学高数",
+      "due_date": null,
+      "confidence": 0.8,
+      "state": "done",
+      "tags": [
+        "学习",
+        "高数"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/日/2026-09-28.md",
+      "source_date": "2026-09-28",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-19"
+    },
+    {
+      "id": "-f066a04900",
+      "text": "学斯维尔软件（建模/算量）",
+      "due_date": null,
+      "confidence": 0.5,
+      "state": "done",
+      "tags": [
+        "技能",
+        "软件"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/11月.md",
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-19"
+    },
+    {
+      "id": "10-ff72f57765",
+      "text": "查10月份有哪些比赛可参加",
+      "due_date": null,
+      "confidence": 0.5,
+      "state": "done",
+      "tags": [
+        "竞赛"
+      ],
+      "source_file": "总仓库个人-Sync/个人信息/个人信息/Tasks/月/10月.md",
+      "source_date": "",
+      "origin": "checkbox",
+      "first_seen": "2026-11-13",
+      "last_seen": "2026-11-13",
+      "written_once": true,
+      "last_written": "2026-11-19"
     },
     {
       "id": "-3719416394",
