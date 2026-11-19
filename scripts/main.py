@@ -1412,6 +1412,13 @@ def do_selftest() -> bool:
     check("主页卡片：全半角括号归一后仍能匹配",
           n2 == 1 and h2[0]["status"] == "待做" and h2[0]["state"] == "pending",
           str(h2[0]))
+    # v1.9.2 方案 B：详情页状态行提取（纯函数部分；Playwright 部分离线不可测）
+    check("详情页状态行提取（真实样本：长状态词命中）",
+          qb.find_status_in_text("第三章知识点总结\n已提交，待教师公布正确答案\n"
+                                 "10-25 23:59 至 11-15 23:59") == "已提交，待教师公布正确答案")
+    check("详情页状态行提取：无状态词返回空、长行不当状态",
+          qb.find_status_in_text("活动详情页\n这里是一段很长的说明文字不是状态行") == ""
+          and qb.find_status_in_text("待做") == "待做")
     qdl2, qex2 = qb.parse_quiz_time("12-05 10:00", now)
     check("随堂绝对时间就近补年", qdl2 == "2026-12-05T10:00:00+08:00" and qex2 is False, str(qdl2))
     qdl3, qex3 = qb.parse_quiz_time("2026-11-15 09:00", now)

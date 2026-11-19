@@ -705,6 +705,71 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
     return result
 
 
+def find_status_in_text(txt: str) -> str:
+    """v1.9.2 方案 B：从活动详情页全文里找状态行。
+
+    详情页一定显示用户状态（用户 DOM 实证：color-green span
+    「已提交，待教师公布正确答案」就在点开的详情视图里）。逐行扫：
+    ≤30 字、classify_quiz_line 认识的行即状态行；找不到返回空串。
+    纯函数，selftest 可测。
+    """
+    for line in (txt or "").split("\n"):
+        line = line.strip()
+        if line and len(line) <= 30 and classify_quiz_line(line) != "unknown":
+            return line
+    return ""
+
+
+def fetch_active_status_batch(detail_urls: list[str], cookies: list[dict],
+                              ua: str, per_page_wait: int = 3000) -> list[str]:
+    """v1.9.2 方案 B：逐条打开活动详情页抓状态（一个 browser 多页，限速）。
+
+    背景：iframe 列表的状态徽标是纯图标（无头渲染无文字，v1.9.1 locale
+    修复后分组标签/倒计时已变中文但徽标仍无文字），activelist JSON 无用户
+    完成状态（v1.8.4d full dump 实证）——详情页是唯一可靠状态源。
+    每条间隔 2 秒（反爬约束，调用方每课限 3 条）；任何异常返回空串不抛。
+    """
+    out: list[str] = []
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            ctx = browser.new_context(user_agent=ua, locale="zh-CN")
+            if cookies:
+                ctx.add_cookies(cookies)
+            page = ctx.new_page()
+            for u in detail_urls or []:
+                status = ""
+                try:
+                    page.goto(u, wait_until="domcontentloaded", timeout=30000)
+                    page.wait_for_timeout(per_page_wait)
+                    # 优先 color-green 等状态 span（用户 DOM 实证），
+                    # 兜底全文本逐行找状态词
+                    try:
+                        s = page.evaluate(
+                            "() => { const el = document.querySelector("
+                            "'span[class*=\"color-\"]'); "
+                            "return el ? (el.innerText || '').trim() : ''; }")
+                        if s and classify_quiz_line(s) != "unknown":
+                            status = s
+                    except Exception:
+                        s = ""
+                    if not status:
+                        txt = page.evaluate(
+                            "() => (document.body && document.body.innerText) || ''")
+                        status = find_status_in_text(txt or "")
+                except Exception:
+                    status = ""
+                out.append(status)
+                page.wait_for_timeout(2000)
+            ctx.close()
+            browser.close()
+    except Exception:
+        while len(out) < len(detail_urls or []):
+            out.append("")
+    return out
+
+
 # 兼容旧名（v1.5.22 的接口，selftest/文档引用过 cookies_from_session）
 def cookies_from_session(session) -> list[dict]:
     """v1.6.0：等价 cookies_for_browser（域归一化版）。"""

@@ -707,6 +707,25 @@ def run() -> dict:
                 # （只打词名不落原文）——定位状态文字在哪个 frame/是否渲染
                 for _fd in (res.get("frame_digest") or [])[:8]:
                     log(f"[quiz]   frame：{re.sub(r'[0-9]', 'D', str(_fd))[:110]}")
+                # v1.9.2 方案 B：详情页状态补全——iframe 徽标纯图标（无头渲染
+                # 无文字）、activelist JSON 无用户状态（full dump 实证），详情页
+                # 是唯一可靠状态源（用户 DOM 实证：点开活动看到
+                # 「已提交，待教师公布正确答案」）。每课限 3 条（反爬），
+                # 内存 url 是含 activeId 的深链（strip_personal_fields 之前）
+                _need = [t for t in tasks_q
+                         if not (t.get("status") or "").strip()
+                         and "activeId=" in (t.get("url") or "")]
+                if _need:
+                    _got = qb.fetch_active_status_batch(
+                        [t["url"] for t in _need[:3]], q_cookies, UA)
+                    _ok_n = 0
+                    for t, s in zip(_need[:3], _got):
+                        if s:
+                            t["status"] = s
+                            t["state"] = qb.classify_quiz_line(s)
+                            _ok_n += 1
+                    log(f"[quiz] {cname} 详情页补状态 {_ok_n}/{len(_got)} 条"
+                        f"（待补 {len(_need)} 条，本轮限 3）")
                 line_count = int(res.get("diag", {}).get("lineCount") or 0)
                 if line_count <= 0:
                     # 内容轮询后仍 0 行：疑似没加载完/被限流（run 43807375956
