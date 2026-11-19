@@ -654,10 +654,23 @@ def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> di
                     rows = data.get("rows") or []
                 result.update({"ok": True, "rows_raw": rows, "diag": data,
                                "frame_url": frame.url})
-            # v1.9.0：主页活动卡片提取（状态在主页卡片上，不在 iframe——
-            # 用户 DOM 实证）。无论 frame 找没找到都试一次主页，异常全吞
+            # v1.9.0b：活动卡片提取——**遍历全部 frames**。v1.9.0 只在主 frame
+            # evaluate，高数轮实证抓 0 张；用户 F12 的 Elements 面板显示的是整棵
+            # frame 树，color-green 状态 span 很可能在某个嵌套 iframe 里（页面
+            # 有多个 frame：stuActiveList 之外还有卡片/作业区）。每张卡带上命中
+            # frame 的 path（打码 query）便于定位。
             try:
-                result["home_cards"] = page.evaluate(_HOME_CARD_JS) or []
+                cards = []
+                for fr in page.frames:
+                    try:
+                        got = fr.evaluate(_HOME_CARD_JS) or []
+                    except Exception:
+                        continue
+                    if got:
+                        _fpath = re.sub(r"^[a-z]+://[^/]+/", "",
+                                        (fr.url or "").split("?")[0])[:60]
+                        cards.extend({**c, "frame": _fpath} for c in got)
+                result["home_cards"] = cards
             except Exception:
                 result["home_cards"] = []
             result["xhr"] = xhr_seen[:20]

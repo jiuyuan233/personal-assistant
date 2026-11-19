@@ -701,7 +701,8 @@ def run() -> dict:
                 for _card in (_hc or [])[:6]:
                     _cs = re.sub(r"\d", "D", str(_card.get("status") or ""))[:40]
                     _cc = re.sub(r"\d", "D", str(_card.get("ctx") or ""))[:60]
-                    log(f"[quiz]   卡片：status「{_cs}」 ctx「{_cc}」")
+                    _cf = re.sub(r"\d", "D", str(_card.get("frame") or "?"))[:40]
+                    log(f"[quiz]   卡片：status「{_cs}」 ctx「{_cc}」 frame「{_cf}」")
                 line_count = int(res.get("diag", {}).get("lineCount") or 0)
                 if line_count <= 0:
                     # 内容轮询后仍 0 行：疑似没加载完/被限流（run 43807375956
