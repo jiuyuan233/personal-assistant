@@ -676,8 +676,10 @@ def run() -> bool:
     log(f"任务清单：{stats['pending']} 条可做 / {stats['courses']} 门课"
         f"（今天 {stats['today']} / 7天内 {stats['week']} / 更远 {stats['later']}"
         f" / 截止未知 {stats['unknown']}）")
-    log(f"已剔除：逾期 {d['overdue']} / 非待完成 {d['not_pending']}；"
-        f"清单内待完成 {n_pending} + 未开始 {n_upcoming}")
+    # v1.8.0：四类动态拼（notify_feishu.js 的 TASK_TEMPLATES 若依赖此行格式需同步）
+    _drop_txt = " / ".join(f"{REASON_CN[k]} {d.get(k, 0)}"
+                           for k in REASON_ORDER if d.get(k))
+    log(f"已剔除：{_drop_txt or '无'}；清单内待完成 {n_pending} + 未开始 {n_upcoming}")
     log(f"独立文档：公告 {notice_count} 条 / 潜在计划 {plan_count} 项 / 已剔除 {excluded_count} 项")
     log("README 已生成")
     return ok_n and ok_p and ok_e
