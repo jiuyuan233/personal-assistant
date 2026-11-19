@@ -673,6 +673,11 @@ def run() -> dict:
                     except Exception:
                         log(f"[quiz-xhr] {cname} {_b['path']} 响应非合法 JSON"
                             f"（{len(_b['body'])} 字节）")
+                # v1.8.4b：activeList 枚举值探针——形状 dump 看不到 userStatus 的
+                # 实际值，这里 dump 键名全集 + 前几条枚举值（打码标题），
+                # 用高数三条「已提交」地面真值标定映射（下一版实现状态直读）
+                for _probe in qb.active_list_probe(res.get("xhr_bodies") or [])[:6]:
+                    log(f"[quiz-xhr] {cname} probe：{_probe}")
                 if not res.get("ok"):
                     log(f"[quiz] {cname} 随堂采集失败：{res.get('error', '')[:120]}", level="WARN")
                     continue

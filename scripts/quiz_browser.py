@@ -429,6 +429,46 @@ def json_shape(obj, depth: int = 0) -> str:
     return "num"
 
 
+def active_list_probe(bodies: list[dict]) -> list[str]:
+    """v1.8.4b：从捕获的响应体提取 activeList 的键名与枚举值（打码）。
+
+    形状 dump（json_shape）把数字全掩成 num，看不到 userStatus 的实际枚举值。
+    这里专门为「状态映射标定」收集：全键名列表（键名不敏感）+ 前几条的
+    枚举值（userStatus/type/activeType 是 0-99 的枚举，非学号/ID 类敏感数字），
+    nameOne/nameTwo 数字掩 D 截 24 字——用于和高数三条「已提交」地面真值对齐。
+    """
+    out: list[str] = []
+    for b in bodies or []:
+        if "activelist" not in (b.get("path") or ""):
+            continue
+        try:
+            import json as _j
+            obj = _j.loads(b["body"])
+            items = ((obj.get("data") or {}).get("activeList")) or []
+        except Exception:
+            continue
+        if not items or not isinstance(items[0], dict):
+            continue
+        keys = ",".join(sorted(items[0].keys()))
+        out.append("keys: " + safe_text(keys, 400))
+        for it in items[:4]:
+            if not isinstance(it, dict):
+                continue
+            vals = []
+            for k in ("userStatus", "type", "activeType"):
+                v = it.get(k)
+                if isinstance(v, int) and not isinstance(v, bool):
+                    vals.append(f"{k}={v}")
+            for k in ("nameOne", "nameTwo"):
+                v = it.get(k)
+                if isinstance(v, str) and v.strip():
+                    mv = safe_text(re.sub(r"\d", "D", v), 24)
+                    vals.append(f"{k}='{mv}'")
+            if vals:
+                out.append("item: " + " ".join(vals))
+    return out
+
+
 def collect_quiz(course: dict, mid_url: str, cookies: list[dict], ua: str) -> dict:
     """一门课的随堂采集：打开课程页 → 等 stuActiveList iframe 渲染 → 提取行。
 
