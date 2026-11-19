@@ -816,3 +816,96 @@ def fetch_active_status_batch(detail_urls: list[str], cookies: list[dict],
 def cookies_from_session(session) -> list[dict]:
     """v1.6.0：等价 cookies_for_browser（域归一化版）。"""
     return cookies_for_browser(session)
+
+def _status_from_frames(page) -> tuple[str, str]:
+    """遍历页面全部 frames 找状态：优先 color-green span，兜底逐行状态词。
+
+    返回 (status, frame_url)。点击后的详情视图可能替换 iframe 内容或
+    新增 frame（用户实证 URL 仍是 mycourse/stu，SPA 内部导航），所以
+    每次点击后全量扫一遍 frames。
+    """
+    for fr in page.frames:
+        try:
+            s = fr.evaluate(
+                "() => { const el = document.querySelector("
+                "'span[class*=\"color-\"]'); "
+                "return el ? (el.innerText || '').trim() : ''; }")
+            if s and classify_quiz_line(s) != "unknown":
+                return s, fr.url or ""
+        except Exception:
+            pass
+    for fr in page.frames:
+        try:
+            txt = fr.evaluate(
+                "() => (document.body && document.body.innerText) || ''") or ""
+            s = find_status_in_text(txt)
+            if s:
+                return s, fr.url or ""
+        except Exception:
+            pass
+    return "", ""
+
+
+def fetch_status_by_click(mid_url: str, titles: list[str], cookies: list[dict],
+                          ua: str, diag: list | None = None) -> list[str]:
+    """v1.9.3 点击式状态抓取：在课程页 iframe 里点击活动行，从详情视图提状态。
+
+    用户实证（2026-11-19 截图 + 地址栏）：点开「第三章知识点总结」后 URL
+    仍是 mycourse/stu（SPA 内部导航，无独立详情 URL），状态栏
+    「已提交，待教师公布正确答案」渲染在点击后的详情视图里——无头浏览器
+    没人点击所以永远看不到；拼 stuActiveDetail 直开被服务端拒绝
+    （v1.9.2e 实证）。方案：**完全模拟用户**——打开课程页 → 在
+    stuActiveList iframe 里按标题点击 → 从点击后的 frames 提取状态。
+    每条抓完重开课程页回列表（SPA 返回不可靠），每课限 3 条（调用方约束）。
+    diag（可选）：收「点击命中/状态命中 frame」诊断行，稳定后撤。
+    """
+    out: list[str] = []
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            ctx = browser.new_context(user_agent=ua, locale="zh-CN")
+            if cookies:
+                ctx.add_cookies(cookies)
+            page = ctx.new_page()
+            for title in titles or []:
+                status = ""
+                try:
+                    page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
+                    page.wait_for_timeout(6000)
+                    frame = _find_active_frame(page)
+                    if frame is None:
+                        out.append("")
+                        continue
+                    # 等列表渲染出目标标题（最长 15s）
+                    hit = None
+                    for _ in range(15):
+                        try:
+                            hit = frame.get_by_text(title, exact=False).first
+                            hit.wait_for(state="visible", timeout=1000)
+                            break
+                        except Exception:
+                            hit = None
+                            page.wait_for_timeout(1000)
+                    if hit is None:
+                        if diag is not None:
+                            diag.append(f"标题未渲染：{safe_text(title, 30)}")
+                        out.append("")
+                        continue
+                    hit.click(timeout=5000)
+                    page.wait_for_timeout(4000)  # 详情视图渲染
+                    status, furl = _status_from_frames(page)
+                    if diag is not None and len(diag) < 4:
+                        _fp = safe_text(re.sub(r"\d", "D", furl or ""), 80)
+                        _ss = safe_text(re.sub(r"\d", "D", status or "未命中"), 40)
+                        diag.append(f"click ok 状态「{_ss}」 来源 frame「{_fp}」")
+                except Exception:
+                    status = ""
+                out.append(status)
+                page.wait_for_timeout(1500)
+            ctx.close()
+            browser.close()
+    except Exception:
+        while len(out) < len(titles or []):
+            out.append("")
+    return out
