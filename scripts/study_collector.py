@@ -826,6 +826,22 @@ def run() -> dict:
             _gt_n += 1
     if _gt_n:
         log(f"清洗组标签污染 status（进行中（N）等组计数徽标）：{_gt_n} 条")
+    # v1.9.6b（用户 2026-11-20 实证：第一章已提交+积分 5）：v1.9.5 前缀点击
+    # 点错活动，把已交的高数一/三章抓成「未提交」落盘；merge 的「空状态不
+    # 覆盖旧值」会固化它、补全只挑空状态 → 永远不会被重抓。一次性清洗这
+    # 两条（标题前缀 + 课程限定 + status 恰为「未提交」，足够窄不误伤），
+    # 让 v1.9.6b 的 activeId 直开重抓真实状态。
+    _bad_n = 0
+    for t in merged:
+        if (t.get("kind") == "quiz"
+                and (t.get("status") or "").strip() == "未提交"
+                and "知识点总结" in (t.get("title") or "")
+                and "高等数学" in (t.get("course") or "")):
+            t["status"] = ""
+            t["state"] = "pending"
+            _bad_n += 1
+    if _bad_n:
+        log(f"清洗 v1.9.5 点错污染（高数知识点总结「未提交」→ 清空待重抓）：{_bad_n} 条")
     # 审计 §2.5 / §7.2：data/ 是公开仓库的一部分，不是本地缓存。
     # cpi / answerId / enc 每生一份，落盘前必须抹掉；完整深链只在本轮内存里用于抓详情页。
     link_mode = cfg.get("public_links") or "course"

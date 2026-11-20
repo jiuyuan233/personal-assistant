@@ -1442,6 +1442,29 @@ def do_selftest() -> bool:
           qb.swap_active_id("https://x/page/other?a=1", "123")
           == "https://x/page/other?a=1"
           and qb.swap_active_id("", "123") == "")
+    # v1.9.6b：v1.9.5 点错污染清洗规则（高数知识点总结「未提交」→ 清空待重抓；
+    # 规则本身在 study_collector 内联，这里锁判定条件的纯函数等价形式）
+    def _hit_v195_pollution(t: dict) -> bool:
+        return (t.get("kind") == "quiz"
+                and (t.get("status") or "").strip() == "未提交"
+                and "知识点总结" in (t.get("title") or "")
+                and "高等数学" in (t.get("course") or ""))
+    check("v1.9.5 污染清洗：命中已交的高数一/三章，不误伤真未交/其他课",
+          _hit_v195_pollution({"kind": "quiz", "status": "未提交",
+                               "title": "第一章知识点总结（自己手写…",
+                               "course": "高等数学A"})
+          and _hit_v195_pollution({"kind": "quiz", "status": "未提交",
+                                   "title": "第三章知识点总结（手写+学号姓名）",
+                                   "course": "高等数学A"})
+          and not _hit_v195_pollution({"kind": "quiz", "status": "未提交",
+                                       "title": "随堂练习",
+                                       "course": "高等数学A"})
+          and not _hit_v195_pollution({"kind": "quiz", "status": "未提交",
+                                       "title": "第一章知识点总结",
+                                       "course": "新世纪大学英语综合教程(一)"})
+          and not _hit_v195_pollution({"kind": "work", "status": "未提交",
+                                       "title": "第一章知识点总结",
+                                       "course": "高等数学A"}))
     # v1.9.2b：activelist 的 标题→活动id 映射（onclick 无深链时拼详情页 URL 用）
     _aid = qb.active_ids_by_title([
         {"path": "v2/apis/active/student/activelist",

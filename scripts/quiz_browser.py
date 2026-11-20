@@ -914,69 +914,99 @@ def fetch_status_by_click(mid_url: str, titles: list[str], cookies: list[dict],
                     except Exception:
                         pass
 
-            for idx, title in enumerate(titles or []):
+            def _click_once(title: str) -> tuple[str, str]:
+                """点击式抓单条：返回 (status, furl)。也负责维护 template。
+
+                v1.9.6b：点击**只为获取 URL 模板**（第一条实证第一章点错
+                活动抓成「未提交」），模板到手后所有活动一律 activeId 直开；
+                点击返回的状态仅作直开失败时的兜底。
+                """
+                nonlocal template
+                status, furl = "", ""
+                page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
+                page.wait_for_timeout(6000)
+                frame = _find_active_frame(page)
+                if frame is None:
+                    return "", ""
+                probe = (title or "").strip()[:12]
+                hit = None
+                for _ in range(15):
+                    try:
+                        hit = frame.get_by_text(probe, exact=False).first
+                        hit.wait_for(state="visible", timeout=1000)
+                        break
+                    except Exception:
+                        hit = None
+                        page.wait_for_timeout(1000)
+                if hit is None:
+                    return "", ""
+                n_before = len(ctx.pages)
+                hit.click(timeout=5000)
+                page.wait_for_timeout(8000)
+                if len(ctx.pages) > n_before:
+                    for extra in ctx.pages[n_before:]:
+                        try:
+                            s, fu = _status_from_frames(extra)
+                            if s:
+                                status, furl = s, fu
+                                break
+                        except Exception:
+                            pass
+                if not status:
+                    status, furl = _status_from_frames(page)
+                # 模板：跳转后含 activeId 的 frame URL（幂等保留首个）
+                if not template and "activeId=" in (furl or ""):
+                    template = furl
+                    if diag is not None:
+                        _tp = safe_text(re.sub(r"\d", "D", template), 150)
+                        diag.append(f"模板（点击 {safe_text(title, 14)} 获得）：{_tp}")
+                # activeId 对比：点错可见（第一章实证教训）
+                if diag is not None and len(diag) < 6:
+                    expect = (aid_map or {}).get(_norm_title(title or ""))
+                    if expect:
+                        m = re.search(r"activeId=(\d+)", furl or "")
+                        got = m.group(1) if m else "?"
+                        mark = "一致" if got == expect else "不一致（正常：模板点击可点错）"
+                        diag.append(f"activeId 对比（{safe_text(title, 12)}）："
+                                    f"点击命中 {got[-4:]} vs 预期 {str(expect)[-4:]} {mark}")
+                for extra in list(ctx.pages[1:]):
+                    try:
+                        extra.close()
+                    except Exception:
+                        pass
+                return status, furl
+
+            # 阶段一：模板获取——挑第一个有 activeId 映射的标题点击一次，
+            # **不采信其状态**（第一章实证：第一条点击也会点错）
+            if aid_map and (titles or []):
+                _first = next((t for t in titles
+                               if aid_map.get(_norm_title(t or ""))), None)
+                if _first is not None:
+                    try:
+                        _click_once(_first)
+                    except Exception:
+                        pass
+
+            # 阶段二：逐条抓状态——有模板 + 有 activeId 一律**直开**（精确），
+            # 否则退化点击式（其状态为兜底值）
+            for title in (titles or []):
                 status = ""
                 how = ""
                 expect_id = (aid_map or {}).get(_norm_title(title or ""))
-                # ② 直开：有模板 + 有该活动的 activeId（第一条必须先点击拿模板）
-                if template and expect_id and idx > 0:
-                    status, furl = _direct_fetch(swap_active_id(template, expect_id))
-                    how = "直开"
-                if not status:
-                    # ①/退化：点击式（也负责拿模板）
+                if template and expect_id:
                     try:
-                        page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
-                        page.wait_for_timeout(6000)
-                        frame = _find_active_frame(page)
-                        if frame is not None:
-                            probe = (title or "").strip()[:12]
-                            hit = None
-                            for _ in range(15):
-                                try:
-                                    hit = frame.get_by_text(probe, exact=False).first
-                                    hit.wait_for(state="visible", timeout=1000)
-                                    break
-                                except Exception:
-                                    hit = None
-                                    page.wait_for_timeout(1000)
-                            if hit is not None:
-                                n_before = len(ctx.pages)
-                                hit.click(timeout=5000)
-                                page.wait_for_timeout(8000)
-                                furl = ""
-                                if len(ctx.pages) > n_before:
-                                    for extra in ctx.pages[n_before:]:
-                                        try:
-                                            s, fu = _status_from_frames(extra)
-                                            if s:
-                                                status, furl = s, fu
-                                                break
-                                        except Exception:
-                                            pass
-                                if not status:
-                                    status, furl = _status_from_frames(page)
-                                how = "点击"
-                                # 模板：跳转后含 activeId 的 frame URL（幂等保留首个）
-                                if not template and "activeId=" in (furl or ""):
-                                    template = furl
-                                    if diag is not None:
-                                        _tp = safe_text(re.sub(r"\d", "D", template), 150)
-                                        diag.append(f"模板（点击 {safe_text(title, 14)} 获得）：{_tp}")
-                                # activeId 对比：点错可见（第一章实证教训）
-                                if diag is not None and expect_id and len(diag) < 6:
-                                    m = re.search(r"activeId=(\d+)", furl or "")
-                                    got = m.group(1) if m else "?"
-                                    mark = "一致" if got == expect_id else "不一致→可能点错"
-                                    diag.append(f"activeId 对比（{safe_text(title, 12)}）："
-                                                f"点击命中 {got[-4:]} vs 预期 {str(expect_id)[-4:]} {mark}")
-                                for extra in list(ctx.pages[1:]):
-                                    try:
-                                        extra.close()
-                                    except Exception:
-                                        pass
+                        status, _fu = _direct_fetch(
+                            swap_active_id(template, expect_id))
+                        how = "直开"
                     except Exception:
                         status = ""
-                if diag is not None and len(diag) < 8:
+                if not status:
+                    try:
+                        status, _fu = _click_once(title)
+                        how = "点击"
+                    except Exception:
+                        status = ""
+                if diag is not None and len(diag) < 9:
                     _ss = safe_text(re.sub(r"\d", "D", status or "未命中"), 40)
                     diag.append(f"[{how or '失败'}] {safe_text(title, 16)} → 「{_ss}」")
                 out.append(status)
