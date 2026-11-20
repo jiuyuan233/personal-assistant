@@ -1424,6 +1424,17 @@ def do_selftest() -> bool:
           qb.find_status_in_text("10-22 16:59 已结束\n已结束") == "已结束"
           and qb.find_status_in_text("10-07 21:41 已结束") == "",
           "日期行不得当状态")
+    # v1.9.7：讨论类 situationalDialogue 页的状态形态——「最终得分X分」
+    # （用户实证思修「怎样创造有意义的人生？」最终得分 85 分，.final-score div）
+    check("讨论类得分状态：词表命中 done（有得分 = 已完成）",
+          qb.classify_quiz_line("最终得分85分") == "done"
+          and qb.classify_quiz_line("最终得分0分") == "done",
+          "得分即完成")
+    check("讨论类得分状态：状态行提取命中且不被日期防御误杀",
+          qb.find_status_in_text("活动标题\n最终得分85分\n10-23 17:50 已结束")
+          == "最终得分85分"
+          and not qb.is_group_tag("最终得分85分"),
+          "得分行可提取")
     # v1.9.4：分组标签排除——「进行中（N）/已结束（N）」是组计数徽标不是用户状态
     # （思修轮点击式实证抓到过并污染落盘，需主动清洗）
     check("分组标签识别（进行中（N）是标签、真实状态词不是）",

@@ -61,7 +61,10 @@ def cookies_for_browser(session) -> list[dict]:
 # 随堂状态词表。未收录的词 classify 返回 unknown，调用方 WARN 出来下一轮补，
 # 不许静默吞掉（学习通「未交」漏词教训，v1.2.3）。
 # v1.6.5：「未开始」单独判 upcoming——活动还没开放，不算待办（与 study_collector.classify 同口径）。
-QUIZ_DONE = {"已完成", "已参与", "已提交", "已结束", "已交", "已答", "已互评", "已过期", "已评分"}
+# v1.9.7：「最终得分」是讨论类 situationalDialogue 页的状态形态（用户实证
+# 「最终得分85分」）——有得分 = 已完成；子串扫描命中即 done。
+QUIZ_DONE = {"已完成", "已参与", "已提交", "已结束", "已交", "已答", "已互评", "已过期", "已评分",
+             "最终得分"}
 QUIZ_SUBMITTED = {"待批阅", "批阅中", "待批改", "批改中"}
 QUIZ_PENDING = {"待做", "未做", "未交", "未提交", "待完成", "进行中", "未参与", "待参与",
                 "待作答", "未答", "已发布", "待开始"}
@@ -835,12 +838,17 @@ def cookies_from_session(session) -> list[dict]:
     return cookies_for_browser(session)
 
 def _status_from_frames(page) -> tuple[str, str]:
-    """遍历页面全部 frames 找状态：优先 color-green span，兜底逐行状态词。
+    """遍历页面全部 frames 找状态：color-green span → 最终得分 → 逐行状态词。
 
     返回 (status, frame_url)。点击后的详情视图可能替换 iframe 内容、
     新增 frame 或开新标签页（用户实证 URL 仍是 mycourse/stu），所以每次
     点击后全量扫一遍 frames。v1.9.4：color-green 通道也排除分组标签
     （「进行中（N）」实证出现过，是组计数徽标不是用户状态）。
+    v1.9.7：讨论类活动点开是 **situationalDialogue** 页（chaoxing Vue，
+    与 quizStudentQuestion 完全不同的页面类型——思修「怎样创造有意义的
+    人生？」实证），状态形态是 `<div class="final-score">最终得分 85 分
+    </div>`——加 **.final-score 专用通道**（有得分 = 已完成），比逐行
+    状态词优先级高（讨论页没有「已提交」类文字）。
     """
     for fr in page.frames:
         try:
@@ -849,6 +857,17 @@ def _status_from_frames(page) -> tuple[str, str]:
                 "'span[class*=\"color-\"]'); "
                 "return el ? (el.innerText || '').trim() : ''; }")
             if s and not is_group_tag(s) and classify_quiz_line(s) != "unknown":
+                return s, fr.url or ""
+        except Exception:
+            pass
+    # v1.9.7：讨论类 situationalDialogue 的得分徽章（innerText 形如
+    # 「最终得分\n85\n分」，压掉空白成「最终得分85分」）
+    for fr in page.frames:
+        try:
+            s = fr.evaluate(
+                "() => { const el = document.querySelector('.final-score'); "
+                "return el ? (el.innerText || '').replace(/\\s+/g, '') : ''; }")
+            if s and "最终得分" in s:
                 return s, fr.url or ""
         except Exception:
             pass
