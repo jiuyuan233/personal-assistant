@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-21T00:00:20+08:00",
+  "updated_at": "2026-11-21T01:04:38+08:00",
   "stats": {
     "pending": 1,
     "overdue": 0,
@@ -10,8 +10,8 @@
     "upcoming": 0,
     "dropped": {
       "ignored": 1,
-      "not_pending": 42,
-      "quiz_ended": 6,
+      "not_pending": 44,
+      "quiz_ended": 4,
       "overdue": 1
     },
     "courses": 14
@@ -30,11 +30,11 @@
       "state": "pending",
       "deadline": "2026-11-22T23:40:00+08:00",
       "deadline_exact": true,
-      "remaining_text": "剩余47小时44分钟",
+      "remaining_text": "剩余46小时36分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58763973",
       "start_time": "2026-11-20T22:40:00+08:00",
       "first_seen": "2026-11-20T23:54:32+08:00",
-      "last_seen": "2026-11-20T23:54:32+08:00"
+      "last_seen": "2026-11-21T01:02:31+08:00"
     }
   ],
   "courses": [
@@ -42,9 +42,7 @@
       "course_id": "269154829",
       "class_id": "159619174",
       "ismooc2": "1",
-      "name": "大学生职业生涯与发展规划",
-      "task_count": 0,
-      "pending_count": 0
+      "name": "大学生职业生涯与发展规划"
     },
     {
       "course_id": "246136739",
