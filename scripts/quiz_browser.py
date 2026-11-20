@@ -965,7 +965,7 @@ def fetch_status_by_click(mid_url: str, titles: list[str], cookies: list[dict],
                     return "", ""
                 n_before = len(ctx.pages)
                 hit.click(timeout=5000)
-                page.wait_for_timeout(8000)
+                page.wait_for_timeout(10000)  # v1.9.7b：8s→10s，讨论类 Vue 页渲染慢
                 if len(ctx.pages) > n_before:
                     for extra in ctx.pages[n_before:]:
                         try:
@@ -992,6 +992,42 @@ def fetch_status_by_click(mid_url: str, titles: list[str], cookies: list[dict],
                         mark = "一致" if got == expect else "不一致（正常：模板点击可点错）"
                         diag.append(f"activeId 对比（{safe_text(title, 12)}）："
                                     f"点击命中 {got[-4:]} vs 预期 {str(expect)[-4:]} {mark}")
+                # v1.9.7b 诊断：点击后未命中时 dump 页面形态（讨论类 situationalDialogue
+                # 点击后到底开了什么——页面 URL / 各 frame path / final-score 探测 /
+                # 文本长度），定位思修轮 0/3 的真实原因
+                if not status and diag is not None and len(diag) < 9:
+                    try:
+                        _pages_info = []
+                        for _p in ctx.pages[:3]:
+                            _frs = []
+                            for _fr in _p.frames[:5]:
+                                try:
+                                    _fp2 = re.sub(r"^[a-z]+://[^/]+/", "",
+                                                  (_fr.url or "").split("?")[0])[:50]
+                                    _fs = ""
+                                    try:
+                                        _fs = _fr.evaluate(
+                                            "() => { const el = document.querySelector("
+                                            "'.final-score'); "
+                                            "return el ? '有' : '无'; }")
+                                    except Exception:
+                                        _fs = "?"
+                                    _tl = 0
+                                    try:
+                                        _tl = _fr.evaluate(
+                                            "() => document.body ? "
+                                            "(document.body.innerText || '').length : 0")
+                                    except Exception:
+                                        _tl = -1
+                                    _frs.append(f"{_fp2}(score:{_fs},{_tl}字)")
+                                except Exception:
+                                    pass
+                            _pu = re.sub(r"^[a-z]+://[^/]+/", "",
+                                         (_p.url or "").split("?")[0])[:50]
+                            _pages_info.append(f"{_pu}[{';'.join(_frs) or '无frame'}]")
+                        diag.append("点击后形态：" + " | ".join(_pages_info)[:280])
+                    except Exception:
+                        diag.append("形态诊断失败")
                 for extra in list(ctx.pages[1:]):
                     try:
                         extra.close()
