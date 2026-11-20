@@ -1,22 +1,41 @@
 {
-  "updated_at": "2026-11-20T15:00:23+08:00",
+  "updated_at": "2026-11-20T16:27:33+08:00",
   "stats": {
-    "pending": 0,
+    "pending": 1,
     "overdue": 0,
     "today": 0,
     "week": 0,
     "later": 0,
     "unknown": 0,
-    "upcoming": 0,
+    "upcoming": 1,
     "dropped": {
       "ignored": 1,
-      "not_pending": 46,
+      "not_pending": 45,
       "quiz_ended": 4,
       "overdue": 1
     },
     "courses": 14
   },
-  "items": [],
+  "items": [
+    {
+      "id": "201780805-575172791c",
+      "kind": "exam",
+      "course": "新世纪大学英语综合教程(一)",
+      "course_id": "201780805",
+      "class_id": "156290484",
+      "title": "2026级本科新生英语词汇听力词汇水平情况摸底测试1.0",
+      "work_id": "11273747",
+      "label": "考试",
+      "status": "未开始",
+      "state": "upcoming",
+      "deadline": "2026-11-21T15:18:00+08:00",
+      "deadline_exact": true,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/exam-ans/exam/test/examcode/examnotes?courseId=201780805&classId=156290484&examId=11273747",
+      "first_seen": "2026-11-20T15:13:15+08:00",
+      "last_seen": "2026-11-20T16:24:08+08:00"
+    }
+  ],
   "courses": [
     {
       "course_id": "269154829",
@@ -111,7 +130,7 @@
       "class_id": "156290484",
       "ismooc2": "1",
       "name": "新世纪大学英语综合教程(一)",
-      "task_count": 3,
+      "task_count": 4,
       "pending_count": 0
     },
     {
