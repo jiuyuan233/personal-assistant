@@ -950,6 +950,12 @@ def fetch_status_by_click(mid_url: str, titles: list[str], cookies: list[dict],
                 page.wait_for_timeout(6000)
                 frame = _find_active_frame(page)
                 if frame is None:
+                    # v1.9.7d：不再无声失败——2026-11-20 思修轮实证 IP 被封时
+                    # goto 后 iframe 不渲染，3 条全部静默「未命中」且形态诊断
+                    # 也没触发（提前 return），排查了两轮才定位
+                    if diag is not None and len(diag) < 9:
+                        diag.append("frame 未找到（goto 后 iframe 未渲染，"
+                                    "疑似封禁/限流）")
                     return "", ""
                 probe = (title or "").strip()[:12]
                 hit = None

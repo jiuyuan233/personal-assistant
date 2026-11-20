@@ -723,7 +723,16 @@ def run() -> dict:
                          and (t.get("title") or "").strip()]
                 _need.sort(key=lambda t: (parse_datetime(t.get("deadline"))
                                           or datetime.max))
-                if _need:
+                # v1.9.7d 封禁熔断：XHR 响应体含「已被封禁」时本轮跳过点击
+                # 补状态（2026-11-20 实证：连续多轮派发+点击补全触发反爬，
+                # 心理/英语课接口返回「当前ip 已被封禁」；此时继续点击
+                # 只会延长封禁，等自然解封下一轮再补）
+                _banned = any("封禁" in (b.get("body") or "")
+                              for b in (res.get("xhr_bodies") or []))
+                if _banned:
+                    log(f"[quiz] {cname} 接口返回封禁提示，本轮跳过点击补状态"
+                        f"（等自然解封）", level="WARN")
+                if _need and not _banned:
                     _diag: list = []
                     _aid_map = qb.active_ids_by_title(res.get("xhr_bodies") or [])
                     _got = qb.fetch_status_by_click(
