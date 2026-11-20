@@ -707,31 +707,32 @@ def run() -> dict:
                 # （只打词名不落原文）——定位状态文字在哪个 frame/是否渲染
                 for _fd in (res.get("frame_digest") or [])[:8]:
                     log(f"[quiz]   frame：{re.sub(r'[0-9]', 'D', str(_fd))[:110]}")
-                # v1.9.3 点击式状态补全——**完全模拟用户行为**。三层实证链：
-                # ① iframe 徽标纯图标（locale 修复后仍无文字）；② activelist
-                # JSON 无用户完成状态（full dump）；③ 拼 stuActiveDetail 直开
-                # 被服务端拒绝 + 用户地址栏实证「点开活动后 URL 仍是
-                # mycourse/stu（SPA 内部导航，无独立详情 URL），状态文字在
-                # 点击后的详情视图里」。方案：打开课程页 → iframe 里按标题
-                # 点击 → 从点击后的 frames 提取状态。每课限 3 条（反爬）。
+                # v1.9.6 点击式 + URL 模板直开。实证链：① iframe 徽标纯图标；
+                # ② activelist JSON 无用户完成状态；③ stuActiveDetail 直开被拒；
+                # ④ 状态在点击后的 quizStudentQuestion 页；⑤ 第一章用户实证
+                # 「已提交」但前缀点击抓成「未提交」（点错活动）——新方案：
+                # 第一条点击拿 quizStudentQuestion 完整 URL 做模板，其余活动
+                # 用 activelist 的 nameOne→id 映射换 activeId 精确直开。
                 _need = [t for t in tasks_q
                          if not (t.get("status") or "").strip()
                          and (t.get("title") or "").strip()]
                 if _need:
                     _diag: list = []
+                    _aid_map = qb.active_ids_by_title(res.get("xhr_bodies") or [])
                     _got = qb.fetch_status_by_click(
                         mid_url, [t["title"] for t in _need[:3]],
-                        q_cookies, UA, diag=_diag)
-                    # v1.9.3 诊断（抓到状态就撤）：点击命中/状态来源 frame
-                    for _d in _diag[:3]:
-                        log(f"[quiz]   点击诊断：{re.sub(r'[0-9]', 'D', str(_d))[:150]}")
+                        q_cookies, UA, diag=_diag, aid_map=_aid_map)
+                    # v1.9.6 诊断（抓到状态就撤）：模板形状/直开|点击来源/
+                    # activeId 对比（第一章点错教训）
+                    for _d in _diag[:8]:
+                        log(f"[quiz]   补状态诊断：{re.sub(r'[0-9]', 'D', str(_d))[:170]}")
                     _ok_n = 0
                     for t, s in zip(_need[:3], _got):
                         if s:
                             t["status"] = s
                             t["state"] = qb.classify_quiz_line(s)
                             _ok_n += 1
-                    log(f"[quiz] {cname} 点击式补状态 {_ok_n}/{len(_got)} 条"
+                    log(f"[quiz] {cname} 点击式+直开补状态 {_ok_n}/{len(_got)} 条"
                         f"（待补 {len(_need)} 条，本轮限 3）")
                 line_count = int(res.get("diag", {}).get("lineCount") or 0)
                 if line_count <= 0:

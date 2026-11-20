@@ -860,23 +860,36 @@ def _status_from_frames(page) -> tuple[str, str]:
     return "", ""
 
 
-def fetch_status_by_click(mid_url: str, titles: list[str], cookies: list[dict],
-                          ua: str, diag: list | None = None) -> list[str]:
-    """v1.9.3/9.4 点击式状态抓取：在课程页 iframe 里点击活动行，从详情视图提状态。
+def swap_active_id(url: str, new_id: str) -> str:
+    """v1.9.6：把 URL 里的 activeId 参数值替换为 new_id（纯函数）。
 
-    用户实证（2026-11-19 截图 + 地址栏）：点开「第三章知识点总结」后 URL
-    仍是 mycourse/stu（SPA 内部导航，无独立详情 URL），状态栏
-    「已提交，待教师公布正确答案」渲染在点击后的详情视图里——无头浏览器
-    没人点击所以永远看不到；拼 stuActiveDetail 直开被服务端拒绝
-    （v1.9.2e 实证）。方案：**完全模拟用户**——打开课程页 → 在
-    stuActiveList iframe 里按标题点击 → 从点击后的 frames 提取状态。
-    v1.9.4：详情视图可能开**新标签页**（用户截图是完整页面）——点击后
-    检查 ctx.pages 增量，先扫新 tab 再扫原页面；组标签（进行中（N））
-    已在 _status_from_frames/find_status_in_text 排除（思修轮污染教训）。
-    每条抓完重开课程页回列表（SPA 返回不可靠），每课限 3 条（调用方约束）。
-    diag（可选）：收「点击命中/状态命中 frame」诊断行，稳定后撤。
+    点击式抓到的 quizStudentQuestion URL 是完整可用模板（含 courseId/
+    classId/enc 等全部上下文），同门课的活动只需换 activeId 即可精确直达
+    ——彻底绕开「前缀匹配点错行」的问题（第一章实证：交了但被点错活动
+    抓成「未提交」）。URL 不含 activeId 时原样返回（调用方退化点击式）。
+    """
+    if "activeId=" not in (url or "") or not new_id:
+        return url or ""
+    return re.sub(r"(activeId=)\d+", lambda m: m.group(1) + str(new_id), url)
+
+
+def fetch_status_by_click(mid_url: str, titles: list[str], cookies: list[dict],
+                          ua: str, diag: list | None = None,
+                          aid_map: dict | None = None) -> list[str]:
+    """v1.9.6 点击式 + URL 模板直开：随堂状态抓取（最终形态）。
+
+    用户实证（2026-11-20）：第一章「已提交，待教师公布正确答案」（积分 5）
+    但点击式抓成「未提交」——前缀匹配点错活动。新方案两段式：
+    ① 模板获取：第一条仍按前缀点击（v1.9.5 逻辑），从跳转后的 frame URL
+       （quizStudentQuestion?activeId=… 含全部上下文参数）提取模板，并与
+       aid_map 预期 activeId 对比（打码进 diag，点错可见）；
+    ② 精确直开：其余活动用 swap_active_id 换上自己的 activeId（来自
+       activelist JSON 的 nameOne→id 映射）直接 goto —— 精确、零误点。
+    模板拿不到或无 id 的条目退化点击式。每课限 3 条（调用方约束）。
+    diag（可选）：模板形状（数字打码）/ 每条来源（直开|点击）/状态。
     """
     out: list[str] = []
+    template = ""
     try:
         from playwright.sync_api import sync_playwright
         with sync_playwright() as pw:
@@ -885,64 +898,87 @@ def fetch_status_by_click(mid_url: str, titles: list[str], cookies: list[dict],
             if cookies:
                 ctx.add_cookies(cookies)
             page = ctx.new_page()
-            for title in titles or []:
-                status = ""
+
+            def _direct_fetch(url: str) -> tuple[str, str]:
+                """新 page 直开 quizStudentQuestion 模板 URL，返回 (状态, frame URL)。"""
+                p2 = ctx.new_page()
                 try:
-                    page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
-                    page.wait_for_timeout(6000)
-                    frame = _find_active_frame(page)
-                    if frame is None:
-                        out.append("")
-                        continue
-                    # 等列表渲染出目标标题（最长 15s）。v1.9.5：长标题在
-                    # iframe 里被 CSS 截断（带省略号，高数轮实证完整标题匹配
-                    # 不到「第一章知识点总结（自己手写…」），改用**前 12 字
-                    # 前缀**匹配（同课随堂标题前 12 字撞车概率极低）
-                    probe = (title or "").strip()[:12]
-                    hit = None
-                    for _ in range(15):
-                        try:
-                            hit = frame.get_by_text(probe, exact=False).first
-                            hit.wait_for(state="visible", timeout=1000)
-                            break
-                        except Exception:
-                            hit = None
-                            page.wait_for_timeout(1000)
-                    if hit is None:
-                        if diag is not None:
-                            diag.append(f"标题未渲染：{safe_text(title, 30)}")
-                        out.append("")
-                        continue
-                    n_before = len(ctx.pages)
-                    hit.click(timeout=5000)
-                    page.wait_for_timeout(8000)  # 详情视图渲染（v1.9.5：4s→8s，高数轮实证 4s 不够）
-                    # v1.9.4：新标签页优先（用户截图详情是完整页面）
-                    furl = ""
-                    if len(ctx.pages) > n_before:
-                        for extra in ctx.pages[n_before:]:
-                            try:
-                                s, fu = _status_from_frames(extra)
-                                if s:
-                                    status, furl = s, fu
-                                    break
-                            except Exception:
-                                pass
-                    if not status:
-                        status, furl = _status_from_frames(page)
-                    # 关闭多余 tab 防累积（每条重开课程页，旧 tab 无用）
-                    for extra in list(ctx.pages[1:]):
-                        try:
-                            extra.close()
-                        except Exception:
-                            pass
-                    if diag is not None and len(diag) < 4:
-                        _fp = safe_text(re.sub(r"\d", "D", furl or ""), 80)
-                        _ss = safe_text(re.sub(r"\d", "D", status or "未命中"), 40)
-                        _tab = "新tab" if len(ctx.pages) > 1 else "本页"
-                        diag.append(f"click ok（{_tab}） 状态「{_ss}」"
-                                    f" 来源「{_fp}」")
+                    p2.goto(url, wait_until="domcontentloaded", timeout=30000)
+                    p2.wait_for_timeout(6000)
+                    return _status_from_frames(p2)
                 except Exception:
-                    status = ""
+                    return "", ""
+                finally:
+                    try:
+                        p2.close()
+                    except Exception:
+                        pass
+
+            for idx, title in enumerate(titles or []):
+                status = ""
+                how = ""
+                expect_id = (aid_map or {}).get(_norm_title(title or ""))
+                # ② 直开：有模板 + 有该活动的 activeId（第一条必须先点击拿模板）
+                if template and expect_id and idx > 0:
+                    status, furl = _direct_fetch(swap_active_id(template, expect_id))
+                    how = "直开"
+                if not status:
+                    # ①/退化：点击式（也负责拿模板）
+                    try:
+                        page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
+                        page.wait_for_timeout(6000)
+                        frame = _find_active_frame(page)
+                        if frame is not None:
+                            probe = (title or "").strip()[:12]
+                            hit = None
+                            for _ in range(15):
+                                try:
+                                    hit = frame.get_by_text(probe, exact=False).first
+                                    hit.wait_for(state="visible", timeout=1000)
+                                    break
+                                except Exception:
+                                    hit = None
+                                    page.wait_for_timeout(1000)
+                            if hit is not None:
+                                n_before = len(ctx.pages)
+                                hit.click(timeout=5000)
+                                page.wait_for_timeout(8000)
+                                furl = ""
+                                if len(ctx.pages) > n_before:
+                                    for extra in ctx.pages[n_before:]:
+                                        try:
+                                            s, fu = _status_from_frames(extra)
+                                            if s:
+                                                status, furl = s, fu
+                                                break
+                                        except Exception:
+                                            pass
+                                if not status:
+                                    status, furl = _status_from_frames(page)
+                                how = "点击"
+                                # 模板：跳转后含 activeId 的 frame URL（幂等保留首个）
+                                if not template and "activeId=" in (furl or ""):
+                                    template = furl
+                                    if diag is not None:
+                                        _tp = safe_text(re.sub(r"\d", "D", template), 150)
+                                        diag.append(f"模板（点击 {safe_text(title, 14)} 获得）：{_tp}")
+                                # activeId 对比：点错可见（第一章实证教训）
+                                if diag is not None and expect_id and len(diag) < 6:
+                                    m = re.search(r"activeId=(\d+)", furl or "")
+                                    got = m.group(1) if m else "?"
+                                    mark = "一致" if got == expect_id else "不一致→可能点错"
+                                    diag.append(f"activeId 对比（{safe_text(title, 12)}）："
+                                                f"点击命中 {got[-4:]} vs 预期 {str(expect_id)[-4:]} {mark}")
+                                for extra in list(ctx.pages[1:]):
+                                    try:
+                                        extra.close()
+                                    except Exception:
+                                        pass
+                    except Exception:
+                        status = ""
+                if diag is not None and len(diag) < 8:
+                    _ss = safe_text(re.sub(r"\d", "D", status or "未命中"), 40)
+                    diag.append(f"[{how or '失败'}] {safe_text(title, 16)} → 「{_ss}」")
                 out.append(status)
                 page.wait_for_timeout(1500)
             ctx.close()

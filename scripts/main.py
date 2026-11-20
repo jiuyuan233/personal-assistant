@@ -1430,6 +1430,18 @@ def do_selftest() -> bool:
           qb.find_status_in_text("进行中（1）\n已结束（12）\n待做") == "待做"
           and qb.find_status_in_text("进行中（1）\n已结束（12）") == "",
           "组标签不得当状态")
+    # v1.9.6：URL 模板直开——点击拿到的 quizStudentQuestion URL 换 activeId
+    # 精确直达（第一章实证：已交但前缀点击点错活动抓成「未提交」）
+    _tpl = ("https://mobilelearn.huuc.edu.cn/page/quiz/stu/quizStudentQuestion"
+            "?courseId=219232606&classId=153566712&activeId=7000180286535&ut=s")
+    check("URL 模板换 activeId（只换 id 其余参数不动）",
+          qb.swap_active_id(_tpl, "7000177853304")
+          == _tpl.replace("activeId=7000180286535", "activeId=7000177853304"),
+          qb.swap_active_id(_tpl, "7000177853304"))
+    check("URL 无 activeId 时原样返回（退化点击式）",
+          qb.swap_active_id("https://x/page/other?a=1", "123")
+          == "https://x/page/other?a=1"
+          and qb.swap_active_id("", "123") == "")
     # v1.9.2b：activelist 的 标题→活动id 映射（onclick 无深链时拼详情页 URL 用）
     _aid = qb.active_ids_by_title([
         {"path": "v2/apis/active/student/activelist",
