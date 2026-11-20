@@ -1,22 +1,42 @@
 {
-  "updated_at": "2026-11-20T20:33:33+08:00",
+  "updated_at": "2026-11-20T22:53:23+08:00",
   "stats": {
-    "pending": 0,
+    "pending": 1,
     "overdue": 0,
     "today": 0,
-    "week": 0,
+    "week": 1,
     "later": 0,
     "unknown": 0,
     "upcoming": 0,
     "dropped": {
       "ignored": 1,
-      "not_pending": 43,
+      "not_pending": 42,
       "quiz_ended": 6,
       "overdue": 1
     },
     "courses": 14
   },
-  "items": [],
+  "items": [
+    {
+      "id": "219232606-8f1fe79376",
+      "kind": "work",
+      "course": "高等数学A",
+      "course_id": "219232606",
+      "class_id": "153566712",
+      "title": "4.2换元积分法（第2类换元积分法）",
+      "work_id": "58763973",
+      "label": "互评",
+      "status": "未交",
+      "state": "pending",
+      "deadline": "2026-11-22T23:40:00+08:00",
+      "deadline_exact": true,
+      "remaining_text": "剩余48小时49分钟",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58763973",
+      "start_time": "2026-11-20T22:40:00+08:00",
+      "first_seen": "2026-11-20T22:49:57+08:00",
+      "last_seen": "2026-11-20T22:49:57+08:00"
+    }
+  ],
   "courses": [
     {
       "course_id": "269154829",
@@ -120,7 +140,7 @@
       "ismooc2": "1",
       "name": "高等数学A",
       "task_count": 15,
-      "pending_count": 1
+      "pending_count": 2
     },
     {
       "course_id": "205372276",
