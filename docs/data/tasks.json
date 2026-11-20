@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-20T22:53:23+08:00",
+  "updated_at": "2026-11-21T00:00:20+08:00",
   "stats": {
     "pending": 1,
     "overdue": 0,
@@ -18,7 +18,7 @@
   },
   "items": [
     {
-      "id": "219232606-8f1fe79376",
+      "id": "219232606-2928dd1aac",
       "kind": "work",
       "course": "高等数学A",
       "course_id": "219232606",
@@ -30,11 +30,11 @@
       "state": "pending",
       "deadline": "2026-11-22T23:40:00+08:00",
       "deadline_exact": true,
-      "remaining_text": "剩余48小时49分钟",
+      "remaining_text": "剩余47小时44分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58763973",
       "start_time": "2026-11-20T22:40:00+08:00",
-      "first_seen": "2026-11-20T22:49:57+08:00",
-      "last_seen": "2026-11-20T22:49:57+08:00"
+      "first_seen": "2026-11-20T23:54:32+08:00",
+      "last_seen": "2026-11-20T23:54:32+08:00"
     }
   ],
   "courses": [
