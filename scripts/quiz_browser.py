@@ -749,11 +749,15 @@ def find_status_in_text(txt: str) -> str:
     「已提交，待教师公布正确答案」就在点开的详情视图里）。逐行扫：
     ≤30 字、classify_quiz_line 认识的行即状态行；找不到返回空串。
     v1.9.4：排除「进行中（N）」等分组标签（组计数徽标不是用户状态）。
+    v1.9.6b：排除**数字开头**的行（英语轮实证抓到「10-22 16:59 已结束」
+    这种日期行——状态词从不以数字开头，防日期/倒计时混进 status）。
     纯函数，selftest 可测。
     """
     for line in (txt or "").split("\n"):
         line = line.strip()
         if not line or len(line) > 30 or is_group_tag(line):
+            continue
+        if line[0].isdigit():
             continue
         if classify_quiz_line(line) != "unknown":
             return line
