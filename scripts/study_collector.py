@@ -713,9 +713,16 @@ def run() -> dict:
                 # 「已提交」但前缀点击抓成「未提交」（点错活动）——新方案：
                 # 第一条点击拿 quizStudentQuestion 完整 URL 做模板，其余活动
                 # 用 activelist 的 nameOne→id 映射换 activeId 精确直开。
+                # v1.9.7c：待补清单**按截止升序**（最早的最紧急、也最可能是真
+                # 作业）。思修轮实证：选人式讨论（stuSelectPerson 页）抓不到
+                # 状态占掉限额，而截止最早（10-23）的情景对话式讨论
+                # （situationalDialogue 页有最终得分，用户实证）排在第 4 位
+                # 永远轮不到——每轮限 3 条的截断必须先排序再截。
                 _need = [t for t in tasks_q
                          if not (t.get("status") or "").strip()
                          and (t.get("title") or "").strip()]
+                _need.sort(key=lambda t: (parse_datetime(t.get("deadline"))
+                                          or datetime.max))
                 if _need:
                     _diag: list = []
                     _aid_map = qb.active_ids_by_title(res.get("xhr_bodies") or [])
