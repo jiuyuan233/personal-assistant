@@ -424,8 +424,10 @@ def ensure_daily_english(now: datetime | None = None, yesterday_text: str = "",
     - 难度自适应（用户：「难度由我回答的程度逐步提升」）：AI 读**昨天日记**里
       用户对上一句的回应——有英文回应且通顺 → level+1（封顶 5）；没回应 → 不变；
       AI 判断回应吃力 → 可 -1（下限 1）。AI 挂 → 离线句库按当前 level。
-    - 账本 data/diary/english.json（生成物）：{level, sentence, date, answered}，
-      answered 由下一轮的 AI 判断回写。今天已生成直接返回（窗口内幂等）。
+    - 账本 data/diary/english.json（生成物）：{level, sentence, date, comment}，
+      comment = 对用户上一句回应的中文短评（v1.9.9：写进每日英语区块，
+      不串到助手记忆里——用户 2026-11-21 明确两个区块职责要分开）。
+      今天已生成直接返回（窗口内幂等）。
     """
     now = now or now_bj()
     iso = now.date().isoformat()
@@ -436,6 +438,7 @@ def ensure_daily_english(now: datetime | None = None, yesterday_text: str = "",
     level = int(state.get("level") or 1)
     level = max(1, min(ENGLISH_MAX_LEVEL, level))
     sentence = ""
+    comment = ""
 
     if client is None:
         try:
@@ -451,6 +454,7 @@ def ensure_daily_english(now: datetime | None = None, yesterday_text: str = "",
                                     temperature=0.7, max_tokens=400)
             if isinstance(data, dict):
                 sentence = safe_text(data.get("sentence"), 200).strip()
+                comment = safe_text(data.get("comment"), 120).strip()
                 try:
                     new_lv = int(data.get("level") or level)
                 except (TypeError, ValueError):
@@ -463,7 +467,8 @@ def ensure_daily_english(now: datetime | None = None, yesterday_text: str = "",
         sentence = offline_english(level, int(now.strftime("%d")))
 
     save_json(ENGLISH_PATH, {"updated_at": now.isoformat(timespec="seconds"),
-                             "date": iso, "sentence": sentence, "level": level})
+                             "date": iso, "sentence": sentence, "level": level,
+                             "comment": comment})
     log(f"[english] 今日一句（Lv{level}）：{sentence[:80]}")
     return sentence
 
@@ -605,7 +610,10 @@ def run() -> dict:
             english_text = ensure_daily_english(yesterday_text=strip_assistant_block(y_text or ""))
     except Exception as e:
         log(f"每日英语生成失败：{safe_text(e, 160)}", level="WARN")
-    _en_level = int((load_json(ENGLISH_PATH) or {}).get("level") or 1)
+    _en_state = load_json(ENGLISH_PATH) or {}
+    _en_level = int(_en_state.get("level") or 1)
+    # v1.9.9：对上一句英语回应的评价属于每日英语区块（用户明确两个区块职责分开）
+    _en_comment = safe_text(_en_state.get("comment"), 120)
 
     # 写回：昨天挖到的潜在计划 → 今天日记里的复选框；上次没勾完的滚过来。
     # 写回失败只告警，不影响采集结果 —— 日记数据已经落盘了。
@@ -614,7 +622,8 @@ def run() -> dict:
         import diary_writeback
         wb = diary_writeback.run(today=today, g=g, plans=plans, cfg=dcfg,
                                 memory=memory_text, english=english_text,
-                                english_level=_en_level)
+                                english_level=_en_level,
+                                english_comment=_en_comment)
     except Exception as e:
         log(f"日记写回失败：{safe_text(e, 200)}", level="WARN")
     done = set(wb.get("done") or [])

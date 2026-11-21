@@ -379,6 +379,48 @@ def render_excluded(tasks: list[dict], now: datetime,
 DATA_STALE_HOURS = 3
 
 
+def unknown_status_tasks(tasks: list[dict], now: datetime) -> list[dict]:
+    """v1.9.9（用户 2026-11-21 要求）：所有抓不到完成状态的任务（status 为空）。
+
+    包含两类：① 仍在清单里的 pending/upcoming（列表无法确认做没做）；
+    ② 已按「随堂已结束」剔除的 quiz。人工豁免的不算（用户已定性，不需要再确认）。
+    state 已是 done/submitted 的必有状态原文，不列。按截止排序供逐条核对。
+    纯函数，selftest 可注入。
+    """
+    ignored = ignored_tasks()
+    out: list[dict] = []
+    for t in tasks:
+        if str(t.get("work_id") or "") in ignored:
+            continue
+        if (t.get("status") or "").strip():
+            continue
+        if t.get("state") in ("done", "submitted"):
+            continue
+        out.append(t)
+    return sort_by_deadline(out)
+
+
+def render_unknown_status(tasks: list[dict], now: datetime) -> str:
+    """「状态未知」盘点节：集中列出所有 status 空的任务（用户逐条去学习通确认）。"""
+    items = unknown_status_tasks(tasks, now)
+    if not items:
+        return "_所有任务都有明确状态。_\n"
+    lines = [f"共 **{len(items)}** 条：学习通没返回完成状态，**需要你逐条点链接"
+             "去原页确认**（确认后在群里说一声，或按实际情况处理）。", "",
+             "| 任务 | 类型 | 课程 | 截止 | 状态 |",
+             "| --- | --- | --- | --- | --- |"]
+    for t in items:
+        dt = parse_datetime(t.get("deadline"))
+        when = dt.strftime("%m-%d %H:%M") if dt else "⚠️截止未知"
+        if dt and not t.get("deadline_exact"):
+            when += " ≈"
+        lines.append("| {} | {} | {} | {} | 状态未知 |".format(
+            md_link(t.get("title"), t.get("url")),
+            KIND_CN.get(t.get("kind"), t.get("kind") or ""),
+            esc(t.get("course") or ""), when))
+    return "\n".join(lines) + "\n"
+
+
 def study_age_hours(study: dict, now: datetime) -> float | None:
     """数据年龄（小时）。取 last_success，没有就退回 last_attempt；都没有返回 None。"""
     dt = parse_datetime(study.get("last_success") or study.get("last_attempt"))
@@ -674,7 +716,8 @@ def run() -> bool:
     excluded_body, excluded_count = render_excluded(tasks, now)
     ok_e = render_doc(EXCLUDED_TEMPLATE, EXCLUDED_DOC,
                       {"{{EXCLUDED}}": excluded_body,
-                       "{{EXCLUDED_COUNT}}": str(excluded_count)}, now)
+                       "{{EXCLUDED_COUNT}}": str(excluded_count),
+                       "{{UNKNOWN_STATUS}}": render_unknown_status(tasks, now)}, now)
 
     # 网页版数据（docs/ 是 GitHub Pages 目录，前端只能读到这里面的文件）
     # 前端自己按 state 分桶，所以这里必须只喂可做的任务，否则网页会显示出 README 已剔除的逾期项

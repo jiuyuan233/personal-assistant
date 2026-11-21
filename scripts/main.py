@@ -452,6 +452,20 @@ def do_selftest() -> bool:
           _st_join[_st_join.find("无状态作业"):][:80])
     check("未开始计数另附在待完成列",
           any("1（另 1 项未开始）" in r for r in _uc_rows), str(_uc_rows))
+    # v1.9.9（用户 2026-11-21 要求）：抓不到状态的作业集中列出来供逐条核对
+    _unk = rr.unknown_status_tasks(
+        [mk(title="无状态随堂", kind="quiz", status=""),
+         mk(title="有状态随堂", kind="quiz", status="已提交", state="done"),
+         mk(title="无状态作业", kind="work", status=""),
+         mk(title="豁免的", kind="quiz", status="", work_id="58204754")], now)
+    check("状态未知盘点：status 空的都列、有状态/豁免的不列",
+          len(_unk) == 2 and {t["title"] for t in _unk}
+          == {"无状态随堂", "无状态作业"},
+          str([t.get("title") for t in _unk]))
+    _ex_unknown = rr.render_unknown_status(_unk, now)
+    check("状态未知盘点渲染含任务与类型",
+          "状态未知" in _ex_unknown and "无状态随堂" in _ex_unknown,
+          _ex_unknown[:120])
     _uc_stats = rr.render_tasks(sample, now)[2]
     check("未开始计入独立统计并提示自动进待办",
           _uc_stats["upcoming"] == 1
@@ -1026,6 +1040,15 @@ def do_selftest() -> bool:
           .count(dw.EN_BLOCK_START) == 1)
     check("采集时三个助手区块都被剥离",
           "What did you get up" not in dc.strip_assistant_block(with_en))
+    # v1.9.9（用户 2026-11-21 明确「助手记得是助手记得，每日英语是每日英语」）：
+    # 对上次英语回应的评价属于每日英语区块，记忆区块禁止点评英语
+    check("英语区块承载「上次回应」短评（空评不落行）",
+          "📝 上次回应：" in dw.render_english_block(3, "Q?", "这次写得更顺了")
+          and "📝 上次回应" not in dw.render_english_block(3, "Q?", ""))
+    import prompts as _pm9
+    check("助手记忆提示词禁止点评英语练习 + 英语 schema 含 comment 字段",
+          "不点评日记里的英语练习" in _pm9.MEMORY_INSTRUCTIONS
+          and "comment" in _pm9.ENGLISH_SCHEMA)
 
     sample_plans = [
         {"id": "a", "text": "昨天的", "state": "open", "first_seen": "2026-11-12"},
@@ -1898,6 +1921,21 @@ def do_selftest() -> bool:
                                         "kind": "work", "deadline": "", "url": ""}])
     check("傍晚无作业时明说全部搞定（确定性，AI 挂了也在）",
           "全部搞定" in _empty_dusk and "0 条要赶" in _empty_dusk, _empty_dusk[:120])
+    # v1.9.9（用户 2026-11-21 定稿）：有可做作业就通知，不管截止是不是今天
+    _all_line = dp._all_tasks_lines(
+        [{"state": "pending", "title": "周内", "course": "c", "kind": "work",
+          "deadline": (now + timedelta(days=3)).isoformat(timespec="seconds"), "url": ""},
+         {"state": "upcoming", "title": "未开", "course": "c2", "kind": "work",
+          "deadline": None, "url": ""}], now)
+    check("全部待办清单：未来截止也列、未开始另计",
+          "共 1 条要交" in _all_line and "另 1 条未开始" in _all_line
+          and "周内" in _all_line and "未开" in _all_line, _all_line[:160])
+    check("全部待办清单：空清单返回空串（清零夸奖只在真没有时）",
+          dp._all_tasks_lines([], now) == "")
+    _ib_src = inspect.getsource(dp.info_block)
+    check("noon/dusk/night 三个时段都走全量清单（不再按今天/7天/48h 过滤）",
+          _ib_src.count("_all_tasks_lines(") >= 3,
+          str(_ib_src.count("_all_tasks_lines(")))
     # task_overview：AI 事实注入的作业概览（清零 / 未清零两种口径）
     _ov_empty = dp.task_overview(now, [{"state": "done", "title": "x", "course": "c",
                                         "kind": "work", "deadline": None, "url": ""}])

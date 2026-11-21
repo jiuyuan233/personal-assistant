@@ -573,6 +573,30 @@ def _actionable_sorted(now: datetime, tasks: list | None = None) -> list[dict]:
     return sort_by_deadline(kept)
 
 
+def _all_tasks_lines(kept: list[dict], now: datetime,
+                     header: str = "📋 待做作业") -> str:
+    """v1.9.9（用户 2026-11-21 定稿）：列出**全部**能做的作业，不管截止是不是今天。
+
+    用户原话：「是有可以做的作业就通知我，不管是不是今天的」。之前各时段
+    按「今天截止/7 天内/48h 内」过滤，未来截止的作业在部分时段会消失，
+    深夜新发的作业更容易被漏看。现在每个时段统一列全量（按截止近→远），
+    未开始的单列标注；清零话术只在 kept 为空时出现。
+    """
+    if not kept:
+        return ""
+    act = [t for t in kept if t.get("state") != "upcoming"]
+    upc = len(kept) - len(act)
+    head = f"{header}：共 {len(act)} 条要交"
+    if upc:
+        head += f"（另 {upc} 条未开始）"
+    lines = [head + "："]
+    for t in kept[:8]:
+        lines += _task_line(t)
+    if len(kept) > 8:
+        lines.append(f"（还有 {len(kept) - 8} 条，全量在 README）")
+    return "\n".join(lines)
+
+
 def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
                tasks: list[dict] | None = None) -> str:
     """确定性清单，拼在 AI prose 后面。**不经过 AI**，保证用户点名的内容一条不漏。
@@ -610,16 +634,10 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
             if len(fresh) > 3:
                 lines.append(f"（还有 {len(fresh) - 3} 条，全量在 README）")
             parts.append("\n".join(lines))
-        week = [t for t in kept
-                if t.get("deadline")
-                and (parse_datetime(t["deadline"]) or now) <= now + timedelta(days=7)]
-        if week:
-            lines = [f"⏳ 7 天内截止 {len(week)} 条："]
-            for t in week[:3]:
-                lines += _task_line(t)
-            if len(week) > 3:
-                lines.append(f"（还有 {len(week) - 3} 条，全量在 README）")
-            parts.append("\n".join(lines))
+        # v1.9.9：全部待办（不管截止远近）——用户要求有可做就通知
+        _all = _all_tasks_lines(kept, now)
+        if _all:
+            parts.append(_all)
         en = daily_english()
         if en:
             parts.append("🇬🇧 今日英语一句\n" + en)
@@ -627,41 +645,27 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
         if recall:
             parts.append("📖 名言回顾（你日记里的话）\n" + recall)
     elif kind == "dusk":
-        # v1.5.19 傍晚冲刺：今天 24:00 前截止的作业（全天最后一次「还来得及」）
-        # + IT之家科技热点（本档独有）。不含英语/名言回顾（午安专属）与天气（晚安专属）。
-        # v1.7.1（用户 2026-11-17 报）：没有作业时也要明说并夸他——空清单不是
-        # 直接跳过，而是确定性写「全部搞定」，AI 挂了这条也在。
+        # v1.5.19 傍晚冲刺 + IT之家科技热点（本档独有）。
+        # v1.7.1（用户 2026-11-17 报）：没有作业时也要明说并夸他。
+        # v1.9.9（用户 2026-11-21 定稿）：有可做作业就列**全部**（不管截止是不是
+        # 今天）；清零夸奖只在真的一条都没有时出现，其余情况一律列清单。
         kept = _actionable_sorted(now, tasks)
-        day_end = now.replace(hour=23, minute=59, second=59)
-        today = [t for t in kept
-                 if t.get("deadline")
-                 and now <= (parse_datetime(t["deadline"]) or now) <= day_end]
-        if today:
-            lines = [f"🔥 今天 24:00 前截止还没交的 {len(today)} 条："]
-            for t in today[:3]:
-                lines += _task_line(t)
-            if len(today) > 3:
-                lines.append(f"（还有 {len(today) - 3} 条，全量在 README）")
-            parts.append("\n".join(lines))
+        _all = _all_tasks_lines(kept, now, "🔥 傍晚冲刺")
+        if _all:
+            parts.append(_all)
         else:
-            parts.append("🎉 今天截止的作业：**全部搞定，0 条要赶**。\n"
+            parts.append("🎉 待做作业：**全部搞定，0 条要赶**。\n"
                          "该交的都交了，今晚不用再惦记作业——哼，千得漂亮。")
         # tech_provider 可注入（selftest 离线确定性）；缺省联 IT之家 RSS
         tn = (tech_provider or tech_news)()
         if tn:
             parts.append("📰 今日科技热点\n" + tn)
     else:
+        # v1.9.9：晚安档同款——全部待办，不按 48h 过滤
         kept = _actionable_sorted(now, tasks)
-        soon = [t for t in kept
-                if t.get("deadline")
-                and (parse_datetime(t["deadline"]) or now) <= now + timedelta(hours=48)]
-        if soon:
-            lines = [f"🔥 48 小时内截止还没交的 {len(soon)} 条："]
-            for t in soon[:3]:
-                lines += _task_line(t)
-            if len(soon) > 3:
-                lines.append(f"（还有 {len(soon) - 3} 条，全量在 README）")
-            parts.append("\n".join(lines))
+        _all = _all_tasks_lines(kept, now, "🌙 今晚盘点")
+        if _all:
+            parts.append(_all)
         all_tasks = tasks if tasks is not None else load_list(DATA_DIR / "study" / "tasks.json")
         monday_iso = (now.date() - timedelta(days=now.date().weekday())).isoformat()
         this_week = [t for t in all_tasks if (t.get("first_seen") or "") >= monday_iso]

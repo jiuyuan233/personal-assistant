@@ -91,11 +91,17 @@ def render_memory_block(yesterday: str, text: str) -> str:
     return "\n".join(lines)
 
 
-def render_english_block(level: int, sentence: str) -> str:
-    """英语角（v1.7.0）：每日一句 small talk，难度随用户回应程度提升。"""
+def render_english_block(level: int, sentence: str, comment: str = "") -> str:
+    """英语角（v1.7.0）：每日一句 small talk，难度随用户回应程度提升。
+
+    v1.9.9（用户 2026-11-21 明确「助手记得是助手记得，每日英语是每日英语」）：
+    对用户上一句回应的评价（comment）属于这里，不再由助手记忆代劳。
+    """
     lines = [EN_BLOCK_START, f"> [!tip]- 🗣 每日英语 · Lv {level}",
-              "> " + (sentence or "").strip(),
-              "> 在明天的日记里用英语回它——回得动难度就升。",
+              "> " + (sentence or "").strip()]
+    if (comment or "").strip():
+        lines.append("> 📝 上次回应： " + safe_text(comment, 120))
+    lines += ["> 在明天的日记里用英语回它——回得动难度就升。",
               EN_BLOCK_END]
     return "\n".join(lines)
 
@@ -185,7 +191,8 @@ def run(today: date | None = None, g: Gitee | None = None,
         now: datetime | None = None,
         memory: str | None = None,
         english: str | None = None,
-        english_level: int = 1) -> dict:
+        english_level: int = 1,
+        english_comment: str = "") -> dict:
     now = now or now_bj()
     today = today or now.date()
     cfg = cfg if cfg is not None else ((load_json(DATA_DIR / "sources.json") or {}).get("diary") or {})
@@ -255,7 +262,8 @@ def run(today: date | None = None, g: Gitee | None = None,
     block = render_block(iso, entries)
     mem_block = (render_memory_block((today - timedelta(days=1)).isoformat(), memory)
                  if memory else "")
-    en_block = render_english_block(english_level, english) if english else ""
+    en_block = (render_english_block(english_level, english, english_comment)
+                if english else "")
 
     def _compose(base: str) -> str:
         t = upsert_block(base or NEW_FILE_TEMPLATE, block)
