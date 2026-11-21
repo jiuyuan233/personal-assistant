@@ -1896,27 +1896,33 @@ def do_selftest() -> bool:
     _empty_dusk = dp.info_block("dusk", now, "", tech_provider=lambda: "",
                                 tasks=[{"state": "done", "title": "已交", "course": "X",
                                         "kind": "work", "deadline": "", "url": ""}])
-    check("傍晚无作业时明说全部搞定（确定性，AI 挂了也在）",
-          "全部搞定" in _empty_dusk and "0 条要赶" in _empty_dusk, _empty_dusk[:120])
+    check("傍晚无作业时明说清零 + 数据时效说明（v1.9.8：不说绝对化承诺）",
+          "全部交上了" in _empty_dusk and "0 条要赶" in _empty_dusk
+          and "数据截至" in _empty_dusk and "新作业" in _empty_dusk
+          and "不用再惦记" not in _empty_dusk, _empty_dusk[:150])
     # task_overview：AI 事实注入的作业概览（清零 / 未清零两种口径）
     _ov_empty = dp.task_overview(now, [{"state": "done", "title": "x", "course": "c",
                                         "kind": "work", "deadline": None, "url": ""}])
-    check("作业概览：全做完时如实说「已全部做完」",
-          "作业已全部做完" in _ov_empty and "0 条" in _ov_empty, _ov_empty)
+    check("作业概览：清零时说「目前待完成 0 条」+ 时效说明（v1.9.8：不给 AI 绝对化依据）",
+          "目前待完成 0 条" in _ov_empty and "数据截至" in _ov_empty
+          and "不要向用户保证" in _ov_empty, _ov_empty)
     _ov_some = dp.task_overview(now, [
         {"state": "pending", "title": "周内", "course": "c", "kind": "work",
          "deadline": (now + timedelta(days=2)).isoformat(timespec="seconds"), "url": ""},
         {"state": "upcoming", "title": "未开", "course": "c2", "kind": "work",
          "deadline": None, "url": ""}])
     check("作业概览：有条数/今天截止口径/未开始另计",
-          "还需要动手的 1 条" in _ov_some and "今天截止的已全部完成" in _ov_some
+          "还需要动手的 1 条" in _ov_some and "今天截止的已全部交上" in _ov_some
           and "另有 1 条未开始" in _ov_some, _ov_some)
     check("AI 的 facts 注入了作业概览（run 源码守卫）",
           "task_overview(now)" in inspect.getsource(dp.run))
     import prompts as _pm
-    check("dusk/night 文案指令含「全部做完时必须夸」",
-          "这必须夸" in _pm.PUSH_KIND_BRIEF["dusk"]
-          and "今天作业全清" in _pm.PUSH_KIND_BRIEF["night"])
+    check("dusk/night 文案指令：可夸今天的但禁止绝对化承诺（v1.9.8）",
+          "这可以夸" in _pm.PUSH_KIND_BRIEF["dusk"]
+          and "绝不许说" in _pm.PUSH_KIND_BRIEF["dusk"]
+          and "绝不许说" in _pm.PUSH_KIND_BRIEF["night"]
+          and "不用再惦记" in _pm.PUSH_KIND_BRIEF["dusk"],
+          "清零夸奖与未来保证分离")
     # v1.5.20 用户要求：早报作业全部完成时，推送潜在任务（来自 Obsidian 笔记）
     pb = dp.plans_block([
         {"text": "学会 Rust", "state": "open", "confidence": 0.9},

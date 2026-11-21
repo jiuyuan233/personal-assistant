@@ -528,9 +528,12 @@ def task_overview(now: datetime, tasks: list[dict] | None = None) -> str:
     if today_n:
         parts.append(f"其中今天截止 {today_n} 条")
     elif not act:
-        parts.append("作业已全部做完（待完成 0 条）")
+        # v1.9.8：不说「全部做完」这种面向未来的保证——老师深夜也可能发新作业
+        # （2026-11-20 23:54 实证），只陈述「目前待完成 0 条」+ 数据时效
+        parts.append(f"目前待完成 0 条（数据截至 {now:%H:%M}，新发布的作业"
+                     "会单独推送提醒，不要向用户保证「以后没有作业」）")
     else:
-        parts.append("今天截止的已全部完成")
+        parts.append("今天截止的已全部交上")
     if week_n:
         parts.append(f"7 天内还有 {week_n} 条")
     if upc:
@@ -644,8 +647,14 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
                 lines.append(f"（还有 {len(today) - 3} 条，全量在 README）")
             parts.append("\n".join(lines))
         else:
-            parts.append("🎉 今天截止的作业：**全部搞定，0 条要赶**。\n"
-                         "该交的都交了，今晚不用再惦记作业——哼，千得漂亮。")
+            # v1.9.8（用户 2026-11-21 报「飞书说作业全完成但还有作业要交」）：
+            # 旧文案「今晚不用再惦记作业」是绝对化承诺——老师 23:54 深夜发布
+            # 新作业、系统 00:00 才发现并补推，深夜消息用户容易漏看，只记得
+            # 傍晚那句「不用惦记」。改为只陈述已核实的事实 + 数据时效说明，
+            # 绝不说「不用惦记/全部完成」这类面向未来的保证。
+            parts.append("🎉 今天截止的作业：全部交上了，0 条要赶。\n"
+                         f"（数据截至 {now:%H:%M}；老师随时可能发新作业，"
+                         "新作业会单独推送提醒）")
         # tech_provider 可注入（selftest 离线确定性）；缺省联 IT之家 RSS
         tn = (tech_provider or tech_news)()
         if tn:
