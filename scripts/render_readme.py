@@ -70,6 +70,33 @@ def task_start(t: dict) -> datetime | None:
     return parse_datetime(t.get("start_time")) or parse_datetime(t.get("first_seen"))
 
 
+# v1.9.11（用户 2026-11-21 定稿）：**活动持续时间 = 分类保底判据**，对所有类型
+# （作业/考试/随堂活动）生效。老师可能把作业发在随堂测验里、状态又抓不到——
+# 但「越重要的任务给的时间越多」：窗口 >6 小时按作业对待；≤6 小时是课堂活动
+#（当堂测验/讨论）。缺开始时间时返回 None/False，不臆测。
+LONG_ACTIVITY_HOURS = 6
+
+
+def task_duration_hours(t: dict) -> float | None:
+    """活动窗口时长（小时）= 真实 start_time → deadline；缺任一返回 None。
+
+    刻意不用 first_seen 兜底——那是系统的发现时间，不是活动开始时间，
+    拿它算时长会把长作业低估成课堂活动。
+    """
+    st = parse_datetime(t.get("start_time"))
+    dt = parse_datetime(t.get("deadline"))
+    if not st or not dt:
+        return None
+    hours = (dt - st).total_seconds() / 3600
+    return hours if hours > 0 else None
+
+
+def is_long_activity(t: dict) -> bool:
+    """窗口 >6h = 作业（保底分类）；缺时间数据返回 False（不臆测）。"""
+    h = task_duration_hours(t)
+    return h is not None and h > LONG_ACTIVITY_HOURS
+
+
 _ignored_cache: dict[str, str] = {}
 
 
@@ -109,7 +136,11 @@ def drop_reason(t: dict, now: datetime) -> str | None:
         return "not_pending"
     dt = parse_datetime(t.get("deadline"))
     if dt and dt < now:
-        if t.get("kind") == "quiz" and not (t.get("status") or "").strip():
+        if (t.get("kind") == "quiz"
+                and not (t.get("status") or "").strip()
+                and not is_long_activity(t)):
+            # v1.9.11：仅**短时**（≤6h）课堂活动判「随堂已结束」；窗口 >6h 的
+            # 随堂按作业对待（老师把作业发在随堂里的保底分类），过期即欠交
             return "quiz_ended"
         return "overdue"
     return None
@@ -211,7 +242,7 @@ def course_rows(courses: list[dict], kept: list[dict],
             if t.get("state") == "upcoming":
                 cells.append("{}（{}·未开始）".format(
                     md_link(t.get("title"), t.get("url")),
-                    KIND_CN.get(t.get("kind"), t.get("kind") or "")))
+                    (t.get("label") or KIND_CN.get(t.get("kind"), t.get("kind") or ""))))
                 continue
             dt = parse_datetime(t.get("deadline"))
             # 「抓不到截止」不等于「很久以后」。原来渲染成「无截止」并被算进「更远」，
@@ -226,11 +257,11 @@ def course_rows(courses: list[dict], kept: list[dict],
             if tag:
                 cells.append("{}（{}·{}·{}）".format(
                     md_link(t.get("title"), t.get("url")),
-                    KIND_CN.get(t.get("kind"), t.get("kind") or ""), tag, when))
+                    (t.get("label") or KIND_CN.get(t.get("kind"), t.get("kind") or "")), tag, when))
             else:
                 cells.append("{}（{}·{}）".format(
                     md_link(t.get("title"), t.get("url")),
-                    KIND_CN.get(t.get("kind"), t.get("kind") or ""), when))
+                    (t.get("label") or KIND_CN.get(t.get("kind"), t.get("kind") or "")), when))
         act_n = sum(1 for t in items if t.get("state") != "upcoming")
         upc_n = len(items) - act_n
         # 待完成列只数能做的；未开始另附计数，不混在一起（用户要求状态区分开）
@@ -320,7 +351,7 @@ def excluded_row(t: dict, reason: str, now: datetime) -> str:
         start += "（首次发现）"
     return "| {} | {} | {} | {} | {} |".format(
         md_link(t.get("title"), t.get("url")),
-        KIND_CN.get(t.get("kind"), t.get("kind") or ""),
+        (t.get("label") or KIND_CN.get(t.get("kind"), t.get("kind") or "")),
         when, start, reason_detail(reason, t, now, dt, st))
 
 
@@ -416,7 +447,7 @@ def render_unknown_status(tasks: list[dict], now: datetime) -> str:
             when += " ≈"
         lines.append("| {} | {} | {} | {} | 状态未知 |".format(
             md_link(t.get("title"), t.get("url")),
-            KIND_CN.get(t.get("kind"), t.get("kind") or ""),
+            (t.get("label") or KIND_CN.get(t.get("kind"), t.get("kind") or "")),
             esc(t.get("course") or ""), when))
     return "\n".join(lines) + "\n"
 

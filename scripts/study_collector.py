@@ -684,6 +684,15 @@ def run() -> dict:
                 rows_raw = res.get("rows_raw") or []
                 tasks_q, unmapped = qb.parse_active_rows(
                     rows_raw, c, now, res.get("frame_url") or "")
+                # v1.9.11（用户 2026-11-21 定稿）：activelist JSON 的 startTime/
+                # endTime（毫秒）落盘——精确截止（替代 End time 推算）+ 开始时间；
+                # 窗口 >6h 的活动判「随堂作业」（老师把作业发在随堂里的保底分类）
+                _tm_n = qb.merge_activity_times(tasks_q, res.get("xhr_bodies") or [])
+                _long_n = sum(1 for t in tasks_q
+                              if t.get("label") == "随堂作业")
+                if _tm_n:
+                    log(f"[quiz] {cname} activelist 精确时间补充 {_tm_n} 条"
+                        f"（其中 >6h 作业类 {_long_n} 条）")
                 # v1.9.0：主页活动卡片状态回填——iframe 全列表无状态文本、
                 # 主页卡片有（用户 DOM 实证 color-green span），按标题合并
                 _hc = res.get("home_cards") or []

@@ -33,7 +33,7 @@ import re
 
 from datetime import datetime
 
-from utils import make_id, parse_remaining, safe_text, scrub_task_title
+from utils import BJ_TZ, make_id, parse_remaining, safe_text, scrub_task_title
 
 # ---------------------------------------------------------------------------
 # 纯函数（selftest 离线可测）
@@ -734,6 +734,74 @@ def active_ids_by_title(bodies: list[dict]) -> dict[str, str]:
             if name and aid:
                 out.setdefault(name, aid)
     return out
+
+
+# v1.9.11（用户 2026-11-21 定稿）：**活动持续时间 = 分类保底判据**。
+# 老师可能把作业发在「随堂测验」里，光看状态/标题分不出——但「越重要的任务
+# 给的时间越多」：活动窗口 >6 小时 → 按作业对待；≤6 小时 → 课堂活动
+#（当堂测验/讨论/签到）。对所有类型的任务/考试/活动生效。
+LONG_ACTIVITY_HOURS = 6
+
+
+def _ms_to_iso(ms) -> str:
+    """毫秒时间戳 → 北京时间 ISO；无效返回空串。"""
+    try:
+        v = int(ms)
+        if v <= 0:
+            return ""
+        return datetime.fromtimestamp(v / 1000, BJ_TZ).isoformat(timespec="seconds")
+    except (TypeError, ValueError, OSError):
+        return ""
+
+
+def merge_activity_times(tasks: list[dict], bodies: list[dict]) -> int:
+    """v1.9.11：activelist JSON 的 startTime/endTime（毫秒）落到随堂任务上。
+
+    价值：① 得到**精确截止**（替代 iframe「End time」推算，deadline_exact=True）；
+    ② 得到**开始时间** → 可算持续时间，按 >6h 判「作业」并给 label「随堂作业」。
+    按标题归一化匹配（与 active_ids_by_title 同口径）。返回补充条数（纯函数，
+    selftest 可注入）。bodies 里同一标题取首条（幂等）。
+    """
+    by_title: dict[str, dict] = {}
+    for b in bodies or []:
+        if "activelist" not in (b.get("path") or ""):
+            continue
+        try:
+            import json as _j
+            obj = _j.loads(b["body"])
+            items = ((obj.get("data") or {}).get("activeList")) or []
+        except Exception:
+            continue
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            name = _norm_title(it.get("nameOne") or "")
+            if name and name not in by_title:
+                by_title[name] = it
+    filled = 0
+    for t in tasks:
+        if t.get("kind") != "quiz":
+            continue
+        it = by_title.get(_norm_title(t.get("title") or ""))
+        if not it:
+            continue
+        start_iso = _ms_to_iso(it.get("startTime"))
+        end_iso = _ms_to_iso(it.get("endTime"))
+        if end_iso:
+            t["deadline"] = end_iso
+            t["deadline_exact"] = True
+        if start_iso:
+            t["start_time"] = start_iso
+        if start_iso and end_iso:
+            try:
+                dur = (datetime.fromisoformat(end_iso)
+                       - datetime.fromisoformat(start_iso)).total_seconds() / 3600
+            except ValueError:
+                dur = None
+            if dur is not None and dur > LONG_ACTIVITY_HOURS:
+                t["label"] = "随堂作业"
+        filled += 1
+    return filled
 
 
 # v1.9.4：分组标签形状——「进行中（1）/已结束（12）」是列表的组计数徽标

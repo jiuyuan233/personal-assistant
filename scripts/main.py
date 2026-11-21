@@ -32,6 +32,7 @@
 """
 from __future__ import annotations
 
+import json
 import sys
 
 from utils import DATA_DIR, exc_brief, load_json, log, now_bj, parse_datetime, save_json
@@ -423,6 +424,19 @@ def do_selftest() -> bool:
     check("豁免名单命中判「人工豁免」（建环 58204754 老师作废）",
           rr.drop_reason(mk(work_id="58204754",
                             deadline=iso(now - timedelta(hours=1))), now) == "ignored")
+    # v1.9.11（用户 2026-11-21 定稿）：活动窗口 >6h = 作业（保底分类判据）
+    _long = mk(kind="quiz", status="", deadline=iso(now - timedelta(hours=1)),
+               start_time=iso(now - timedelta(days=2)))
+    _short = mk(kind="quiz", status="", deadline=iso(now - timedelta(hours=1)),
+                start_time=iso(now - timedelta(hours=2)))
+    check("时长判据：>6h 是作业、≤6h 是课堂活动、缺数据不臆测",
+          rr.is_long_activity(_long) and not rr.is_long_activity(_short)
+          and rr.task_duration_hours(mk(kind="quiz")) is None,
+          f"{rr.task_duration_hours(_long)}h/{rr.task_duration_hours(_short)}h")
+    check("无状态随堂过点：长时活动判逾期（作业欠交），短时判已结束",
+          rr.drop_reason(_long, now) == "overdue"
+          and rr.drop_reason(_short, now) == "quiz_ended",
+          f"{rr.drop_reason(_long, now)}/{rr.drop_reason(_short, now)}")
     # 未开始在清单里的显示：单元格标「未开始」、计数另附、不计「截止未知」
     _uc_rows = rr.course_rows(
         [{"course_id": "c1", "class_id": "", "name": "示例课", "task_count": 2}],
@@ -1466,6 +1480,31 @@ def do_selftest() -> bool:
     check("AI 互动故事得分行可提取",
           qb.find_status_in_text("活动标题\n总分96分\n10-23 17:50 已结束")
           == "总分96分")
+    # v1.9.11（用户 2026-11-21 定稿）：activelist 精确时间落盘 + >6h 保底判作业
+    _ms_now = int(now.timestamp() * 1000)
+    _h_ms = 3600 * 1000
+    _qt = [{"kind": "quiz", "title": "长时随堂作业", "status": "",
+            "state": "pending", "deadline": None}]
+    _n_tm = qb.merge_activity_times(
+        _qt, [{"path": "v2/apis/active/student/activelist",
+               "body": json.dumps({"data": {"activeList": [
+                   {"nameOne": "长时随堂作业",
+                    "startTime": _ms_now - 24 * _h_ms,
+                    "endTime": _ms_now + _h_ms}]}})}])
+    check("activelist 时间合并：精确截止 + 开始时间 + >6h 标「随堂作业」",
+          _n_tm == 1 and _qt[0]["deadline_exact"] is True
+          and bool(_qt[0].get("start_time"))
+          and _qt[0].get("label") == "随堂作业", str(_qt[0]))
+    _qs = [{"kind": "quiz", "title": "短时测验", "status": "",
+            "state": "pending", "deadline": None}]
+    qb.merge_activity_times(
+        _qs, [{"path": "v2/apis/active/student/activelist",
+               "body": json.dumps({"data": {"activeList": [
+                   {"nameOne": "短时测验",
+                    "startTime": _ms_now - _h_ms,
+                    "endTime": _ms_now + _h_ms}]}})}])
+    check("activelist 时间合并：≤6h 不标「随堂作业」",
+          _qs[0].get("label") != "随堂作业", str(_qs[0]))
     # v1.9.4：分组标签排除——「进行中（N）/已结束（N）」是组计数徽标不是用户状态
     # （思修轮点击式实证抓到过并污染落盘，需主动清洗）
     check("分组标签识别（进行中（N）是标签、真实状态词不是）",
@@ -1771,7 +1810,7 @@ def do_selftest() -> bool:
     # ------------------------------------------------------------------
     import importlib
     import inspect
-    import json
+
 
     from utils import exc_brief, public_url, scrub_task_title, strip_personal_fields
 
