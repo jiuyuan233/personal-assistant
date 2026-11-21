@@ -24,7 +24,7 @@ from pathlib import Path
 import requests
 
 from dedup import load_list, sort_by_deadline
-from utils import (BJ_TZ, DATA_DIR, clean_html_text, log, now_bj,
+from utils import (BJ_TZ, DATA_DIR, clean_html_text, load_json, log, now_bj,
                    parse_datetime, safe_text)
 
 DIARY_DIR = DATA_DIR / "diary"
@@ -525,8 +525,14 @@ def task_overview(now: datetime, tasks: list[dict] | None = None) -> str:
                  if t.get("deadline")
                  and day_end < (parse_datetime(t["deadline"]) or now) <= now + timedelta(days=7))
     parts = [f"作业概况：还需要动手的 {len(act)} 条"]
+    # v1.9.12（用户 2026-11-21）：状态抓不到的作业**不许被 AI 当成「全部完成」**
+    unknown = rr.unknown_status_tasks(tasks, now)
     if today_n:
         parts.append(f"其中今天截止 {today_n} 条")
+    elif not act and unknown:
+        parts.append(f"待完成 0 条，但 {len(unknown)} 条作业状态抓不到、"
+                     "无法确认是否已交——不许说「全部完成/都搞定了」，"
+                     "要明确提醒用户手动核查")
     elif not act:
         parts.append("作业已全部做完（待完成 0 条）")
     else:
@@ -535,7 +541,67 @@ def task_overview(now: datetime, tasks: list[dict] | None = None) -> str:
         parts.append(f"7 天内还有 {week_n} 条")
     if upc:
         parts.append(f"另有 {upc} 条未开始（暂不可做）")
+    # v1.9.12（用户 2026-11-21：误报全部完成会导致漏交）：状态抓不到的作业
+    # 一律附加警告——不管 act 是否为空，AI 都拿不到「全部完成」的干净口径
+    if unknown:
+        parts.append(f"另有 {len(unknown)} 条作业状态抓不到、无法确认是否已交"
+                     "——不许说「全部完成/都搞定了」，必须提醒用户手动核查")
     return "，".join(parts) + "。"
+
+
+def problem_block(now: datetime, tasks: list[dict] | None = None) -> str:
+    """v1.9.12（用户 2026-11-21 要求）：**出问题的作业必须在飞书上明说**。
+
+    用户原话：「对于出问题的作业，在飞书上就说出问题了，不要像这次一样
+    告诉我都完成了，这可能导致我漏交作业。」三类「出问题」全部走确定性
+    文本（不经过 AI，AI 覆盖不了）：
+    ① 状态抓不到（status 空、未豁免、非 done/submitted）——不能确认交没交；
+    ② 已逾期（drop_reason=overdue）——已错过截止；
+    ③ 采集失败 / 数据过期——清单可能不全，更不许说「全部完成」。
+    无问题返回空串；有问题返回预警节（由 info_block 置顶）。纯函数可注入。
+    """
+    import render_readme as rr
+
+    if tasks is None:
+        tasks = load_list(DATA_DIR / "study" / "tasks.json")
+    unknown = rr.unknown_status_tasks(tasks, now)
+    overdue = [t for t in tasks if rr.drop_reason(t, now) == "overdue"]
+    lines: list[str] = []
+    if unknown:
+        lines.append(f"⚠️ 出问题了：{len(unknown)} 条作业**状态抓不到**，"
+                     "不能确认你交没交——别当它们没事，请手动核查：")
+        for t in unknown[:6]:
+            lines.append(f"- {t.get('course')} · {t.get('title')} · 截止 {_when(t)}")
+            if t.get("url"):
+                lines.append(f"  ↳ {t['url']}")
+        if len(unknown) > 6:
+            lines.append(f"（还有 {len(unknown) - 6} 条，全量见已剔除文档"
+                         "「状态未知」节）")
+    if overdue:
+        lines.append(f"🔴 另有 {len(overdue)} 条已逾期（已错过截止）：")
+        for t in overdue[:4]:
+            lines.append(f"- {t.get('course')} · {t.get('title')} ·"
+                         f"「{_state_tag(t)}」")
+    try:
+        meta = load_json(DATA_DIR / "study" / "meta.json") or {}
+        study = meta.get("study") or {}
+        status = study.get("status") or ("ok" if study.get("ok") else "failed")
+        if study and status == "failed":
+            lines.append("🔴 本次学习通采集失败——清单可能不是最新的，"
+                         "别信「全部完成」。")
+        else:
+            last = parse_datetime(study.get("last_success")
+                                  or study.get("last_attempt"))
+            if last and (now - last).total_seconds() > 3 * 3600:
+                hours = int((now - last).total_seconds() / 3600)
+                lines.append(f"⚠️ 学习通数据已 {hours} 小时未更新——清单可能不全。")
+    except Exception:
+        pass
+    if not lines:
+        return ""
+    header = ("🚨 **以下作业有问题，请优先处理**"
+              "（系统无法确认的部分不会替你打勾）")
+    return header + "\n" + "\n".join(lines)
 
 
 # v1.7.2：飞书清单里每条作业的状态标注（用户 2026-11-17 要求：「12 点那一条的
@@ -609,13 +675,17 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
     """
     parts: list[str] = []
     today_iso = now.date().isoformat()
+    # v1.9.12（用户 2026-11-21 要求）：先算「出问题的作业」——状态抓不到/已逾期/
+    # 采集失败时**置顶告警**，且清零夸奖只在真没问题时才出现
+    _pb = problem_block(now, tasks)
     if kind == "morning":
         sf, kept_m = study_facts(now, tasks)
         if kept_m:
             parts.append("📚 待完成作业\n" + sf)
-        else:
+        elif not _pb:
             # 用户 2026-11-15：「全部都完成了的话，就推送我的潜在任务，来自我的
-            # obsidian 笔记」——没作业可做的日子，用他自己的长期计划填满这一格
+            # obsidian 笔记」——没作业可做的日子，用他自己的长期计划填满这一格。
+            # v1.9.12：有「出问题的作业」时不夸清零、不换长期任务（防漏交）
             block = plans_block(load_list(DIARY_DIR / "plans.json"))
             if block:
                 parts.append("🎉 待完成作业全部清空！来干点长期的事：\n"
@@ -653,7 +723,9 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
         _all = _all_tasks_lines(kept, now, "🔥 傍晚冲刺")
         if _all:
             parts.append(_all)
-        else:
+        elif not _pb:
+            # v1.9.12：有「出问题的作业」时不说「全部搞定」（用户 2026-11-21：
+            # 误报全部完成会导致漏交）——问题预警节会置顶
             parts.append("🎉 待做作业：**全部搞定，0 条要赶**。\n"
                          "该交的都交了，今晚不用再惦记作业——哼，千得漂亮。")
         # tech_provider 可注入（selftest 离线确定性）；缺省联 IT之家 RSS
@@ -687,6 +759,9 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
             parts.append(f"🌤 明早天气：{w}")
     if hit:
         parts.append(f"💬 今日一言：{hit}")
+    # v1.9.12：出问题的作业置顶——确定性文本不经 AI，保证用户第一眼看到
+    if _pb:
+        parts.insert(0, _pb)
     return "\n\n".join(parts)
 
 

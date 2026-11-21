@@ -2002,6 +2002,32 @@ def do_selftest() -> bool:
                                         "kind": "work", "deadline": None, "url": ""}])
     check("作业概览：全做完时如实说「已全部做完」",
           "作业已全部做完" in _ov_empty and "0 条" in _ov_empty, _ov_empty)
+    # v1.9.12（用户 2026-11-21：误报全部完成会导致漏交）：状态抓不到时不许说
+    # 全部完成——problem_block 必须置顶告警，task_overview 必须带警告口径
+    _pb_unknown = dp.problem_block(now, [
+        {"state": "pending", "title": "无状态作业", "course": "c", "kind": "quiz",
+         "status": "", "deadline": None, "url": ""}])
+    check("出问题的作业明说：状态抓不到 → 置顶告警节",
+          "出问题了" in _pb_unknown and "状态抓不到" in _pb_unknown
+          and "手动核查" in _pb_unknown, _pb_unknown[:160])
+    check("没有问题作业时预警节为空串",
+          dp.problem_block(now, [{"state": "done", "title": "x", "course": "c",
+                                  "kind": "work", "status": "已完成",
+                                  "deadline": None, "url": ""}]) == "")
+    _ov_unknown = dp.task_overview(now, [
+        {"state": "pending", "title": "无状态作业", "course": "c", "kind": "quiz",
+         "status": "", "deadline": None, "url": ""}])
+    check("作业概览：有状态抓不到的作业时不给「全部完成」口径",
+          "状态抓不到" in _ov_unknown
+          and "不许说" in _ov_unknown, _ov_unknown)
+    _dusk_unknown = dp.info_block("dusk", now, "", tech_provider=lambda: "",
+                                  tasks=[{"state": "pending", "title": "无状态作业",
+                                          "course": "c", "kind": "quiz",
+                                          "status": "", "deadline": None,
+                                          "url": ""}])
+    check("傍晚推送：有出问题的作业时不说「全部搞定」",
+          "出问题了" in _dusk_unknown and "全部搞定" not in _dusk_unknown,
+          _dusk_unknown[:200])
     _ov_some = dp.task_overview(now, [
         {"state": "pending", "title": "周内", "course": "c", "kind": "work",
          "deadline": (now + timedelta(days=2)).isoformat(timespec="seconds"), "url": ""},
@@ -2016,6 +2042,11 @@ def do_selftest() -> bool:
     check("dusk/night 文案指令含「全部做完时必须夸」",
           "这必须夸" in _pm.PUSH_KIND_BRIEF["dusk"]
           and "今天作业全清" in _pm.PUSH_KIND_BRIEF["night"])
+    # v1.9.12（用户 2026-11-21）：出问题必须提醒，AI 不许说「全部完成」
+    check("AI 写作规则：事实含出问题/状态抓不到时禁止说全部完成",
+          "出问题" in _pm.PUSH_RULES and "状态抓不到" in _pm.PUSH_RULES
+          and "全部完成" in _pm.PUSH_RULES and "漏交" in _pm.PUSH_RULES,
+          "PUSH_RULES 含防漏交禁令")
     # v1.5.20 用户要求：早报作业全部完成时，推送潜在任务（来自 Obsidian 笔记）
     pb = dp.plans_block([
         {"text": "学会 Rust", "state": "open", "confidence": 0.9},
