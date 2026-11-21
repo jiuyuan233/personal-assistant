@@ -403,9 +403,31 @@ def do_selftest() -> bool:
           and rr.drop_reason(mk(start_time=iso(now - timedelta(days=8))), now) is None)
     check("一周规则已废除：first_seen 9 天前仍留在清单",
           rr.drop_reason(mk(first_seen=iso(now - timedelta(days=9))), now) is None)
-    check("剔除原因四类（人工豁免/非待完成/随堂已结束/已逾期；未开始是显示分类不是剔除）",
-          rr.REASON_ORDER == ("ignored", "not_pending", "quiz_ended", "overdue"),
+    check("剔除原因五类（人工豁免/非待完成/课堂活动/随堂已结束/已逾期）",
+          rr.REASON_ORDER == ("ignored", "not_pending", "classroom",
+                              "quiz_ended", "overdue"),
           str(rr.REASON_ORDER))
+    # v1.9.13（用户 2026-11-21「不是作业，你不用通知我」）：有明确窗口且
+    # ≤6h 的随堂是课堂活动——不进待办、不列状态未知、不推送
+    check("短时随堂判课堂活动（≤6h），长时随堂按作业逻辑",
+          rr.drop_reason(mk(kind="quiz", status="",
+                            deadline=iso(now + timedelta(hours=1)),
+                            start_time=iso(now - timedelta(minutes=30))),
+                         now) == "classroom"
+          and rr.drop_reason(mk(kind="quiz", status="",
+                                deadline=iso(now - timedelta(hours=1)),
+                                start_time=iso(now - timedelta(days=2))),
+                             now) == "overdue",
+          "课堂活动/长时作业分流")
+    _unk_short = rr.unknown_status_tasks(
+        [mk(kind="quiz", status="", deadline=iso(now + timedelta(hours=1)),
+            start_time=iso(now - timedelta(minutes=30))),
+         mk(kind="quiz", status="", deadline=iso(now + timedelta(hours=48)),
+            start_time=iso(now - timedelta(hours=1)))], now)
+    check("状态未知清单排除短时课堂活动",
+          len(_unk_short) == 1
+          and _unk_short[0].get("deadline") == iso(now + timedelta(hours=48)),
+          str([t.get("deadline") for t in _unk_short]))
     # v1.8.0（用户核查 16 条"逾期"定论，真欠仅 1 条互评）：随堂无状态过点
     # 判「随堂已结束」而非「逾期」——End time 是下课时间不是作业截止；
     # 有状态词的随堂照旧判逾期（页面明确「待做」过期才是真欠）。
@@ -433,9 +455,9 @@ def do_selftest() -> bool:
           rr.is_long_activity(_long) and not rr.is_long_activity(_short)
           and rr.task_duration_hours(mk(kind="quiz")) is None,
           f"{rr.task_duration_hours(_long)}h/{rr.task_duration_hours(_short)}h")
-    check("无状态随堂过点：长时活动判逾期（作业欠交），短时判已结束",
+    check("无状态随堂：长时活动判逾期（作业欠交），短时判课堂活动（v1.9.13）",
           rr.drop_reason(_long, now) == "overdue"
-          and rr.drop_reason(_short, now) == "quiz_ended",
+          and rr.drop_reason(_short, now) == "classroom",
           f"{rr.drop_reason(_long, now)}/{rr.drop_reason(_short, now)}")
     # 未开始在清单里的显示：单元格标「未开始」、计数另附、不计「截止未知」
     _uc_rows = rr.course_rows(

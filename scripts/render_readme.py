@@ -38,9 +38,13 @@ KIND_CN = {"work": "作业", "eval": "互评", "exam": "考试", "quiz": "随堂
 #   都会落在这里，不再制造"逾期 30 天"的假账；
 # - 「人工豁免」：老师作废/课上明确说不用做的任务没法自动判断（提示词管不住
 #   的用代码守），用户在 sources.json → study.ignored_tasks 里自己维护名单。
+# v1.9.13（用户 2026-11-21 明确「不是作业，你不用通知我」）：新增「课堂活动」——
+# 有明确活动窗口且 ≤6 小时的随堂（当堂测验/讨论/签到），不是作业，不进待办、
+# 不进状态未知、不推送提醒，只留档。
 REASON_CN = {"ignored": "人工豁免", "not_pending": "非待完成",
-             "quiz_ended": "随堂已结束", "overdue": "已逾期"}
-REASON_ORDER = ("ignored", "not_pending", "quiz_ended", "overdue")
+             "classroom": "课堂活动", "quiz_ended": "随堂已结束",
+             "overdue": "已逾期"}
+REASON_ORDER = ("ignored", "not_pending", "classroom", "quiz_ended", "overdue")
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 NOTICE_LIMIT = 12
 PLAN_LIMIT = 15
@@ -97,6 +101,16 @@ def is_long_activity(t: dict) -> bool:
     return h is not None and h > LONG_ACTIVITY_HOURS
 
 
+def is_classroom_activity(t: dict) -> bool:
+    """v1.9.13（用户 2026-11-21「不是作业，你不用通知我」）：有明确活动窗口且
+    ≤6 小时的随堂 = 课堂活动（当堂测验/讨论/签到），不是作业——不进待办、
+    不进状态未知、不推送。时长未知返回 False（不臆测，继续按原逻辑）。"""
+    if t.get("kind") != "quiz":
+        return False
+    h = task_duration_hours(t)
+    return h is not None and h <= LONG_ACTIVITY_HOURS
+
+
 _ignored_cache: dict[str, str] = {}
 
 
@@ -134,6 +148,9 @@ def drop_reason(t: dict, now: datetime) -> str | None:
         return None
     if t.get("state") != "pending":
         return "not_pending"
+    # v1.9.13：短时随堂（≤6h）是课堂活动不是作业——不通知、不判逾期
+    if is_classroom_activity(t):
+        return "classroom"
     dt = parse_datetime(t.get("deadline"))
     if dt and dt < now:
         if (t.get("kind") == "quiz"
@@ -322,6 +339,12 @@ def reason_detail(reason: str, t: dict, now: datetime,
         why = ignored_tasks().get(str(t.get("work_id") or ""), "")
         return "**人工豁免**：{}（名单在 data/sources.json → study.ignored_tasks，想恢复删掉那条即可）".format(
             esc(why) or "老师作废/明确不用做的任务")
+    if reason == "classroom":
+        # v1.9.13（用户 2026-11-21「不是作业，你不用通知我」）
+        h = task_duration_hours(t)
+        dur = f"{h:.1f} 小时" if h is not None else "≤6 小时"
+        return (f"**课堂活动**：活动窗口 {dur}（≤6 小时），是当堂测验/讨论，"
+                "不是作业——不进待办、不推送提醒")
     if reason == "quiz_ended" and dt:
         # v1.8.3（用户反馈）：旧文案「这是活动结束不是作业逾期」是解释性废话，
         # 没回答用户真正关心的「我交没交过」。改直说：学习通这条没给完成状态、
@@ -422,6 +445,10 @@ def unknown_status_tasks(tasks: list[dict], now: datetime) -> list[dict]:
     out: list[dict] = []
     for t in tasks:
         if str(t.get("work_id") or "") in ignored:
+            continue
+        # v1.9.13（用户 2026-11-21「不是作业，你不用通知我」）：短时随堂
+        #（≤6h，当堂测验/讨论）是课堂活动不是作业——不列状态未知、不推送
+        if is_classroom_activity(t):
             continue
         if (t.get("status") or "").strip():
             continue
