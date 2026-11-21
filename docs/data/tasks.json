@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-21T12:51:41+08:00",
+  "updated_at": "2026-11-21T13:55:26+08:00",
   "stats": {
     "pending": 2,
     "overdue": 0,
@@ -10,8 +10,8 @@
     "upcoming": 0,
     "dropped": {
       "ignored": 1,
-      "not_pending": 44,
-      "quiz_ended": 4,
+      "not_pending": 45,
+      "quiz_ended": 3,
       "overdue": 0
     },
     "courses": 14
@@ -30,11 +30,11 @@
       "state": "pending",
       "deadline": "2026-11-22T23:40:00+08:00",
       "deadline_exact": true,
-      "remaining_text": "剩余34小时52分钟",
+      "remaining_text": "剩余33小时46分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58763973",
       "start_time": "2026-11-20T22:40:00+08:00",
       "first_seen": "2026-11-20T23:54:32+08:00",
-      "last_seen": "2026-11-21T12:47:09+08:00"
+      "last_seen": "2026-11-21T13:53:09+08:00"
     },
     {
       "id": "219232606-9f8fde3d38",
@@ -53,7 +53,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58673369",
       "start_time": "2026-11-21T07:03:00+08:00",
       "first_seen": "2026-11-21T07:26:33+08:00",
-      "last_seen": "2026-11-21T12:47:09+08:00"
+      "last_seen": "2026-11-21T13:53:09+08:00"
     }
   ],
   "courses": [
