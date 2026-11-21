@@ -334,6 +334,14 @@ def do_selftest() -> bool:
         check("eval-list 识别为互评", rows[1]["kind"] == "eval", rows[1]["kind"])
         check("待互评为 pending", rows[1]["state"] == "pending", rows[1]["state"])
         check("ID 不含 enc", "abc123" not in rows[0]["id"] and "def456" not in rows[1]["id"])
+    # v1.9.14（GitHub chaoxing-homework-checker 的 API.md 逆向证实）：作业列表
+    # 分页 pageNum——只抓第一页会漏掉排在后面的已完成作业（高数第三章疑例）
+    from inspect import getsource as _getsrc
+    check("作业列表请求含 pageNum 翻页参数",
+          "pageNum" in _getsrc(study_collector.Chaoxing.work_html))
+    _psrc = _getsrc(study_collector.Chaoxing.work_rows_paged)
+    check("作业列表翻页采集：逐页去重 + 页数上限 + 首页失败返回 None",
+          "max_pages" in _psrc and "seen" in _psrc and "return None" in _psrc)
     # v1.7.0：需要动手的状态集合 —— 待完成/待互评/已退回/待考试；
     # 不需动手的：已完成/待批改(submitted)/未开始(upcoming)
     check("已退回 归为 pending（退回要重做）",

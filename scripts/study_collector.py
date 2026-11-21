@@ -221,11 +221,44 @@ class Chaoxing:
             course["name"] = name if name and name != "提示" else f"课程{course['course_id']}"
         return tokens
 
-    def work_html(self, course: dict, tokens: dict) -> str | None:
+    def work_html(self, course: dict, tokens: dict, page_num: int = 1) -> str | None:
         return self.get(self.cfg.get("work_list", "https://mooc1.huuc.edu.cn/mooc2/work/list"),
                         params={"courseId": course["course_id"], "classId": course["class_id"],
                                 "cpi": course["cpi"], "ut": "s",
-                                "stuenc": tokens["enc"], "enc": tokens["workEnc"]})
+                                "stuenc": tokens["enc"], "enc": tokens["workEnc"],
+                                # v1.9.14（GitHub chaoxing-homework-checker 的 API.md 逆向
+                                # 证实）：作业列表分页，pageNum 从 1 开始。只抓第一页会
+                                # 漏掉排后面的已完成/旧作业（高数第三章「知识点总结」
+                                # 已提交却状态为空，疑在此列）
+                                "pageNum": page_num})
+
+    def work_rows_paged(self, course: dict, tokens: dict,
+                        now: datetime, max_pages: int = 3) -> list[dict] | None:
+        """v1.9.14：作业列表**翻页**采集（逐页解析、按 id 去重）。
+
+        - 第一页被拒/tip 页 → 返回 None（调用方按原逻辑记 failed）；
+        - 后续页被拒/无新条目/解析为空 → 停止，用已收集的页（不报错）；
+        - 最多 max_pages 页（默认 3，控制请求量：反爬约束）。
+        """
+        all_rows: list[dict] = []
+        seen: set[str] = set()
+        for page in range(1, max_pages + 1):
+            html = self.work_html(course, tokens, page)
+            if is_tip_page(html):
+                if page == 1:
+                    return None
+                break
+            rows = parse_work_rows(html, course, now)
+            new = [r for r in rows if r.get("id") and r["id"] not in seen]
+            if not new:
+                break
+            for r in new:
+                seen.add(r["id"])
+                all_rows.append(r)
+        if len(all_rows):
+            log(f"作业列表翻页：{course.get('name') or course['course_id']} "
+                f"共 {len(all_rows)} 条（最多 {max_pages} 页）")
+        return all_rows
 
     def exam_html(self, course: dict, tokens: dict) -> str | None:
         if not tokens.get("examEnc"):
@@ -550,12 +583,13 @@ def run() -> dict:
         if not tokens:
             failed += 1
             continue
-        whtml = cx.work_html(c, tokens)
-        if is_tip_page(whtml):
+        # v1.9.14（API.md 逆向证实 pageNum 分页）：翻页采集作业列表——只抓
+        # 第一页会漏掉排在后面的已完成/旧作业（高数第三章疑例）
+        rows = cx.work_rows_paged(c, tokens, req_now)
+        if rows is None:
             log(f"课程 {c.get('name')} 作业列表被拒（token/权限/登录态失效）", level="WARN")
             failed += 1
             continue
-        rows = parse_work_rows(whtml, c, req_now)
         ehtml = cx.exam_html(c, tokens)
         if ehtml and not is_tip_page(ehtml):
             rows.extend(parse_exam_rows(ehtml, c, req_now, tokens))
