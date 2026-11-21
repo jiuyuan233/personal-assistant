@@ -743,11 +743,22 @@ def run() -> dict:
                     for _d in _diag[:8]:
                         log(f"[quiz]   补状态诊断：{re.sub(r'[0-9]', 'D', str(_d))[:170]}")
                     _ok_n = 0
+                    _bbs_titles: set[str] = set()
                     for t, s in zip(_need[:3], _got):
+                        if s == "__BBS_DISCUSSION__" or s.startswith("__BBS_DISCUSSION__"):
+                            # v1.9.10（用户 2026-11-21 明确）：groupweb BBS 讨论页
+                            # 「只是一个讨论，算不上作业」——从随堂清单剔除
+                            _bbs_titles.add(t.get("title") or "")
+                            continue
                         if s:
                             t["status"] = s
                             t["state"] = qb.classify_quiz_line(s)
                             _ok_n += 1
+                    if _bbs_titles:
+                        tasks_q = [t for t in tasks_q
+                                   if (t.get("title") or "") not in _bbs_titles]
+                        log(f"[quiz] {cname} 剔除 BBS 讨论（非作业）"
+                            f"{len(_bbs_titles)} 条")
                     log(f"[quiz] {cname} 点击式+直开补状态 {_ok_n}/{len(_got)} 条"
                         f"（待补 {len(_need)} 条，本轮限 3）")
                 line_count = int(res.get("diag", {}).get("lineCount") or 0)

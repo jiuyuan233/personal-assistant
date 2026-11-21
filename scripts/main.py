@@ -1458,6 +1458,14 @@ def do_selftest() -> bool:
           == "最终得分85分"
           and not qb.is_group_tag("最终得分85分"),
           "得分行可提取")
+    # v1.9.10（用户 2026-11-21 实证）：aiInteractStory 页状态是「总分96分」
+    # （.totalScore div）——有总分 = 已完成
+    check("AI 互动故事得分状态：总分命中 done",
+          qb.classify_quiz_line("总分96分") == "done"
+          and qb.classify_quiz_line("总分0分") == "done")
+    check("AI 互动故事得分行可提取",
+          qb.find_status_in_text("活动标题\n总分96分\n10-23 17:50 已结束")
+          == "总分96分")
     # v1.9.4：分组标签排除——「进行中（N）/已结束（N）」是组计数徽标不是用户状态
     # （思修轮点击式实证抓到过并污染落盘，需主动清洗）
     check("分组标签识别（进行中（N）是标签、真实状态词不是）",
@@ -1628,6 +1636,20 @@ def do_selftest() -> bool:
                        "title": "A"}], now)
     check("作业合并：新值状态空不冲掉旧非空状态",
           m8[0]["status"] == "已完成" and m8[0]["state"] == "done", str(m8[0]))
+    # v1.9.10（高数第三章状态再次丢失实证）：id 漂移兜底——同课同标题视为同一任务，
+    # 新 id 继承旧 id 与旧状态（否则旧「已提交」被新 id 的新值权威清掉）
+    m9 = _mq([{"id": "old-id", "kind": "quiz", "course_id": "219232606",
+               "class_id": "153566712",
+               "title": "第三章知识点总结（手写+学号姓名）",
+               "state": "done", "status": "已提交，待教师公布正确答案"}],
+             [{"id": "new-drifted-id", "kind": "quiz", "course_id": "219232606",
+               "class_id": "153566712",
+               "title": "第三章知识点总结(手写+学号姓名)",
+               "state": "pending", "status": ""}], {("219232606", "153566712")}, now)
+    check("随堂合并：id 漂移按标题归位并继承旧状态",
+          m9[0]["id"] == "old-id"
+          and m9[0]["status"] == "已提交，待教师公布正确答案"
+          and m9[0]["state"] == "done", str(m9[0]))
     # v1.8.0：课堂活动容器过滤——整词「（主题）讨论/提问」、标题退化成课程名
     check("课堂活动整词过滤（主题讨论/提问整词，长标题不误伤）",
           bool(qb.CLASSROOM_EXACT_RE.fullmatch("主题讨论"))

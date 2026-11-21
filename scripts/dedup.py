@@ -9,6 +9,7 @@
 """
 from __future__ import annotations
 
+import re
 from datetime import date, datetime, timedelta
 
 from utils import BJ_TZ, load_json, log, now_bj, parse_datetime, save_json
@@ -166,10 +167,27 @@ def merge_quiz(old_list: list[dict], new_list: list[dict],
     new_list = dedupe_by_id(new_list)
     stamp = now.isoformat(timespec="seconds")
     old_by_id = {t["id"]: t for t in old_list}
+    # v1.9.10（高数第三章状态再次丢失实证）：**id 漂移兜底**——id 里的 key 来自
+    # onclick 的 activeId/数字串，某轮解析不出时 key 退化成标题 hash，id 就变了；
+    # 新 id 不在旧表 → 当新条目处理 → 旧状态「已提交」被「新值权威」清掉。
+    # 同课同标题视为同一任务，继承旧 id（进而继承状态/first_seen）。
+    old_by_title: dict[tuple, dict] = {}
+    for t in old_list:
+        _nt = re.sub(r"\s+", "", (t.get("title") or "")
+                     .replace("（", "(").replace("）", ")"))
+        if _nt:
+            old_by_title.setdefault(
+                (t.get("course_id"), t.get("class_id"), _nt), t)
     out: list[dict] = []
     fresh = 0
     for new in new_list:
         old = old_by_id.get(new["id"])
+        if not old:
+            _nt = re.sub(r"\s+", "", (new.get("title") or "")
+                         .replace("（", "(").replace("）", ")"))
+            old = old_by_title.get((new.get("course_id"), new.get("class_id"), _nt))
+            if old is not None:
+                new["id"] = old["id"]  # id 漂移归位，后续继承旧状态/first_seen
         if old:
             new["first_seen"] = old.get("first_seen") or stamp
             if old.get("deadline_exact") and not new.get("deadline_exact"):

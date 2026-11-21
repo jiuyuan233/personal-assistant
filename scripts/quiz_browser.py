@@ -63,8 +63,9 @@ def cookies_for_browser(session) -> list[dict]:
 # v1.6.5：「未开始」单独判 upcoming——活动还没开放，不算待办（与 study_collector.classify 同口径）。
 # v1.9.7：「最终得分」是讨论类 situationalDialogue 页的状态形态（用户实证
 # 「最终得分85分」）——有得分 = 已完成；子串扫描命中即 done。
+# v1.9.10（用户 2026-11-21 实证）：aiInteractStory 页用「总分96分」（.totalScore）。
 QUIZ_DONE = {"已完成", "已参与", "已提交", "已结束", "已交", "已答", "已互评", "已过期", "已评分",
-             "最终得分"}
+             "最终得分", "总分"}
 QUIZ_SUBMITTED = {"待批阅", "批阅中", "待批改", "批改中"}
 QUIZ_PENDING = {"待做", "未做", "未交", "未提交", "待完成", "进行中", "未参与", "待参与",
                 "待作答", "未答", "已发布", "待开始"}
@@ -871,6 +872,18 @@ def _status_from_frames(page) -> tuple[str, str]:
                 return s, fr.url or ""
         except Exception:
             pass
+    # v1.9.10（用户 2026-11-21 实证）：aiInteractStory/pcStudentIndex 页的状态是
+    # `<div class="totalScore">总分<span class="numStyle">96</span>分</div>`
+    # ——innerText 压空白后形如「总分96分」，有总分 = 已完成
+    for fr in page.frames:
+        try:
+            s = fr.evaluate(
+                "() => { const el = document.querySelector('.totalScore'); "
+                "return el ? (el.innerText || '').replace(/\\s+/g, '') : ''; }")
+            if s and "总分" in s:
+                return s, fr.url or ""
+        except Exception:
+            pass
     for fr in page.frames:
         try:
             txt = fr.evaluate(
@@ -880,6 +893,13 @@ def _status_from_frames(page) -> tuple[str, str]:
                 return s, fr.url or ""
         except Exception:
             pass
+    # v1.9.10（用户 2026-11-21 明确）：「groupweb.huuc.edu.cn/.../topicDiscuss/
+    # replysList」页面**只是一个讨论，算不上作业**——识别后返回特殊标记，
+    # 调用方（study_collector）把该任务从随堂清单里剔除，不再占待办。
+    for fr in page.frames:
+        u = fr.url or ""
+        if "groupweb" in u and "topicDiscuss" in u:
+            return "__BBS_DISCUSSION__", u
     return "", ""
 
 
