@@ -24,7 +24,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
-from utils import make_id, parse_remaining, safe_text, scrub_task_title
+from utils import BJ_TZ, make_id, parse_remaining, safe_text, scrub_task_title
 
 # ---------------------------------------------------------------------------
 # cookies（v1.7.2 原样保留）
@@ -387,11 +387,15 @@ def active_id_map(bodies: list[dict]) -> dict[str, dict]:
 # ---------------------------------------------------------------------------
 # Playwright 采集
 # ---------------------------------------------------------------------------
-def _new_ctx(pw, cookies: list[dict], ua: str, profile: str | None = None):
-    """浏览器上下文：Actions 用 cookies 注入；本地开发用持久 profile 登录态。"""
+def _new_ctx(pw, cookies: list[dict], ua: str,
+             profile: str | None = None, proxy: str | None = None):
+    """浏览器上下文：Actions 用 cookies 注入；本地开发用持久 profile 登录态；
+    限流时段可走代理出口换 IP。"""
     if profile:
-        ctx = pw.chromium.launch_persistent_context(
-            profile, headless=True, user_agent=ua, locale="zh-CN")
+        kw = dict(headless=True, user_agent=ua, locale="zh-CN")
+        if proxy:
+            kw["proxy"] = {"server": proxy}
+        ctx = pw.chromium.launch_persistent_context(profile, **kw)
         return None, ctx
     browser = pw.chromium.launch(headless=True)
     ctx = browser.new_context(user_agent=ua, locale="zh-CN")
@@ -474,9 +478,185 @@ def _collect_list_frame(page, snippets, seen_titles: dict) -> list[str]:
     return blocks
 
 
+# activelist API 的活动类型 → 分类（本地 14 门课实证；未知 type 宁多勿漏）
+KNOWN_CLASSROOM_TYPES = {2, 44, 11, 43, 14, 4, 80, 59, 49, 23, 46,
+                         82, 56, 17, 45, 83, 13, 5, 50}
+
+
+def replay_activelist(target, api_url: str) -> list[dict]:
+    """iframe 上下文重放 activelist API → 活动清单（绕过页面渲染波动）。
+
+    本地实证：列表页 body 一轮 1524 字、一轮 13 字（随机骨架），但 API
+    重放稳定返回全部活动（id/nameOne/type/startTime/endTime/status）。
+    注意：JSON 里 status/userStatus 对签到/课件/作业无区分（v1.8.4d 实证），
+    用户完成状态必须走详情页。"""
+    js = """
+async (args) => {
+  const r = await fetch(args.url, {credentials: 'include',
+      headers: {'Accept': 'application/json'}});
+  return await r.text();
+}
+"""
+    try:
+        txt = target.evaluate(js, {"url": api_url})
+        import json as _j
+        obj = _j.loads(txt)
+        return (obj.get("data") or {}).get("activeList") or []
+    except Exception:
+        return []
+
+
+def _quiz_type(atype) -> bool:
+    """activelist type → 是否作业候选：已知课堂类排除，未知 type 宁多勿漏。"""
+    try:
+        at = int(atype)
+    except (TypeError, ValueError):
+        return False
+    if at in KNOWN_CLASSROOM_TYPES:
+        return False
+    return True
+
+
+def tasks_from_activelist(items: list[dict], course: dict,
+                          now: datetime) -> list[dict]:
+    """activelist API 活动清单 → 作业任务（本地 14 门课实证）。
+
+    仅收作业候选 type（42 测验/35 分组任务/未知 type 宁多勿漏）；签到(2)、
+    课件(44)、选人(11)、投票(43)、讨论(5/50) 等已知课堂类直接排除。
+    deadline 用 endTime 毫秒时间戳（精确，比解析文本可靠）。"""
+    tasks: list[dict] = []
+    seen: set[str] = set()
+    for it in items or []:
+        try:
+            at = int(it.get("type"))
+        except (TypeError, ValueError):
+            continue
+        if not _quiz_type(at):
+            continue
+        title = str(it.get("nameOne") or "").strip()
+        if _bad_title(title):
+            continue
+        key = re.sub(r"\s+", "", title)
+        if key in seen:
+            continue
+        seen.add(key)
+        deadline, exact = None, False
+        try:
+            ets = int(it.get("endTime") or 0)
+            if ets > 0:
+                deadline = datetime.fromtimestamp(
+                    ets / 1000, tz=BJ_TZ).isoformat(timespec="seconds")
+                exact = True
+        except (TypeError, ValueError, OSError):
+            pass
+        tasks.append({
+            "id": make_id(course.get("course_id") or "", key),
+            "kind": "quiz",
+            "category": "quiz",
+            "_aid": str(it.get("id") or ""),
+            "atype": at,
+            "course": course.get("name") or "",
+            "course_id": course.get("course_id") or "",
+            "title": scrub_task_title(title),
+            "status": "",
+            "state": "unknown",
+            "deadline": deadline,
+            "deadline_exact": exact,
+            "time_hint": "",
+            "url": "",
+            "first_seen": now.isoformat(timespec="seconds"),
+        })
+    return tasks
+
+
+def _quiz42_status(ctx, mid_url: str, aid: str) -> str:
+    """测验/知识点总结（type=42）：直开 answerQuestion2 → 轮询读状态词。
+
+    本地实证：已提交态显示「已提交，待教师公布正确答案」；页面可能再
+    302 到 quizStudentQuestion，轮询所有 frame 读。精确状态优先于徽标。"""
+    page = ctx.new_page()
+    try:
+        page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
+        page.wait_for_timeout(6000)
+        frame = _find_active_frame(page)
+        if frame is None:
+            return ""
+        vals = frame.evaluate(
+            "() => ({fid: String(window.fid||''), courseId: String(window.courseId||''),"
+            " classId: String(window.classId||''), timetable: String(window.timetable||'')})")
+        url = (f"https://mobilelearn.huuc.edu.cn/page/quiz/stu/answerQuestion2"
+               f"?courseId={vals['courseId']}&classId={vals['classId']}"
+               f"&activeId={aid}&fid={vals['fid']}&timetable={vals['timetable']}")
+        page.goto(url, wait_until="domcontentloaded", timeout=60000)
+        best = ""
+        for _ in range(10):
+            page.wait_for_timeout(1000)
+            for f in page.frames:
+                try:
+                    txt = f.evaluate(STAT_PAGE_JS)
+                except Exception:
+                    continue
+                if "个人最终得分" in txt:
+                    continue  # 误入分组任务详情，跳过
+                for ln in txt.splitlines():
+                    ln2 = ln.strip()
+                    if ln2 and len(ln2) < 60 and not GROUP_TAG.fullmatch(ln2)                             and classify_quiz(ln2) != "unknown":
+                        if any(w in ln2 for w in ("已提交", "待批阅", "已评分",
+                                                  "已互评", "得分")):
+                            return ln2
+                        if not best:
+                            best = ln2
+        return best
+    except Exception:
+        return ""
+    finally:
+        try:
+            page.close()
+        except Exception:
+            pass
+
+
+def _fill_quiz_status(ctx, page, mid_url: str,
+                      items: list[dict]) -> tuple[int, list[str]]:
+    """状态补抓：按活动 type 分发——35 分组任务 API、42 测验直开、
+    其余 activeRowClick 兜底。返回 (成功数, 失败原因列表)。"""
+    got = 0
+    reasons: list[str] = []
+    for it in items:
+        title = it.get("title") or ""
+        tag = title[:12]
+        aid = it.get("_aid") or ""
+        atype = it.get("atype")
+        status = ""
+        if not aid:
+            reasons.append(f"{tag}:无id")
+        elif atype == 35:
+            status = _group_task_status(ctx, mid_url, aid)
+            if not status:
+                reasons.append(f"{tag}:分组任务API空")
+        elif atype == 42:
+            status = _quiz42_status(ctx, mid_url, aid)
+            if not status:
+                # 直开兜底失败（详情页形态多变）→ 回退列表点击路径
+                status, reason = _rowclick_status(ctx, page, mid_url, title)
+                if not status:
+                    reasons.append(f"{tag}:测验直开无状态/{reason}")
+        else:
+            status, reason = _rowclick_status(ctx, page, mid_url, title)
+            if not status:
+                reasons.append(f"{tag}:{reason}")
+        if status:
+            it["status"] = status
+            it["state"] = classify_quiz(status)
+            got += 1
+        page.wait_for_timeout(2000)
+    return got, reasons
+
+
 def collect_course(course: dict, mid_url: str, cookies: list[dict],
                    ua: str, now: datetime,
-                   profile: str | None = None) -> dict:
+                   profile: str | None = None,
+                   proxy: str | None = None) -> dict:
     """单课采集（一次浏览器会话完成列表 + 状态补抓）。
 
     登录态二选一：cookies（Actions，cx 登录链注入）或 profile（本地开发，
@@ -487,78 +667,109 @@ def collect_course(course: dict, mid_url: str, cookies: list[dict],
     try:
         from playwright.sync_api import sync_playwright
         with sync_playwright() as pw:
-            browser, ctx = _new_ctx(pw, cookies, ua, profile)
+            browser, ctx = _new_ctx(pw, cookies, ua, profile, proxy)
             page = ctx.new_page()
             xhr_bodies: list[dict] = []
 
             def _on_response(resp):
                 try:
                     u = resp.url or ""
-                    if "activelist" not in u.lower():
+                    # 只认 v2 JSON API（页面 URL stuActiveList 会误匹配 activelist）；
+                    # 不查 content-type——实测该 API 响应头不保证 application/json
+                    if "/v2/apis/" not in u or "activelist" not in u.lower():
                         return
-                    if "json" not in ((resp.headers or {}).get("content-type") or "").lower():
-                        return
-                    if len(xhr_bodies) < 3:
-                        xhr_bodies.append({"url": u[:80], "body": resp.text()[:200000]})
+                    if not any(x.get("url") == u for x in xhr_bodies):
+                        xhr_bodies.append({"url": u, "body": resp.text()[:200000]})
                 except Exception:
                     pass
 
             page.on("response", _on_response)
-            # ① 主页任务 tab：随堂 iframe + 主页卡片 + XHR 拦截
-            page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
-            page.wait_for_timeout(6000)
-            real = page.url
-            cards = []
-            try:
-                cards = page.evaluate(HOME_CARD_JS) or []
-            except Exception:
-                pass
-            frame = _find_active_frame(page)
-            if frame is None:
-                try:
-                    page.get_by_text("任务", exact=True).first.click(timeout=5000)
-                except Exception:
-                    pass
-                for _ in range(10):
-                    page.wait_for_timeout(1000)
-                    frame = _find_active_frame(page)
-                    if frame is not None:
+            # ① 主页任务 tab：随堂清单 API 优先。骨架轮（body 只有课程名）
+            # 时 activelist XHR 根本不发——重试 goto 至捕获 API（实测第 2 轮即中）
+            api_url = ""
+            frame = None
+            real = ""
+            cards: list = []
+            for attempt in range(3):
+                frame = None  # 重新 goto 后旧 frame 引用必 detached，必须重置
+                page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
+                page.wait_for_timeout(9000)
+                real = page.url
+                for b in xhr_bodies:
+                    u = b.get("url") or ""
+                    if "/v2/apis/" in u and "activelist" in u.lower():
+                        api_url = u
                         break
-            blocks: list[str] = []
-            if frame is not None:
-                try:
-                    frame.wait_for_load_state("domcontentloaded", timeout=15000)
-                except Exception:
-                    pass
-                _wait_text(frame, 15)
-                blocks = _grab_blocks(frame)
-                if not blocks:
-                    frame.wait_for_timeout(2000)
-                    blocks = _grab_blocks(frame)
-                if not blocks:
-                    # 渲染波动兜底（实测同课一轮 48 块、一轮 0 块）：整页重进一次
-                    page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
-                    page.wait_for_timeout(8000)
+                if frame is None:
                     frame = _find_active_frame(page)
-                    if frame is None:
-                        try:
-                            page.get_by_text("任务", exact=True).first.click(timeout=5000)
-                        except Exception:
-                            pass
-                        for _ in range(10):
-                            page.wait_for_timeout(1000)
-                            frame = _find_active_frame(page)
-                            if frame is not None:
-                                break
-                    if frame is not None:
-                        _wait_text(frame, 15)
+                if frame is None:
+                    try:
+                        page.get_by_text("任务", exact=True).first.click(timeout=5000)
+                    except Exception:
+                        pass
+                    for _ in range(8):
+                        page.wait_for_timeout(1000)
+                        frame = _find_active_frame(page)
+                        if frame is not None:
+                            break
+                if api_url:
+                    try:
+                        cards = page.evaluate(HOME_CARD_JS) or []
+                    except Exception:
+                        cards = []
+                    break
+                result["diag"].append(
+                    f"attempt {attempt + 1} 无 activelist API（骨架轮）")
+            # ①a 随堂清单：API 优先（重放 activelist，绕过渲染波动——
+            # 实测同课一轮 body 1524 字、一轮 13 字），块解析兜底
+            api_url = ""
+            for b in xhr_bodies:
+                u = b.get("url") or ""
+                if "/v2/apis/" in u and "activelist" in u.lower():
+                    api_url = u
+                    break
+            api_items: list[dict] = []
+            if api_url and frame is not None:
+                api_items = replay_activelist(frame, api_url)
+            tasks: list[dict] = tasks_from_activelist(api_items, course, now)
+            if api_items:
+                result["diag"].append(f"API活动 {len(api_items)}")
+            if not tasks:
+                # 块解析兜底（API 未捕获/空时）
+                blocks: list[str] = []
+                if frame is not None:
+                    try:
+                        frame.wait_for_load_state("domcontentloaded", timeout=15000)
+                    except Exception:
+                        pass
+                    _wait_text(frame, 15)
+                    blocks = _grab_blocks(frame)
+                    if not blocks:
+                        frame.wait_for_timeout(2000)
                         blocks = _grab_blocks(frame)
-                result["diag"].append(f"随堂块 {len(blocks)}")
-            else:
-                result["diag"].append("no_stuactivelist_frame")
-
-            tasks = parse_active_blocks(blocks, course, now)
-            merge_home_cards(tasks, cards)
+                    if not blocks:
+                        # 渲染波动兜底（实测同课一轮 48 块、一轮 0 块）：整页重进一次
+                        page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
+                        page.wait_for_timeout(8000)
+                        frame = _find_active_frame(page)
+                        if frame is None:
+                            try:
+                                page.get_by_text("任务", exact=True).first.click(timeout=5000)
+                            except Exception:
+                                pass
+                            for _ in range(10):
+                                page.wait_for_timeout(1000)
+                                frame = _find_active_frame(page)
+                                if frame is not None:
+                                    break
+                        if frame is not None:
+                            _wait_text(frame, 15)
+                            blocks = _grab_blocks(frame)
+                    result["diag"].append(f"随堂块 {len(blocks)}（API 兜底）")
+                else:
+                    result["diag"].append("no_stuactivelist_frame（API 兜底）")
+                tasks = parse_active_blocks(blocks, course, now)
+                merge_home_cards(tasks, cards)
 
             # ②③ 作业/考试 tab（iframe 块 + 翻页）
             seen_w: dict = {}
@@ -575,17 +786,19 @@ def collect_course(course: dict, mid_url: str, cookies: list[dict],
                 result["diag"].append(f"{key}块 {len(bl)}")
                 _merge_work_exam(tasks, bl, key, course, now)
 
-            # ④ 状态补抓：随堂作业类且无状态的条目
-            aid_map = active_id_map(xhr_bodies)
+            # ④ 状态补抓：随堂作业类且无状态的条目（按 atype 分发：
+            # 35 分组任务 API、42 测验直开 answerQuestion2、其余 rowclick）
             need = [t for t in tasks
-                    if t.get("category") == "quiz" and t.get("state") == "unknown"]
+                    if t.get("kind") == "quiz" and t.get("state") == "unknown"]
             filled = 0
             if need:
-                if not aid_map:
-                    result["diag"].append("aid_map 空（activelist XHR 未捕获）")
-                filled, _reasons = _fill_quiz_status(ctx, page, mid_url, need, aid_map)
+                filled, _reasons = _fill_quiz_status(ctx, page, mid_url, need)
                 result["diag"].extend(_reasons)
-            result["diag"].append(f"补状态 {filled}/{len(need)}（aid_map {len(aid_map)}）")
+            result["diag"].append(f"补状态 {filled}/{len(need)}")
+            # 审计红线（§2.5）：_aid/atype 是每生活动 ID，不落盘
+            for t in tasks:
+                t.pop("_aid", None)
+                t.pop("atype", None)
             result["ok"] = True
             result["tasks"] = tasks
             ctx.close()
@@ -641,37 +854,6 @@ def _merge_work_exam(tasks: list[dict], blocks: list[str], kind: str,
             "first_seen": now.isoformat(timespec="seconds"),
         })
 
-
-def _fill_quiz_status(ctx, page, mid_url: str, items: list[dict],
-                      aid_map: dict[str, dict]) -> tuple[int, list[str]]:
-    """状态补抓：type=35 分组任务走 API 分支，其余走 activeRowClick 跳详情。
-
-    返回 (成功数, 失败原因列表)——原因进 diag，Actions 日志可定位卡点。"""
-    got = 0
-    reasons: list[str] = []
-    for it in items:
-        title = it.get("title") or ""
-        tag = title[:12]
-        info = aid_map.get(re.sub(r"\s+", "", title))
-        if info is None:
-            reasons.append(f"{tag}:无aid映射")
-            continue
-        aid, atype = info["id"], info.get("type")
-        status = ""
-        if atype == 35:
-            status = _group_task_status(ctx, mid_url, aid)
-            if not status:
-                reasons.append(f"{tag}:分组任务API空")
-        else:
-            status, reason = _rowclick_status(ctx, page, mid_url, title)
-            if not status:
-                reasons.append(f"{tag}:{reason}")
-        if status:
-            it["status"] = status
-            it["state"] = classify_quiz(status)
-            got += 1
-        page.wait_for_timeout(2000)
-    return got, reasons
 
 
 def _rowclick_status(ctx, page, mid_url: str, title: str) -> tuple[str, str]:
