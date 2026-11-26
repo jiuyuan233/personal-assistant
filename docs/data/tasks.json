@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-27T05:18:52+08:00",
+  "updated_at": "2026-11-27T06:23:46+08:00",
   "stats": {
     "pending": 0,
     "overdue": 0,
@@ -9,7 +9,7 @@
     "unknown": 0,
     "upcoming": 0,
     "dropped": {
-      "not_pending": 114,
+      "not_pending": 89,
       "overdue": 6
     },
     "courses": 14
