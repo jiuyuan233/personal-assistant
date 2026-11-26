@@ -10,16 +10,16 @@
     "notice": "2026-11-27T04:31:48+08:00"
   },
   "pushed": {
-    "morning": "2026-11-26",
+    "morning": "2026-11-27",
     "noon": "2026-11-26",
     "night": "2026-11-26",
     "dusk": "2026-11-26"
   },
   "errors": {},
   "writeback_date": "2026-11-27",
-  "last_tick": "2026-11-27T06:44:03+08:00",
+  "last_tick": "2026-11-27T07:04:26+08:00",
   "last_results": {
-    "diary": true,
+    "morning": true,
     "finalize": true
   },
   "notified_new": {
