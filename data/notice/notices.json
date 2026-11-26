@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-11-26T16:20:24+08:00",
-  "count": 128,
+  "updated_at": "2026-11-26T22:40:25+08:00",
+  "count": 129,
   "sources": [
     "校网通知公告",
     "教务处",
@@ -194,6 +194,21 @@
       ],
       "score": 3,
       "first_seen": "2026-11-14",
+      "last_seen": "2026-11-26"
+    },
+    {
+      "id": "-5067d90798",
+      "title": "我校举办“数字化教学改革与智慧课程建设” 专题培训会",
+      "url": "https://jwc.huuc.edu.cn/info/1018/5584.htm",
+      "source": "教务处",
+      "publish_date": "2026-11-26",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 2,
+      "first_seen": "2026-11-26",
       "last_seen": "2026-11-26"
     },
     {
