@@ -148,6 +148,10 @@
     "quiz_per_round": 4,
     "_quiz说明": "v1.6.0 随堂作业收录（用户报「老师把作业当随堂作业发了，不在仓库里」）：Playwright 打开课程页后从内嵌 stuActiveList frame 提取。每轮只轮换抓 quiz_per_round 门课（反爬约束，14 门轮一圈约 3.5 小时）；任何失败不影响主采集。关掉随堂采集改这里为 false",
     "public_links": "course",
-    "_public_links说明": "审计 §2.5 / §7.2：公开产物（README / docs）里的作业链接保留到哪一级。course=只留课程级参数（去掉 cpi/enc/clazzid 等可定位到个人的值），full=保留完整深链。完整深链只在飞书推送里给（飞书是私聊，不公开）"
+    "_public_links说明": "审计 §2.5 / §7.2：公开产物（README / docs）里的作业链接保留到哪一级。course=只留课程级参数（去掉 cpi/enc/clazzid 等可定位到个人的值），full=保留完整深链。完整深链只在飞书推送里给（飞书是私聊，不公开）",
+    "xxt_cpi": "577967959",
+    "_xxt_cpi说明": "学生 cpi 全课程共用（v1.7.2 版 courses.json 无 cpi 字段）；stat2 统计页对 cpi 缺失返回空页",
+    "stat_per_round": 2,
+    "_stat说明": "统计页每轮轮换门数；只补分数不覆盖状态（作业状态由 work/exam tab 覆盖）"
   }
 }

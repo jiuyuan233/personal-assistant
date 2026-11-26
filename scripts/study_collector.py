@@ -628,13 +628,13 @@ def run() -> dict:
         anomalies.append(f"待完成但抓不到截止：{t.get('course')} · {t.get('title')}")
         log(f"⚠️ 待完成却无截止时间，可能已逾期：{t.get('course')} · {t.get('title')}", level="WARN")
 
-    # v1.6.0 随堂作业**收录**：Playwright 打开课程页 → 从内嵌的
-    # stuActiveList frame 提取行（v1.5.22 四层逆向确认的唯一可行路径：
-    # 单独 goto 该 URL 渲染 0 字，课程页内的 iframe 才渲染出真实内容）。
-    # 每轮只轮换抓少数课程（反爬约束），**任何失败都不影响主采集**。
-    # 行结构未吃透时落打码诊断日志，据实收紧 parse_active_rows，不许猜。
+    # v2.0 随堂采集（2026-11-26 本地 14 门课验证版移植）：块解析 + 三类
+    # 分类（quiz/classroom/material）+ 状态补抓（activeRowClick 跳详情 /
+    # 分组任务 API）。classroom/material 只记日志不进待办（用户定论：
+    # 讨论不算作业、课件不是作业）。任何失败都不影响主采集。
     quiz_new: list[dict] = []
     quiz_covered: set = set()
+    xxt_cpi = str(cfg.get("xxt_cpi") or "577967959")
     if cfg.get("quiz_browser", True):
         try:
             import quiz_browser as qb
@@ -648,54 +648,28 @@ def run() -> dict:
             for c in picks:
                 time.sleep(2)
                 mid_url = (f"https://mooc1.huuc.edu.cn/visit/stucoursemiddle"
-                           f"?courseid={c['course_id']}&clazzid={c['class_id']}&cpi={c['cpi']}"
+                           f"?courseid={c['course_id']}&clazzid={c['class_id']}"
+                           f"&cpi={c.get('cpi') or xxt_cpi}"
                            f"&ismooc2={c.get('ismooc2', '1')}")
-                res = qb.collect_quiz(c, mid_url, q_cookies, UA)
+                res = qb.collect_course(c, mid_url, q_cookies, UA, now)
                 cname = c.get("name") or "?"
                 if not res.get("ok"):
-                    log(f"[quiz] {cname} 随堂采集失败：{res.get('error', '')[:120]}", level="WARN")
+                    log(f"[quiz] {cname} 随堂采集失败：{res.get('error', '')[:120]}",
+                        level="WARN")
                     continue
-                rows_raw = res.get("rows_raw") or []
-                tasks_q, unmapped = qb.parse_active_rows(
-                    rows_raw, c, now, res.get("frame_url") or "")
-                line_count = int(res.get("diag", {}).get("lineCount") or 0)
-                if line_count <= 0:
-                    # 内容轮询后仍 0 行：疑似没加载完/被限流（run 43807375956
-                    # 实测同一门课一轮 316 字、一轮 0 字）——**不算覆盖**，
-                    # 旧数据保命，下一轮自然重试。
-                    log(f"[quiz] {cname} frame 渲染 0 行（疑似未加载完/限流），"
-                        f"本轮不覆盖、保留旧数据", level="WARN")
-                    continue
-                # 「打开成功」且（解析出行 或 页面明确空）才算覆盖这门课：
-                # 渲染了内容但一行没解析出来 = 结构没吃透，不算空，旧数据保命
-                if tasks_q or line_count < 120:
+                tasks_q = res.get("tasks") or []
+                diag = "; ".join(str(d) for d in res.get("diag") or [])
+                # 「有任一解析结果」才算覆盖这门课；全 0 保留旧数据（旧数据保命）
+                if tasks_q or res.get("work_blocks") or res.get("exam_blocks"):
                     quiz_covered.add((c["course_id"], c["class_id"]))
                     quiz_new.extend(tasks_q)
-                    log(f"[quiz] {cname} 随堂 {len(tasks_q)} 条（frame {line_count} 行、"
-                        f"候选 {len(rows_raw)} 条）")
+                    log(f"[quiz] {cname} 随堂作业 {len(tasks_q)} 条"
+                        f"（diag {diag}）")
                     for t in tasks_q[:10]:
                         log(f"[quiz]   · {t['title']}｜{t['status'] or '无状态'}｜"
                             f"{t.get('deadline') or '无截止'}")
-                    if not tasks_q and rows_raw:
-                        # 「判定为空」但页面明明有候选元素——要么真没随堂、要么被
-                        # 过滤规则误杀。打码 dump 出来，下一轮人工核对，不许盲删。
-                        log(f"[quiz] {cname} 判定空但有 {len(rows_raw)} 条候选，诊断（打码）：")
-                        for d in qb.masked_diag(res.get("diag") or {}, rows_raw)[:12]:
-                            log(f"[quiz]     {d}")
-                elif rows_raw:
-                    quiz_covered.add((c["course_id"], c["class_id"]))
-                    quiz_new.extend(tasks_q)
-                    log(f"[quiz] {cname} frame {line_count} 行、候选行 {len(rows_raw)} 条"
-                        f"但解析 0 条，dump 诊断（打码）：", level="WARN")
-                    for d in qb.masked_diag(res.get("diag") or {}, rows_raw)[:12]:
-                        log(f"[quiz]     {d}")
                 else:
-                    log(f"[quiz] {cname} frame 渲染 {line_count} 行、0 候选行，"
-                        f"dump 诊断（打码）：", level="WARN")
-                    for d in qb.masked_diag(res.get("diag") or {})[:12]:
-                        log(f"[quiz]     {d}")
-                for w in unmapped[:5]:
-                    log(f"[quiz] {cname} 未收录状态词「{w}」（按 pending 处理，待补词表）",
+                    log(f"[quiz] {cname} 0 候选（diag {diag}），保留旧数据",
                         level="WARN")
             new_cursor = (cursor + len(picks)) % max(1, len(courses))
             meta_now = load_json(META_PATH) or {}
@@ -720,6 +694,42 @@ def run() -> dict:
               if not quiz_browser_FILE_RE.search((t.get("title") or "").strip())]
     if len(merged) < _before_files:
         log(f"清理课件类条目（.pptx 等文件后缀，非作业）：{_before_files - len(merged)} 条")
+    # v2.0 统计页分数补充（本地 14 门课验证版）：stat2 每门课独立 URL，
+    # 每轮只轮换 stat_per_round 门（防频率风控）；**cpi 必须显式**——
+    # stat2 对 cpi 缺失返回 30 字符空页（本地实证，曾误判为「限流」）。
+    # 只补分数不覆盖状态（作业状态已由 work/exam tab 全量覆盖），按
+    # 课程+标题归一匹配，score 为空才填。任何失败不影响主采集。
+    stat_per = max(0, int(cfg.get("stat_per_round") or 2))
+    if stat_per and cfg.get("quiz_browser", True):
+        try:
+            import quiz_browser as qb
+            meta_s = load_json(META_PATH) or {}
+            scur = int(meta_s.get("stat_cursor") or 0) % max(1, len(courses))
+            spicks = courses[scur:scur + stat_per] or courses[:1]
+            q_cookies = qb.cookies_for_browser(cx.s)
+            _n_score = 0
+            for c in spicks:
+                rows_s = qb.fetch_work_stat(c, q_cookies, UA, xxt_cpi)
+                log(f"[stat] {c.get('name')}: 统计页 {len(rows_s)} 条")
+                for r in rows_s:
+                    if not r.get("score"):
+                        continue
+                    rk = re.sub(r"\s+", "", r["title"])[:20]
+                    for t in merged:
+                        if t.get("kind") not in ("work", "exam") or t.get("score"):
+                            continue
+                        if (t.get("course_id") == str(c.get("course_id"))
+                                and re.sub(r"\s+", "", t.get("title") or "")[:20] == rk):
+                            t["score"] = r["score"]
+                            _n_score += 1
+                            break
+                time.sleep(2)
+            nscur = (scur + len(spicks)) % max(1, len(courses))
+            meta_s["stat_cursor"] = nscur
+            save_json(META_PATH, meta_s)
+            log(f"[stat] 本轮分数回填 {_n_score} 条（cursor → {nscur}）")
+        except Exception as e:
+            log(f"[stat] 统计页采集异常（不影响主采集）：{exc_brief(e)}", level="WARN")
     # 审计 §2.5 / §7.2：data/ 是公开仓库的一部分，不是本地缓存。
     # cpi / answerId / enc 每生一份，落盘前必须抹掉；完整深链只在本轮内存里用于抓详情页。
     link_mode = cfg.get("public_links") or "course"

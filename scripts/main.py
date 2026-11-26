@@ -1015,18 +1015,20 @@ def do_selftest() -> bool:
           bool(study_collector.quiz_browser_FILE_RE.search("D1-2数列的极限.pptx"))
           and bool(study_collector.quiz_browser_FILE_RE.search("讲义.zip"))
           and not study_collector.quiz_browser_FILE_RE.search("第三章知识点总结"))
-    _pptx_rows, _pptx_unmap = qb.parse_active_rows(
-        [{"text": "D1-2数列的极限.pptx", "y": 100,
-          "onclick": "openCurrentUrl('https://mobilelearn.huuc.edu.cn/page/active/"
-                     "stuActiveDetail?courseid=219232606&clazzid=153566712&activeId=111111111', 2)",
-          "aria": ""},
-         {"text": "随堂小测", "y": 200,
-          "onclick": "openCurrentUrl('https://mobilelearn.huuc.edu.cn/page/active/"
-                     "stuActiveDetail?courseid=219232606&clazzid=153566712&activeId=222222222', 2)",
-          "aria": ""}],
+    # v2.0（本地 14 门课验证版移植）：随堂块解析——课件/签到分类、真作业收录
+    _pptx_rows = qb.parse_active_blocks(
+        ["D1-2数列的极限.pptx\n结束时间：11-24 15:19",
+         "随堂小测\n进行中\n结束时间：11-24 16:00"],
         {"course_id": "219232606", "class_id": "153566712", "name": "高等数学A"}, now)
-    check("随堂解析跳过课件文件、只收真作业",
-          [t["title"] for t in _pptx_rows] == ["随堂小测"], str(_pptx_rows))
+    check("随堂块解析跳过课件文件、只收真作业且带分类",
+          [t["title"] for t in _pptx_rows] == ["随堂小测"]
+          and _pptx_rows[0]["category"] == "quiz", str(_pptx_rows))
+    check("分类规则：签到/整词讨论/课件 → 非作业，其余 quiz",
+          qb.classify_category("二维码签到") == "classroom"
+          and qb.classify_category("主题讨论") == "classroom"
+          and qb.classify_category("提问") == "classroom"
+          and qb.classify_category("D1-2数列的极限.pptx") == "material"
+          and qb.classify_category("第三章知识总结") == "quiz")
 
     # v1.7.0：每日英语（AI 不可用走离线句库；难度限幅 1-5；当天幂等）
     class FakeEnAI:
@@ -1334,60 +1336,41 @@ def do_selftest() -> bool:
     check("随堂绝对时间就近补年", qdl2 == "2026-12-05T10:00:00+08:00" and qex2 is False, str(qdl2))
     qdl3, qex3 = qb.parse_quiz_time("2026-11-15 09:00", now)
     check("随堂带年份视为精确", qdl3 == "2026-11-15T09:00:00+08:00" and qex3 is True, str(qdl3))
-    qrows, qunmap = qb.parse_active_rows(
-        [{"text": "第三章知识总结\n进行中\n剩余2天3小时", "cls": "a",
-          "onclick": "openCurrentUrl('https://mobilelearn.huuc.edu.cn/page/active/"
-                     "stuActiveDetail?courseid=219232606&clazzid=153566712&activeId=123456789', 2)",
-          "aria": "第三章知识总结 ; 进行中"},
-         {"text": "已完成", "cls": "b", "onclick": "", "aria": ""}],
+    # v2.0：块解析——真实列表块形态（纯状态行跳过、倒计时推算、中文时分就近补年）
+    _brows = qb.parse_active_blocks(
+        ["第三章知识总结\n进行中\n剩余2天3小时",
+         "已完成"],
         {"course_id": "219232606", "class_id": "153566712", "name": "高等数学A"}, now)
-    check("随堂行解析出 1 条（纯状态行跳过）",
-          len(qrows) == 1 and not qunmap, f"{len(qrows)}/{qunmap}")
-    if len(qrows) == 1:
-        t0 = qrows[0]
-        check("随堂行字段齐（kind/label/标题/状态/截止/深链）",
-              t0["kind"] == "quiz" and t0["label"] == "随堂"
+    check("随堂块解析出 1 条（纯状态行跳过）",
+          len(_brows) == 1, str(len(_brows)))
+    if len(_brows) == 1:
+        t0 = _brows[0]
+        check("随堂块字段齐（kind/分类/标题/状态/截止推算）",
+              t0["kind"] == "quiz" and t0["category"] == "quiz"
               and t0["title"] == "第三章知识总结"
               and t0["state"] == "pending" and t0["status"] == "进行中"
-              and t0["deadline"] == qdl and t0["deadline_exact"] is False
-              and "courseid=219232606" in t0["url"] and "123456789" in t0["url"],
+              and t0["deadline"] == qdl and t0["deadline_exact"] is False,
               str(t0))
-    # v1.6.1 真实样本结构（run 43805479954）：同一可视行是并列碎片元素，
-    # 靠 Y 坐标聚类合并；计数徽标与课堂互动（签到）过滤；中文时分格式；
-    # ID 提取认 activeId 而非顺位第一的 courseid（撞车会吞任务）。
+    # v2.0：真实列表块形态（签到行过滤、中文时分就近补年、不同活动 id 不同）
     qdl4, qex4 = qb.parse_quiz_time("11月05日 15时30分", now)
     check("随堂中文时分就近补年", qdl4 == "2026-11-05T15:30:00+08:00" and qex4 is False, str(qdl4))
-    frag_rows = [
-        {"text": "（3）", "y": 100,
-         "onclick": "openCurrentUrl('https://mobilelearn.huuc.edu.cn/page/active/"
-                    "stuActiveDetail?courseid=219232606&clazzid=153566712&activeId=123456789', 2)",
-         "aria": ""},
-        {"text": "第三章知识总结", "y": 102, "onclick": "", "aria": "第三章知识总结 ; 进行中"},
-        {"text": "11月05日 15时30分\n2026-11-05 15:30", "y": 104, "onclick": "", "aria": ""},
-        {"text": "2026-2027第一学期第一次签到", "y": 200, "onclick": "", "aria": ""},
-        {"text": "11月03日 19时33分", "y": 202, "onclick": "", "aria": ""},
-        {"text": "3-5函数的极值与最值", "y": 300,
-         "onclick": "openCurrentUrl('https://mobilelearn.huuc.edu.cn/page/active/"
-                    "stuActiveDetail?courseid=219232606&clazzid=153566712&activeId=987654321', 2)",
-         "aria": ""},
-    ]
-    frows, funmap = qb.parse_active_rows(
-        frag_rows, {"course_id": "219232606", "class_id": "153566712", "name": "高等数学A"}, now)
-    check("碎片按视觉聚类：2 条任务（签到行被过滤）",
-          len(frows) == 2 and not funmap, f"{len(frows)}/{funmap}")
-    if len(frows) == 2:
-        f0, f1 = frows
-        check("聚类行的字段（标题/状态/机器层精确截止/深链）",
+    _frows = qb.parse_active_blocks(
+        ["2026-2027第一学期第一次签到\n结束时间：11月03日 19:33",
+         "第三章知识总结\n进行中\n11月05日 15时30分",
+         "3-5函数的极值与最值\n进行中\n结束时间：11月12日 23:59"],
+        {"course_id": "219232606", "class_id": "153566712", "name": "高等数学A"}, now)
+    check("真实块形态：2 条任务（签到行被过滤）",
+          len(_frows) == 2, str(len(_frows)))
+    if len(_frows) == 2:
+        f0, f1 = _frows
+        check("块字段（标题/状态/中文时分就近补年）",
               f0["title"] == "第三章知识总结" and f0["state"] == "pending"
               and f0["status"] == "进行中"
-              and f0["deadline"] == "2026-11-05T15:30:00+08:00" and f0["deadline_exact"] is True
-              and "courseid=219232606" in f0["url"] and "123456789" in f0["url"],
+              and f0["deadline"] == "2026-11-05T15:30:00+08:00" and f0["deadline_exact"] is False,
               str(f0))
-        check("ID 提取认 activeId 不撞车（两行同课不同 ID）",
+        check("两行不同活动 id 不同",
               f1["title"] == "3-5函数的极值与最值" and f0["id"] != f1["id"],
               f"{f0['id']}/{f1['id']}")
-    masked = qb.masked_diag({"firstLines": ["学号12345 某某 undisclosed"]}, [])
-    check("随堂诊断数字打码", masked and "12345" not in masked[0] and "D" in masked[0], str(masked))
     old_q = [{"id": "a", "kind": "quiz", "course_id": "1", "class_id": "1", "title": "A", "state": "pending"},
              {"id": "b", "kind": "quiz", "course_id": "2", "class_id": "2", "title": "B", "state": "pending"}]
     m1 = _mq(old_q, [{"id": "a2", "kind": "quiz", "course_id": "1", "class_id": "1",
