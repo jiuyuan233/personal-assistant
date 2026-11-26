@@ -651,7 +651,8 @@ def run() -> dict:
                            f"?courseid={c['course_id']}&clazzid={c['class_id']}"
                            f"&cpi={c.get('cpi') or xxt_cpi}"
                            f"&ismooc2={c.get('ismooc2', '1')}")
-                res = qb.collect_course(c, mid_url, q_cookies, UA, now)
+                res = qb.collect_course(c, mid_url, q_cookies, UA, now,
+                                        cpi=xxt_cpi)
                 cname = c.get("name") or "?"
                 if not res.get("ok"):
                     log(f"[quiz] {cname} 随堂采集失败：{res.get('error', '')[:120]}",

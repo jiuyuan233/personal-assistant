@@ -21,6 +21,7 @@ parse_group_detail / parse_stat_rows
 """
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime
 
@@ -390,9 +391,15 @@ def active_id_map(bodies: list[dict]) -> dict[str, dict]:
 def _new_ctx(pw, cookies: list[dict], ua: str,
              profile: str | None = None, proxy: str | None = None):
     """浏览器上下文：Actions 用 cookies 注入；本地开发用持久 profile 登录态；
-    限流时段可走代理出口换 IP。"""
+    限流时段可走代理出口换 IP。profile 模式加 stealth 参数（学习通对
+    HeadlessChrome 特征拒绝渲染 Vue 页——本地实证白屏）。"""
     if profile:
-        kw = dict(headless=True, user_agent=ua, locale="zh-CN")
+        # 本地验证可传 proxy（persistent 整体走代理：huuc 偶发超时由
+        # collect_course 的 attempt 重试兜底；chaoxing.com 直连极慢必须走）；
+        # Actions 不传 proxy（runner 直连全通）。加 stealth 参数——学习通
+        # 对 HeadlessChrome 特征拒绝渲染 Vue 页（本地实证白屏）。
+        kw = dict(headless=True, user_agent=ua, locale="zh-CN",
+                  args=["--disable-blink-features=AutomationControlled"])
         if proxy:
             kw["proxy"] = {"server": proxy}
         ctx = pw.chromium.launch_persistent_context(profile, **kw)
@@ -549,11 +556,24 @@ def tasks_from_activelist(items: list[dict], course: dict,
                 exact = True
         except (TypeError, ValueError, OSError):
             pass
+        # type=77：content.sourceConfig.publishRelationUuid 是学生页面
+        # （situationalDialogue 等 Vue 页）的关键参数——teaUrl 是教师预览
+        # 链接，学生态访问会被拒
+        uuid = ""
+        if at == 77:
+            try:
+                content = json.loads(
+                    str(it.get("content") or "").replace("'", '"'))
+                sc = json.loads(str(content.get("sourceConfig") or ""))
+                uuid = str(sc.get("publishRelationUuid") or "")
+            except Exception:
+                pass
         tasks.append({
             "id": make_id(course.get("course_id") or "", key),
             "kind": "quiz",
             "category": "quiz",
             "_aid": str(it.get("id") or ""),
+            "_uuid": uuid,
             "atype": at,
             "course": course.get("name") or "",
             "course_id": course.get("course_id") or "",
@@ -589,7 +609,9 @@ def _quiz42_status(ctx, mid_url: str, aid: str) -> str:
                f"&activeId={aid}&fid={vals['fid']}&timetable={vals['timetable']}")
         page.goto(url, wait_until="domcontentloaded", timeout=60000)
         best = ""
-        for _ in range(10):
+        # 实测该域页面挂载极慢（situationalDialogue 51s 才出 innerText）——
+        # 轮询 60s，出现即返回
+        for _ in range(60):
             page.wait_for_timeout(1000)
             for f in page.frames:
                 try:
@@ -616,10 +638,62 @@ def _quiz42_status(ctx, mid_url: str, aid: str) -> str:
             pass
 
 
-def _fill_quiz_status(ctx, page, mid_url: str,
-                      items: list[dict]) -> tuple[int, list[str]]:
+def _tea_url_status(ctx, mid_url: str, course: dict, uuid: str,
+                    cpi: str) -> str:
+    """type=77（老师发布的外部互动活动，teaUrl 指向 situationalDialogue/
+    aiInteractStory 等 Vue 页）：用 sourceConfig.publishRelationUuid 构造
+    学生页面 URL，轮询 60s 读「最终得分/总分」。
+
+    本地实证：页面挂载 **51s 后才出现 innerText**（「最终得分 85 分」），
+    25s 等待不够是此前抓不到的唯一原因；网络无失败请求。
+    在主 ctx 里直开（persistent+proxy 时 chaoxing.com 可达且带登录态；
+    Actions runner 直连亦可达）。"""
+    page = ctx.new_page()
+    try:
+        page.add_init_script(
+            "Object.defineProperty(navigator,'webdriver',{get:()=>undefined})")
+        cid = course.get("course_id") or ""
+        clz = course.get("class_id") or ""
+        surl = (f"https://mooc2-ans.chaoxing.com/mooc2-ans-vue/situationalDialogue"
+                f"?courseid={cid}&clazzid={clz}&cpi={cpi}"
+                f"&publishRelationUuid={uuid}")
+        # chaoxing.com 对部分网络直连极慢/超时——commit 不等 domcontentloaded
+        page.goto(surl, wait_until="commit", timeout=45000)
+        best = ""
+        for _ in range(60):
+            page.wait_for_timeout(1000)
+            for f in page.frames:
+                try:
+                    txt = f.evaluate(STAT_PAGE_JS)
+                except Exception:
+                    continue
+                m = re.search(r"(最终得分|总分|个人最终得分)[^\d]{0,6}([\d.]+)\s*分", txt)
+                if m:
+                    return f"已提交，{m.group(1)} {m.group(2)} 分"
+                for ln in txt.splitlines():
+                    ln2 = ln.strip()
+                    if ln2 and len(ln2) < 60 and not GROUP_TAG.fullmatch(ln2) \
+                            and classify_quiz(ln2) != "unknown":
+                        if any(w in ln2 for w in ("已提交", "待批阅", "已评分",
+                                                  "已互评", "得分")):
+                            return ln2
+                        if not best:
+                            best = ln2
+        return best
+    except Exception:
+        return ""
+    finally:
+        try:
+            if page:
+                page.close()
+        except Exception:
+            pass
+
+
+def _fill_quiz_status(ctx, course: dict, mid_url: str,
+                      items: list[dict], cpi: str) -> tuple[int, list[str]]:
     """状态补抓：按活动 type 分发——35 分组任务 API、42 测验直开、
-    其余 activeRowClick 兜底。返回 (成功数, 失败原因列表)。"""
+    77 外部互动学生页面、其余 activeRowClick 兜底。返回 (成功数, 失败原因)。"""
     got = 0
     reasons: list[str] = []
     for it in items:
@@ -634,27 +708,46 @@ def _fill_quiz_status(ctx, page, mid_url: str,
             status = _group_task_status(ctx, mid_url, aid)
             if not status:
                 reasons.append(f"{tag}:分组任务API空")
+        elif atype == 77:
+            uuid = it.get("_uuid") or ""
+            status = _tea_url_status(ctx, mid_url, course, uuid, cpi) \
+                if uuid else ""
+            if not status:
+                reasons.append(f"{tag}:teaUrl学生页无状态")
         elif atype == 42:
             status = _quiz42_status(ctx, mid_url, aid)
             if not status:
                 # 直开兜底失败（详情页形态多变）→ 回退列表点击路径
-                status, reason = _rowclick_status(ctx, page, mid_url, title)
+                status, reason = _rowclick_status(ctx, mid_url, title)
                 if not status:
                     reasons.append(f"{tag}:测验直开无状态/{reason}")
         else:
-            status, reason = _rowclick_status(ctx, page, mid_url, title)
+            status, reason = _rowclick_status(ctx, mid_url, title)
             if not status:
                 reasons.append(f"{tag}:{reason}")
         if status:
             it["status"] = status
             it["state"] = classify_quiz(status)
             got += 1
-        page.wait_for_timeout(2000)
+        page_wait(ctx, 2000)
     return got, reasons
 
 
+def page_wait(ctx, ms: int) -> None:
+    """补抓函数各自开 page，等待统一走 ctx 已有 page 或退化 sleep。"""
+    try:
+        pages = ctx.pages
+        if pages:
+            pages[0].wait_for_timeout(ms)
+            return
+    except Exception:
+        pass
+    import time as _t
+    _t.sleep(ms / 1000)
+
+
 def collect_course(course: dict, mid_url: str, cookies: list[dict],
-                   ua: str, now: datetime,
+                   ua: str, now: datetime, cpi: str = "577967959",
                    profile: str | None = None,
                    proxy: str | None = None) -> dict:
     """单课采集（一次浏览器会话完成列表 + 状态补抓）。
@@ -692,7 +785,14 @@ def collect_course(course: dict, mid_url: str, cookies: list[dict],
             cards: list = []
             for attempt in range(3):
                 frame = None  # 重新 goto 后旧 frame 引用必 detached，必须重置
-                page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
+                try:
+                    # 代理模式下 huuc 域绕远可能超时——超时不放弃，重试下轮
+                    page.goto(mid_url, wait_until="domcontentloaded",
+                              timeout=60000)
+                except Exception as e:
+                    result["diag"].append(
+                        f"attempt {attempt + 1} goto超时 {safe_text(str(e), 50)}")
+                    continue
                 page.wait_for_timeout(9000)
                 real = page.url
                 for b in xhr_bodies:
@@ -792,13 +892,15 @@ def collect_course(course: dict, mid_url: str, cookies: list[dict],
                     if t.get("kind") == "quiz" and t.get("state") == "unknown"]
             filled = 0
             if need:
-                filled, _reasons = _fill_quiz_status(ctx, page, mid_url, need)
+                filled, _reasons = _fill_quiz_status(ctx, course, mid_url,
+                                                     need, cpi)
                 result["diag"].extend(_reasons)
             result["diag"].append(f"补状态 {filled}/{len(need)}")
             # 审计红线（§2.5）：_aid/atype 是每生活动 ID，不落盘
             for t in tasks:
                 t.pop("_aid", None)
                 t.pop("atype", None)
+                t.pop("_uuid", None)
             result["ok"] = True
             result["tasks"] = tasks
             ctx.close()
@@ -856,57 +958,63 @@ def _merge_work_exam(tasks: list[dict], blocks: list[str], kind: str,
 
 
 
-def _rowclick_status(ctx, page, mid_url: str, title: str) -> tuple[str, str]:
+def _rowclick_status(ctx, mid_url: str, title: str) -> tuple[str, str]:
     """进列表页 → 找 li[activeId] → activeRowClick 使 iframe 跳详情 → 读状态词。
 
     列表渲染有随机波动（实测同课一轮 48 块、一轮 0 块），整条重试 2 次；
-    详情页加载慢，点完轮询 8s 读状态词。返回 (状态串, 失败原因)。"""
-    hint = "未尝试"
-    for attempt in range(3):
-        page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
-        page.wait_for_timeout(6000)
-        frame = _find_active_frame(page)
-        if frame is None:
-            hint = "无frame"
-            continue
+    详情页加载慢，点完轮询 8s 读状态词。返回 (状态串, 失败原因)。
+    自开 page（主采集 page 已停在考试 tab，不互扰）。"""
+    page = ctx.new_page()
+    try:
+        hint = "未尝试"
+        for attempt in range(3):
+            page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
+            page.wait_for_timeout(6000)
+            frame = _find_active_frame(page)
+            if frame is None:
+                hint = "无frame"
+                continue
+            try:
+                li = frame.query_selector(f'li[activeId]:has-text("{title[:20]}")')
+            except Exception:
+                li = None
+            if li is None:
+                hint = "无li"
+                continue
+            try:
+                frame.evaluate("el => { try { activeRowClick(el); } catch (e) {} }", li)
+            except Exception as e:
+                hint = f"rowclick异常 {str(e)[:40]}"
+                continue
+            nt = re.sub(r"\s+", "", title)[:10]
+            # 精确状态优先：「已提交，待教师公布正确答案」比页面徽标「已结束」
+            # 信息量更大（本地实证详情页两者并存，顺序不定）
+            best = ""
+            for _ in range(8):
+                page.wait_for_timeout(1000)
+                for target in list(page.frames):
+                    try:
+                        txt = target.evaluate(STAT_PAGE_JS)
+                    except Exception:
+                        continue
+                    if not txt or nt not in re.sub(r"\s+", "", txt):
+                        continue
+                    for ln in txt.splitlines():
+                        ln2 = ln.strip()
+                        if ln2 and len(ln2) < 60 and not GROUP_TAG.fullmatch(ln2) \
+                                and classify_quiz(ln2) != "unknown":
+                            if any(w in ln2 for w in ("已提交", "待批阅",
+                                                      "已评分", "已互评", "得分")):
+                                return ln2, ""
+                            if not best:
+                                best = ln2
+            hint = "详情无状态词"
+        return "", hint
+    finally:
         try:
-            li = frame.query_selector(f'li[activeId]:has-text("{title[:20]}")')
+            page.close()
         except Exception:
-            li = None
-        if li is None:
-            hint = "无li"
-            continue
-        try:
-            frame.evaluate("el => { try { activeRowClick(el); } catch (e) {} }", li)
-        except Exception as e:
-            hint = f"rowclick异常 {str(e)[:40]}"
-            continue
-        nt = re.sub(r"\s+", "", title)[:10]
-        # 精确状态优先：「已提交，待教师公布正确答案」比页面徽标「已结束」
-        # 信息量更大（本地实证详情页两者并存，顺序不定）
-        best = ""
-        for _ in range(8):
-            page.wait_for_timeout(1000)
-            for target in list(page.frames):
-                try:
-                    txt = target.evaluate(STAT_PAGE_JS)
-                except Exception:
-                    continue
-                if not txt or nt not in re.sub(r"\s+", "", txt):
-                    continue
-                for ln in txt.splitlines():
-                    ln2 = ln.strip()
-                    if ln2 and len(ln2) < 60 and not GROUP_TAG.fullmatch(ln2) \
-                            and classify_quiz(ln2) != "unknown":
-                        if any(w in ln2 for w in ("已提交", "待批阅", "已评分",
-                                                  "已互评", "得分")):
-                            return ln2, ""
-                        if not best:
-                            best = ln2
-        if best:
-            return best, ""
-        hint = "详情无状态词"
-    return "", hint
+            pass
 
 
 def _group_task_status(ctx, mid_url: str, aid: str) -> str:
@@ -934,8 +1042,14 @@ async (args) => {
 }
 """, {"fid": vals["fid"], "cid": vals["courseId"], "aid": aid})
         data = (info or {}).get("data") or {}
-        is_norm, to_ans = data.get("isNorm"), data.get("toAnswerPage")
-        use_note = data.get("useNoteEditor")
+        # API 返回字符串/数字不定（本地实证两种都有）——统一转 int 比较
+        def _n(v):
+            try:
+                return int(v)
+            except (TypeError, ValueError):
+                return -1
+        is_norm, to_ans = _n(data.get("isNorm")), _n(data.get("toAnswerPage"))
+        use_note = _n(data.get("useNoteEditor"))
         q = (f"courseId={vals['courseId']}&classId={vals['classId']}"
              f"&activeId={aid}&fid={vals['fid']}&timetable={vals['timetable']}")
         if is_norm == 1 and use_note == 1 and to_ans == 1:
@@ -947,15 +1061,17 @@ async (args) => {
         else:
             url = f"/page/renwuNew/notGroup/taskDetailStuAndAnsDetailNotGroup_new?{q}"
         page.goto("https://mobilelearn.huuc.edu.cn" + url,
-                  wait_until="domcontentloaded", timeout=60000)
-        page.wait_for_timeout(8000)
-        for f in page.frames:
-            try:
-                txt = f.evaluate(STAT_PAGE_JS)
-            except Exception:
-                continue
-            if "个人最终得分" in txt or "提交时间" in txt or "已结束" in txt:
-                return parse_group_detail(txt)
+                  wait_until="commit", timeout=60000)
+        # 页面挂载极慢（本地实证 51s+），固定 8s 必读空——轮询 60s 出现即返回
+        for _ in range(60):
+            page.wait_for_timeout(1000)
+            for f in page.frames:
+                try:
+                    txt = f.evaluate(STAT_PAGE_JS)
+                except Exception:
+                    continue
+                if "个人最终得分" in txt or "提交时间" in txt or "已结束" in txt:
+                    return parse_group_detail(txt)
         return ""
     except Exception:
         return ""
