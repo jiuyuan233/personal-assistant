@@ -1,20 +1,37 @@
 {
-  "updated_at": "2026-11-27T06:23:46+08:00",
+  "updated_at": "2026-11-27T07:32:19+08:00",
   "stats": {
-    "pending": 0,
+    "pending": 1,
     "overdue": 0,
     "today": 0,
     "week": 0,
     "later": 0,
-    "unknown": 0,
+    "unknown": 1,
     "upcoming": 0,
     "dropped": {
-      "not_pending": 89,
+      "not_pending": 105,
       "overdue": 6
     },
     "courses": 14
   },
-  "items": [],
+  "items": [
+    {
+      "id": "228141406-9a9f9e8fcc",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "人造空间的热湿声光环境调控工程",
+      "status": "未交",
+      "state": "pending",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T07:26:12+08:00",
+      "last_seen": "2026-11-27T07:26:12+08:00"
+    }
+  ],
   "courses": [
     {
       "course_id": "269154829",
