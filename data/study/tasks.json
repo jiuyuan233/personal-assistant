@@ -1,42 +1,8 @@
 {
-  "updated_at": "2026-11-26T12:31:21+08:00",
-  "count": 63,
+  "updated_at": "2026-11-26T13:36:43+08:00",
+  "count": 76,
   "course_count": 14,
   "items": [
-    {
-      "id": "214014802-3c34e17691",
-      "kind": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "class_id": "153270975",
-      "title": "主题讨论",
-      "label": "随堂",
-      "status": "",
-      "state": "pending",
-      "deadline": "2026-10-14T20:18:00+08:00",
-      "deadline_exact": false,
-      "remaining_text": "End time：10-14 20:18",
-      "url": "https://mobilelearn.huuc.edu.cn/page/active/stuActiveList?courseid=214014802&clazzid=153270975&ut=s",
-      "first_seen": "2026-11-16T17:34:53+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
-    },
-    {
-      "id": "260598171-fa0af7dcd2",
-      "kind": "quiz",
-      "course": "大学生心理健康教育（智慧课程）",
-      "course_id": "260598171",
-      "class_id": "156188851",
-      "title": "主题讨论",
-      "label": "随堂",
-      "status": "",
-      "state": "pending",
-      "deadline": "2026-10-15T10:46:00+08:00",
-      "deadline_exact": false,
-      "remaining_text": "End time：10-15 10:46",
-      "url": "https://mobilelearn.huuc.edu.cn/page/active/stuActiveList?courseid=260598171&clazzid=156188851&ut=s",
-      "first_seen": "2026-11-16T17:34:53+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
-    },
     {
       "id": "219232606-702b23c273",
       "kind": "quiz",
@@ -55,21 +21,20 @@
       "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
-      "id": "214014802-acc2b08eb6",
+      "id": "214014802-6e1e90c2d0",
       "kind": "quiz",
+      "category": "quiz",
       "course": "思想道德与法治（校级网络课程）",
       "course_id": "214014802",
-      "class_id": "153270975",
       "title": "怎样创造有意义的人生？",
-      "label": "随堂",
       "status": "",
-      "state": "pending",
+      "state": "unknown",
       "deadline": "2026-10-23T17:50:00+08:00",
       "deadline_exact": false,
-      "remaining_text": "End time：10-23 17:50",
-      "url": "https://mobilelearn.huuc.edu.cn/page/active/stuActiveList?courseid=214014802&clazzid=153270975&ut=s",
-      "first_seen": "2026-11-16T17:34:53+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "time_hint": "结束时间：10-23 17:50",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-0ee6c37f8b",
@@ -106,38 +71,36 @@
       "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
-      "id": "214014802-d16ba3dcce",
+      "id": "214014802-f01a199cff",
       "kind": "quiz",
+      "category": "quiz",
       "course": "思想道德与法治（校级网络课程）",
       "course_id": "214014802",
-      "class_id": "153270975",
       "title": "现在的青年还需要艰苦奋斗吗？",
-      "label": "随堂",
       "status": "",
-      "state": "pending",
+      "state": "unknown",
       "deadline": "2026-11-06T17:20:00+08:00",
       "deadline_exact": false,
-      "remaining_text": "End time：11-06 17:20",
-      "url": "https://mobilelearn.huuc.edu.cn/page/active/stuActiveList?courseid=214014802&clazzid=153270975&ut=s",
-      "first_seen": "2026-11-16T17:34:53+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "time_hint": "结束时间：11-06 17:20",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
-      "id": "214014802-a2fc478719",
+      "id": "214014802-0b7ba3fdcf",
       "kind": "quiz",
+      "category": "quiz",
       "course": "思想道德与法治（校级网络课程）",
       "course_id": "214014802",
-      "class_id": "153270975",
       "title": "绘梦者：AI时代的坚守与突破",
-      "label": "随堂",
       "status": "",
-      "state": "pending",
+      "state": "unknown",
       "deadline": "2026-11-06T17:50:00+08:00",
       "deadline_exact": false,
-      "remaining_text": "End time：11-06 17:50",
-      "url": "https://mobilelearn.huuc.edu.cn/page/active/stuActiveList?courseid=214014802&clazzid=153270975&ut=s",
-      "first_seen": "2026-11-16T17:34:53+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "time_hint": "结束时间：11-06 17:50",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "228141406-dad3429abf",
@@ -156,41 +119,39 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204754",
       "start_time": "2026-11-09T20:21:00+08:00",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
-      "id": "214014802-8e8fc8941c",
+      "id": "214014802-e05313f151",
       "kind": "quiz",
+      "category": "quiz",
       "course": "思想道德与法治（校级网络课程）",
       "course_id": "214014802",
-      "class_id": "153270975",
       "title": "如果让你说一句没够代表中国精神的话语，你会说什么？",
-      "label": "随堂",
       "status": "",
-      "state": "pending",
+      "state": "unknown",
       "deadline": "2026-11-13T16:19:00+08:00",
       "deadline_exact": false,
-      "remaining_text": "End time：11-13 16:19",
-      "url": "https://mobilelearn.huuc.edu.cn/page/active/stuActiveList?courseid=214014802&clazzid=153270975&ut=s",
-      "first_seen": "2026-11-16T17:34:53+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "time_hint": "结束时间：11-13 16:19",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
-      "id": "214014802-c827a4d77a",
+      "id": "214014802-95611e4af8",
       "kind": "quiz",
+      "category": "quiz",
       "course": "思想道德与法治（校级网络课程）",
       "course_id": "214014802",
-      "class_id": "153270975",
       "title": "从中国共产党人的精神谱系中任选一个，讲一讲它的形成和内涵？",
-      "label": "随堂",
       "status": "",
-      "state": "pending",
+      "state": "unknown",
       "deadline": "2026-11-13T17:47:00+08:00",
       "deadline_exact": false,
-      "remaining_text": "End time：11-13 17:47",
-      "url": "https://mobilelearn.huuc.edu.cn/page/active/stuActiveList?courseid=214014802&clazzid=153270975&ut=s",
-      "first_seen": "2026-11-16T17:34:53+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "time_hint": "结束时间：11-13 17:47",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-769fac9053",
@@ -225,7 +186,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58467962",
       "first_seen": "2026-11-13T18:38:58+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-dc942471f7",
@@ -243,7 +204,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58558183",
       "first_seen": "2026-11-16T17:34:53+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "228141406-196238fb25",
@@ -261,7 +222,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491059",
       "first_seen": "2026-11-16T18:32:54+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "228141406-183effa9b4",
@@ -279,7 +240,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491026",
       "first_seen": "2026-11-16T18:32:54+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "228141406-12104c89e4",
@@ -297,7 +258,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491082",
       "first_seen": "2026-11-16T18:32:54+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "246136739-b82796930d",
@@ -332,7 +293,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=58170556",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-1621c779be",
@@ -350,7 +311,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58558183",
       "first_seen": "2026-11-18T07:26:26+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "201780805-8722437faf",
@@ -368,7 +329,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=58170689",
       "first_seen": "2026-11-13T14:28:50+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "268016715-fc0e283afd",
@@ -432,12 +393,12 @@
       "label": "考试",
       "status": "已完成",
       "state": "done",
-      "deadline": "2026-11-27T23:16:53+08:00",
+      "deadline": "2026-11-27T23:16:18+08:00",
       "deadline_exact": false,
-      "remaining_text": "83 分 剩余34小时47分钟",
+      "remaining_text": "83 分 剩余33小时46分钟",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "228141406-6acf5f8fe4",
@@ -450,12 +411,12 @@
       "label": "",
       "status": "待批阅",
       "state": "submitted",
-      "deadline": "2026-11-30T23:58:36+08:00",
+      "deadline": "2026-11-30T23:58:03+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余107小时29分钟",
+      "remaining_text": "剩余106小时28分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771731",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "228141406-08ea8dd7e1",
@@ -468,12 +429,12 @@
       "label": "",
       "status": "待批阅",
       "state": "submitted",
-      "deadline": "2026-11-30T23:58:36+08:00",
+      "deadline": "2026-11-30T23:58:03+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余107小时29分钟",
+      "remaining_text": "剩余106小时28分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771753",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "268008349-7bcd10c306",
@@ -486,12 +447,28 @@
       "label": "考试",
       "status": "已完成",
       "state": "done",
-      "deadline": "2026-12-13T23:59:41+08:00",
+      "deadline": "2026-12-13T23:59:06+08:00",
       "deadline_exact": false,
-      "remaining_text": "100 分 剩余419小时30分钟",
+      "remaining_text": "100 分 剩余418小时29分钟",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=268008349&clazzid=157042838&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "214014802-130322f6e1",
+      "kind": "work",
+      "category": "work",
+      "course": "思想道德与法治（校级网络课程）",
+      "course_id": "214014802",
+      "title": "26-27(1)思想道德与法治第一次作业（张永霞）",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": "2026-12-31T09:50:49+08:00",
+      "deadline_exact": false,
+      "time_hint": "剩余836小时21分钟",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "214014802-99a973636b",
@@ -504,12 +481,12 @@
       "label": "互评",
       "status": "待批阅",
       "state": "submitted",
-      "deadline": "2026-12-31T09:51:44+08:00",
+      "deadline": "2026-12-31T09:51:10+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余837小时22分钟",
+      "remaining_text": "剩余836小时21分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=214014802&classId=153270975&workId=58788782",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "268371439-d050c4254c",
@@ -527,7 +504,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=268371439&clazzid=158553251&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "228141406-497e31d3cf",
@@ -545,7 +522,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=57526332",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "228141406-0cc488bb65",
@@ -563,7 +540,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771802",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "228141406-ec9f34e1ca",
@@ -581,7 +558,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771787",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "228141406-6b7783323d",
@@ -599,7 +576,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771769",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "228141406-147d7af1f3",
@@ -617,7 +594,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204806",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "228141406-6713fb5201",
@@ -635,7 +612,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204711",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "260598171-231e2e59be",
@@ -653,7 +630,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58802014",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "260598171-bc92f57b1c",
@@ -671,7 +648,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58802004",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "260598171-def44f4b92",
@@ -689,7 +666,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58530024",
       "first_seen": "2026-11-18T10:27:18+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "260598171-61a8809da6",
@@ -707,7 +684,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58301119",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "260598171-1c99ab59f3",
@@ -725,7 +702,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57984053",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "260598171-72b229d891",
@@ -743,7 +720,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57648797",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "260598171-a6fef1114b",
@@ -761,7 +738,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57576073",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "260598171-96bd1e26e2",
@@ -779,7 +756,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57576023",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "260598171-8fecdc421f",
@@ -797,7 +774,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57297581",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "260598171-b7fb842da0",
@@ -815,7 +792,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=56895598",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "260598171-4e8c5c943b",
@@ -833,7 +810,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=56430556",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "201780805-51f684486f",
@@ -851,7 +828,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=57584189",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-25210e679f",
@@ -869,7 +846,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58841797",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-725c9fce61",
@@ -887,7 +864,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58763973",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-6651af1cfb",
@@ -905,7 +882,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58841797",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-9f8fde3d38",
@@ -923,7 +900,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58673369",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-2928dd1aac",
@@ -941,7 +918,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58763973",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-d7a743416f",
@@ -959,7 +936,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58673369",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-7bfb3fd544",
@@ -977,7 +954,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58370553",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-dc63b1d597",
@@ -995,7 +972,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58370553",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-a0405ca270",
@@ -1013,7 +990,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58263400",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-f1dafa4ec2",
@@ -1031,7 +1008,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-15T15:26:24+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-fcedf41184",
@@ -1049,7 +1026,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "219232606-9eea2c518b",
@@ -1067,7 +1044,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "205372276-04e9b87b21",
@@ -1085,7 +1062,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=205372276&classId=154422672&workId=56132865",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "205372276-53a0490202",
@@ -1103,7 +1080,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=205372276&classId=154422672&workId=56132395",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "205372276-b727ee1d09",
@@ -1121,7 +1098,231 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=205372276&clazzid=154422672&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-26T12:29:14+08:00"
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "260598171-37076669ab",
+      "kind": "work",
+      "category": "work",
+      "course": "大学生心理健康教育（智慧课程）",
+      "course_id": "260598171",
+      "title": "生命意义与心理危机干预",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "260598171-9453942633",
+      "kind": "work",
+      "category": "work",
+      "course": "大学生心理健康教育（智慧课程）",
+      "course_id": "260598171",
+      "title": "压力管理",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "260598171-cab54d676f",
+      "kind": "work",
+      "category": "work",
+      "course": "大学生心理健康教育（智慧课程）",
+      "course_id": "260598171",
+      "title": "绘制爱情树",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "260598171-3638b8e6a3",
+      "kind": "work",
+      "category": "work",
+      "course": "大学生心理健康教育（智慧课程）",
+      "course_id": "260598171",
+      "title": "人际关系圈",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "260598171-5b0b208d21",
+      "kind": "work",
+      "category": "work",
+      "course": "大学生心理健康教育（智慧课程）",
+      "course_id": "260598171",
+      "title": "情绪管理作业1",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "260598171-41bf150358",
+      "kind": "work",
+      "category": "work",
+      "course": "大学生心理健康教育（智慧课程）",
+      "course_id": "260598171",
+      "title": "情绪管理作业2",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "260598171-aa8a23a069",
+      "kind": "work",
+      "category": "work",
+      "course": "大学生心理健康教育（智慧课程）",
+      "course_id": "260598171",
+      "title": "自我意识-客观题",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "260598171-b5542cc2cc",
+      "kind": "work",
+      "category": "work",
+      "course": "大学生心理健康教育（智慧课程）",
+      "course_id": "260598171",
+      "title": "大学生心理咨询（课后作业）",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "260598171-86cf53003c",
+      "kind": "work",
+      "category": "work",
+      "course": "大学生心理健康教育（智慧课程）",
+      "course_id": "260598171",
+      "title": "作业20261022",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "260598171-3cbf564bf8",
+      "kind": "work",
+      "category": "work",
+      "course": "大学生心理健康教育（智慧课程）",
+      "course_id": "260598171",
+      "title": "绘画测验",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "260598171-ccf42ecbe6",
+      "kind": "work",
+      "category": "work",
+      "course": "大学生心理健康教育（智慧课程）",
+      "course_id": "260598171",
+      "title": "小组海报",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "201780805-8169fbaeb2",
+      "kind": "work",
+      "category": "work",
+      "course": "新世纪大学英语综合教程(一)",
+      "course_id": "201780805",
+      "title": "unit 1 翻译",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "201780805-13647345d1",
+      "kind": "work",
+      "category": "work",
+      "course": "新世纪大学英语综合教程(一)",
+      "course_id": "201780805",
+      "title": "Unit 1 words in action (第2-3大题)",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
+    },
+    {
+      "id": "201780805-72ceddfffa",
+      "kind": "work",
+      "category": "work",
+      "course": "新世纪大学英语综合教程(一)",
+      "course_id": "201780805",
+      "title": "Unit 1单词检测（1-3）",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T13:29:49+08:00",
+      "last_seen": "2026-11-26T13:29:49+08:00"
     }
   ]
 }
