@@ -12,13 +12,14 @@
   "pushed": {
     "morning": "2026-11-26",
     "noon": "2026-11-26",
-    "night": "2026-11-17",
+    "night": "2026-11-26",
     "dusk": "2026-11-26"
   },
   "errors": {},
   "writeback_date": "2026-11-18",
-  "last_tick": "2026-11-26T21:54:02+08:00",
+  "last_tick": "2026-11-26T22:05:40+08:00",
   "last_results": {
+    "night": true,
     "finalize": true
   },
   "notified_new": {
