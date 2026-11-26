@@ -1,37 +1,37 @@
 {
-  "updated_at": "2026-11-18T12:52:47+08:00",
-  "week": "第 11 周 / 共 18 周",
+  "updated_at": "2026-11-26T10:42:19+08:00",
+  "week": "第 12 周 / 共 18 周",
   "stats": {
-    "pending": 1,
+    "pending": 0,
     "overdue": 0,
     "today": 0,
-    "week": 1,
+    "week": 0,
     "later": 0,
     "unknown": 0,
     "upcoming": 0,
     "dropped": {
-      "not_pending": 40,
-      "overdue": 14
+      "not_pending": 47,
+      "overdue": 13
     },
     "courses": 14,
     "suffix": ""
   },
   "sources": {
     "study": {
-      "last_success": "2026-11-18T12:50:10+08:00",
+      "last_success": "2026-11-26T10:23:45+08:00",
       "ok": true,
       "status": "ok",
       "courses": 14,
       "courses_ok": 14,
       "courses_failed": 0,
-      "tasks": 55,
-      "pending": 15,
+      "tasks": 60,
+      "pending": 13,
       "unknown_deadline": 0,
       "anomalies": [],
       "urgent_sig": "",
       "urgent_count": 0,
-      "quiz_cursor": 12,
-      "last_attempt": "2026-11-18T12:50:10+08:00"
+      "quiz_cursor": 0,
+      "last_attempt": "2026-11-26T10:23:45+08:00"
     }
   }
 }

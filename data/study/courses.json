@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-18T11:36:15+08:00",
+  "updated_at": "2026-11-26T10:24:52+08:00",
   "count": 14,
   "items": [
     {
@@ -39,7 +39,7 @@
       "class_id": "157088208",
       "ismooc2": "1",
       "name": "建筑环境与能源应用工程概论",
-      "task_count": 11,
+      "task_count": 12,
       "pending_count": 1
     },
     {
@@ -71,7 +71,7 @@
       "class_id": "153270975",
       "ismooc2": "1",
       "name": "思想道德与法治（校级网络课程）",
-      "task_count": 0,
+      "task_count": 1,
       "pending_count": 0
     },
     {
@@ -79,7 +79,7 @@
       "class_id": "156188851",
       "ismooc2": "1",
       "name": "大学生心理健康教育（智慧课程）",
-      "task_count": 9,
+      "task_count": 11,
       "pending_count": 0
     },
     {
@@ -103,8 +103,8 @@
       "class_id": "153566712",
       "ismooc2": "1",
       "name": "高等数学A",
-      "task_count": 15,
-      "pending_count": 2
+      "task_count": 16,
+      "pending_count": 0
     },
     {
       "course_id": "205372276",

@@ -1,40 +1,20 @@
 {
-  "updated_at": "2026-11-18T12:52:47+08:00",
+  "updated_at": "2026-11-26T10:42:19+08:00",
   "stats": {
-    "pending": 1,
+    "pending": 0,
     "overdue": 0,
     "today": 0,
-    "week": 1,
+    "week": 0,
     "later": 0,
     "unknown": 0,
     "upcoming": 0,
     "dropped": {
-      "not_pending": 40,
-      "overdue": 14
+      "not_pending": 47,
+      "overdue": 13
     },
     "courses": 14
   },
-  "items": [
-    {
-      "id": "219232606-1621c779be",
-      "kind": "eval",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "class_id": "153566712",
-      "title": "4.1不定积分的概念与性质",
-      "work_id": "58558183",
-      "label": "互评",
-      "status": "待互评",
-      "state": "pending",
-      "deadline": "2026-11-20T23:44:00+08:00",
-      "deadline_exact": true,
-      "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58558183",
-      "start_time": "2026-11-18T07:19:00+08:00",
-      "first_seen": "2026-11-18T07:26:26+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
-    }
-  ],
+  "items": [],
   "courses": [
     {
       "course_id": "269154829",
@@ -73,7 +53,7 @@
       "class_id": "157088208",
       "ismooc2": "1",
       "name": "建筑环境与能源应用工程概论",
-      "task_count": 11,
+      "task_count": 12,
       "pending_count": 1
     },
     {
@@ -105,7 +85,7 @@
       "class_id": "153270975",
       "ismooc2": "1",
       "name": "思想道德与法治（校级网络课程）",
-      "task_count": 0,
+      "task_count": 1,
       "pending_count": 0
     },
     {
@@ -113,7 +93,7 @@
       "class_id": "156188851",
       "ismooc2": "1",
       "name": "大学生心理健康教育（智慧课程）",
-      "task_count": 9,
+      "task_count": 11,
       "pending_count": 0
     },
     {
@@ -137,8 +117,8 @@
       "class_id": "153566712",
       "ismooc2": "1",
       "name": "高等数学A",
-      "task_count": 15,
-      "pending_count": 2
+      "task_count": 16,
+      "pending_count": 0
     },
     {
       "course_id": "205372276",

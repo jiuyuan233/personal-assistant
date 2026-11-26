@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-11-18T12:51:52+08:00",
-  "count": 55,
+  "updated_at": "2026-11-26T10:24:52+08:00",
+  "count": 60,
   "course_count": 14,
   "items": [
     {
@@ -52,7 +52,7 @@
       "remaining_text": "End time：10-19 11:13",
       "url": "https://mobilelearn.huuc.edu.cn/page/active/stuActiveList?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-16T13:23:14+08:00",
-      "last_seen": "2026-11-18T09:25:01+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "214014802-acc2b08eb6",
@@ -86,7 +86,7 @@
       "remaining_text": "End time：10-25 23:59",
       "url": "https://mobilelearn.huuc.edu.cn/page/active/stuActiveList?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-16T13:23:14+08:00",
-      "last_seen": "2026-11-18T09:25:01+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "219232606-0b671b41b5",
@@ -103,7 +103,7 @@
       "remaining_text": "End time：11-02 11:51",
       "url": "https://mobilelearn.huuc.edu.cn/page/active/stuActiveList?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-16T13:23:14+08:00",
-      "last_seen": "2026-11-18T09:25:01+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "214014802-d16ba3dcce",
@@ -156,26 +156,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204754",
       "start_time": "2026-11-09T20:21:00+08:00",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
-    },
-    {
-      "id": "219232606-9824d13e16",
-      "kind": "eval",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "class_id": "153566712",
-      "title": "3.1微分中值定理",
-      "work_id": "58047713",
-      "label": "互评",
-      "status": "待互评",
-      "state": "pending",
-      "deadline": "2026-11-10T23:01:00+08:00",
-      "deadline_exact": true,
-      "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58047713",
-      "start_time": "2026-11-06T07:01:00+08:00",
-      "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "214014802-8e8fc8941c",
@@ -226,7 +207,7 @@
       "remaining_text": "End time：11-15 23:40",
       "url": "https://mobilelearn.huuc.edu.cn/page/active/stuActiveList?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-16T13:23:14+08:00",
-      "last_seen": "2026-11-18T09:25:01+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "219232606-5f29d3d202",
@@ -244,7 +225,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58467962",
       "first_seen": "2026-11-13T18:38:58+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "219232606-dc942471f7",
@@ -262,7 +243,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58558183",
       "first_seen": "2026-11-16T17:34:53+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "268016715-fc0e283afd",
@@ -297,7 +278,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491059",
       "first_seen": "2026-11-16T18:32:54+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "228141406-183effa9b4",
@@ -315,7 +296,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491026",
       "first_seen": "2026-11-16T18:32:54+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "228141406-12104c89e4",
@@ -333,7 +314,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491082",
       "first_seen": "2026-11-16T18:32:54+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "201780805-ba99d83e8f",
@@ -348,10 +329,10 @@
       "state": "submitted",
       "deadline": "2026-11-19T23:55:00+08:00",
       "deadline_exact": true,
-      "remaining_text": "剩余35小时4分钟",
+      "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=58170556",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "219232606-1621c779be",
@@ -362,15 +343,14 @@
       "title": "4.1不定积分的概念与性质",
       "work_id": "58558183",
       "label": "互评",
-      "status": "待互评",
-      "state": "pending",
+      "status": "已互评",
+      "state": "done",
       "deadline": "2026-11-20T23:44:00+08:00",
       "deadline_exact": true,
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58558183",
-      "start_time": "2026-11-18T07:19:00+08:00",
       "first_seen": "2026-11-18T07:26:26+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "201780805-8722437faf",
@@ -385,10 +365,64 @@
       "state": "submitted",
       "deadline": "2026-11-20T23:55:00+08:00",
       "deadline_exact": true,
-      "remaining_text": "剩余59小时5分钟",
+      "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=58170689",
       "first_seen": "2026-11-13T14:28:50+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "219232606-5b357a06f1",
+      "kind": "exam",
+      "course": "高等数学A",
+      "course_id": "219232606",
+      "class_id": "153566712",
+      "title": "第四章不定积分测试题",
+      "work_id": "11199068",
+      "label": "考试",
+      "status": "已完成",
+      "state": "done",
+      "deadline": "2026-11-27T23:16:15+08:00",
+      "deadline_exact": false,
+      "remaining_text": "83 分 剩余36小时52分钟",
+      "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "228141406-6acf5f8fe4",
+      "kind": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "class_id": "157088208",
+      "title": "结课论文",
+      "work_id": "58771731",
+      "label": "",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": "2026-11-30T23:58:00+08:00",
+      "deadline_exact": false,
+      "remaining_text": "剩余109小时34分钟",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771731",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "228141406-08ea8dd7e1",
+      "kind": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "class_id": "157088208",
+      "title": "建环专业学生职业生涯规划作业",
+      "work_id": "58771753",
+      "label": "",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": "2026-11-30T23:58:00+08:00",
+      "deadline_exact": false,
+      "remaining_text": "剩余109小时34分钟",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771753",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "268008349-7bcd10c306",
@@ -401,12 +435,30 @@
       "label": "考试",
       "status": "已完成",
       "state": "done",
-      "deadline": "2026-12-13T23:59:30+08:00",
+      "deadline": "2026-12-13T23:59:04+08:00",
       "deadline_exact": false,
-      "remaining_text": "100 分 剩余611小时9分钟",
+      "remaining_text": "100 分 剩余421小时35分钟",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=268008349&clazzid=157042838&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "214014802-99a973636b",
+      "kind": "work",
+      "course": "思想道德与法治（校级网络课程）",
+      "course_id": "214014802",
+      "class_id": "153270975",
+      "title": "26-27(1)思想道德与法治第一次作业（张永霞）",
+      "work_id": "58788782",
+      "label": "互评",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": "2026-12-31T09:51:07+08:00",
+      "deadline_exact": false,
+      "remaining_text": "剩余839小时27分钟",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=214014802&classId=153270975&workId=58788782",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "268371439-d050c4254c",
@@ -424,79 +476,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=268371439&clazzid=158553251&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
-    },
-    {
-      "id": "228141406-147d7af1f3",
-      "kind": "work",
-      "course": "建筑环境与能源应用工程概论",
-      "course_id": "228141406",
-      "class_id": "157088208",
-      "title": "人造空间保障能源的生产、交换与输配",
-      "work_id": "58204806",
-      "label": "",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204806",
-      "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
-    },
-    {
-      "id": "228141406-6713fb5201",
-      "kind": "work",
-      "course": "建筑环境与能源应用工程概论",
-      "course_id": "228141406",
-      "class_id": "157088208",
-      "title": "人工环境的健康与安全工程",
-      "work_id": "58204711",
-      "label": "",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204711",
-      "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
-    },
-    {
-      "id": "228141406-74b5bf3ad2",
-      "kind": "work",
-      "course": "建筑环境与能源应用工程概论",
-      "course_id": "228141406",
-      "class_id": "157088208",
-      "title": "内部空间环境及调控原理",
-      "work_id": "57870752",
-      "label": "",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=57870752",
-      "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
-    },
-    {
-      "id": "228141406-630f844e89",
-      "kind": "work",
-      "course": "建筑环境与能源应用工程概论",
-      "course_id": "228141406",
-      "class_id": "157088208",
-      "title": "人造空间的热湿声光环境调控工程",
-      "work_id": "57870732",
-      "label": "",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=57870732",
-      "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "228141406-497e31d3cf",
@@ -514,43 +494,133 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=57526332",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
-      "id": "228141406-1506755d1d",
+      "id": "228141406-0cc488bb65",
       "kind": "work",
       "course": "建筑环境与能源应用工程概论",
       "course_id": "228141406",
       "class_id": "157088208",
-      "title": "建筑环境与能源应用的基础常识",
-      "work_id": "57160680",
+      "title": "专业教育与职业规划",
+      "work_id": "58771802",
       "label": "",
       "status": "已完成",
       "state": "done",
       "deadline": null,
       "deadline_exact": false,
       "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=57160680",
-      "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771802",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
-      "id": "228141406-c34f632c7c",
+      "id": "228141406-ec9f34e1ca",
       "kind": "work",
       "course": "建筑环境与能源应用工程概论",
       "course_id": "228141406",
       "class_id": "157088208",
-      "title": "绪论",
-      "work_id": "56737893",
+      "title": "建筑自动化与建筑智能化",
+      "work_id": "58771787",
       "label": "",
       "status": "已完成",
       "state": "done",
       "deadline": null,
       "deadline_exact": false,
       "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=56737893",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771787",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "228141406-6b7783323d",
+      "kind": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "class_id": "157088208",
+      "title": "运载工具的环境与能源应用",
+      "work_id": "58771769",
+      "label": "",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771769",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "228141406-147d7af1f3",
+      "kind": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "class_id": "157088208",
+      "title": "人造空间保障能源的生产、交换与输配",
+      "work_id": "58204806",
+      "label": "",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204806",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "228141406-6713fb5201",
+      "kind": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "class_id": "157088208",
+      "title": "人工环境的健康与安全工程",
+      "work_id": "58204711",
+      "label": "",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204711",
+      "first_seen": "2026-11-13T13:07:02+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "260598171-231e2e59be",
+      "kind": "work",
+      "course": "大学生心理健康教育（智慧课程）",
+      "course_id": "260598171",
+      "class_id": "156188851",
+      "title": "生命意义与心理危机干预",
+      "work_id": "58802014",
+      "label": "",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58802014",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "260598171-bc92f57b1c",
+      "kind": "work",
+      "course": "大学生心理健康教育（智慧课程）",
+      "course_id": "260598171",
+      "class_id": "156188851",
+      "title": "压力管理",
+      "work_id": "58802004",
+      "label": "",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58802004",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "260598171-def44f4b92",
@@ -568,7 +638,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58530024",
       "first_seen": "2026-11-18T10:27:18+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "260598171-61a8809da6",
@@ -586,7 +656,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58301119",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "260598171-1c99ab59f3",
@@ -604,7 +674,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57984053",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "260598171-72b229d891",
@@ -622,7 +692,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57648797",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "260598171-a6fef1114b",
@@ -640,7 +710,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57576073",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "260598171-96bd1e26e2",
@@ -658,7 +728,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57576023",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "260598171-8fecdc421f",
@@ -676,7 +746,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57297581",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "260598171-b7fb842da0",
@@ -694,7 +764,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=56895598",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "260598171-4e8c5c943b",
@@ -712,7 +782,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=56430556",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "201780805-51f684486f",
@@ -730,7 +800,115 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=57584189",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "219232606-25210e679f",
+      "kind": "eval",
+      "course": "高等数学A",
+      "course_id": "219232606",
+      "class_id": "153566712",
+      "title": "4.3分部积分法",
+      "work_id": "58841797",
+      "label": "互评",
+      "status": "已互评",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58841797",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "219232606-725c9fce61",
+      "kind": "eval",
+      "course": "高等数学A",
+      "course_id": "219232606",
+      "class_id": "153566712",
+      "title": "4.2换元积分法（第2类换元积分法）",
+      "work_id": "58763973",
+      "label": "互评",
+      "status": "已互评",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58763973",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "219232606-6651af1cfb",
+      "kind": "work",
+      "course": "高等数学A",
+      "course_id": "219232606",
+      "class_id": "153566712",
+      "title": "4.3分部积分法",
+      "work_id": "58841797",
+      "label": "互评",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58841797",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "219232606-9f8fde3d38",
+      "kind": "eval",
+      "course": "高等数学A",
+      "course_id": "219232606",
+      "class_id": "153566712",
+      "title": "4.2换元积分法（第一类换元积分法）",
+      "work_id": "58673369",
+      "label": "互评",
+      "status": "已互评",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58673369",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "219232606-2928dd1aac",
+      "kind": "work",
+      "course": "高等数学A",
+      "course_id": "219232606",
+      "class_id": "153566712",
+      "title": "4.2换元积分法（第2类换元积分法）",
+      "work_id": "58763973",
+      "label": "互评",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58763973",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
+    },
+    {
+      "id": "219232606-d7a743416f",
+      "kind": "work",
+      "course": "高等数学A",
+      "course_id": "219232606",
+      "class_id": "153566712",
+      "title": "4.2换元积分法（第一类换元积分法）",
+      "work_id": "58673369",
+      "label": "互评",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": null,
+      "deadline_exact": false,
+      "remaining_text": "",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58673369",
+      "first_seen": "2026-11-26T10:23:45+08:00",
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "219232606-7bfb3fd544",
@@ -748,7 +926,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58370553",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "219232606-dc63b1d597",
@@ -766,7 +944,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58370553",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "219232606-a0405ca270",
@@ -784,97 +962,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58263400",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
-    },
-    {
-      "id": "219232606-9c897985fa",
-      "kind": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "class_id": "153566712",
-      "title": "3.3泰勒公式 3.4函数的单调性及曲线的凹凸性",
-      "work_id": "58263400",
-      "label": "互评",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58263400",
-      "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
-    },
-    {
-      "id": "219232606-c975dc3af0",
-      "kind": "eval",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "class_id": "153566712",
-      "title": "3.2洛必达法则",
-      "work_id": "58159105",
-      "label": "互评",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58159105",
-      "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
-    },
-    {
-      "id": "219232606-27b8cf8aa3",
-      "kind": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "class_id": "153566712",
-      "title": "3.2洛必达法则",
-      "work_id": "58159105",
-      "label": "互评",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58159105",
-      "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
-    },
-    {
-      "id": "219232606-6254809e23",
-      "kind": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "class_id": "153566712",
-      "title": "3.1微分中值定理",
-      "work_id": "58047713",
-      "label": "互评",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58047713",
-      "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
-    },
-    {
-      "id": "219232606-0c91a31d3e",
-      "kind": "eval",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "class_id": "153566712",
-      "title": "2.4参数方程的导数2.5微分",
-      "work_id": "57809144",
-      "label": "互评",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=57809144",
-      "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "219232606-f1dafa4ec2",
@@ -892,7 +980,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-15T15:26:24+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "219232606-fcedf41184",
@@ -910,7 +998,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "219232606-9eea2c518b",
@@ -928,7 +1016,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "205372276-04e9b87b21",
@@ -946,7 +1034,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=205372276&classId=154422672&workId=56132865",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "205372276-53a0490202",
@@ -964,7 +1052,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=205372276&classId=154422672&workId=56132395",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     },
     {
       "id": "205372276-b727ee1d09",
@@ -982,7 +1070,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=205372276&clazzid=154422672&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-18T12:50:10+08:00"
+      "last_seen": "2026-11-26T10:23:45+08:00"
     }
   ]
 }
