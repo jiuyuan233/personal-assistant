@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-11-26T10:39:06+08:00",
-  "count": 127,
+  "updated_at": "2026-11-26T16:20:24+08:00",
+  "count": 128,
   "sources": [
     "校网通知公告",
     "教务处",
@@ -1621,6 +1621,21 @@
       ],
       "score": 1,
       "first_seen": "2026-11-13",
+      "last_seen": "2026-11-26"
+    },
+    {
+      "id": "2026-2027-b529a1b407",
+      "title": "我校召开2026-2027学年第六次教学调度会",
+      "url": "https://jwc.huuc.edu.cn/info/1018/5583.htm",
+      "source": "教务处",
+      "publish_date": "2026-11-26",
+      "description": "",
+      "deadline": null,
+      "category": "",
+      "reason": "",
+      "tags": [],
+      "score": 0,
+      "first_seen": "2026-11-26",
       "last_seen": "2026-11-26"
     },
     {
