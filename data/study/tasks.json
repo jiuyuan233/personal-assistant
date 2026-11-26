@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-11-27T02:03:59+08:00",
-  "count": 85,
+  "updated_at": "2026-11-27T03:02:51+08:00",
+  "count": 102,
   "course_count": 14,
   "items": [
     {
@@ -308,7 +308,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204754",
       "start_time": "2026-11-09T20:21:00+08:00",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "214014802-e05313f151",
@@ -454,7 +454,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58467962",
       "first_seen": "2026-11-13T18:38:58+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-dc942471f7",
@@ -472,7 +472,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58558183",
       "first_seen": "2026-11-16T17:34:53+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "228141406-196238fb25",
@@ -490,7 +490,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491059",
       "first_seen": "2026-11-16T18:32:54+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "228141406-183effa9b4",
@@ -508,7 +508,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491026",
       "first_seen": "2026-11-16T18:32:54+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "228141406-12104c89e4",
@@ -526,7 +526,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491082",
       "first_seen": "2026-11-16T18:32:54+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "201780805-ba99d83e8f",
@@ -544,7 +544,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=58170556",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-1621c779be",
@@ -562,7 +562,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58558183",
       "first_seen": "2026-11-18T07:26:26+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "201780805-8722437faf",
@@ -580,7 +580,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=58170689",
       "first_seen": "2026-11-13T14:28:50+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "268016715-fc0e283afd",
@@ -630,6 +630,22 @@
       "url": "",
       "first_seen": "2026-11-26T15:48:24+08:00",
       "last_seen": "2026-11-26T15:48:24+08:00"
+    },
+    {
+      "id": "228141406-451fca03b5",
+      "kind": "quiz",
+      "category": "quiz",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "分组任务",
+      "status": "已结束（任务详情页）",
+      "state": "unknown",
+      "deadline": "2026-11-25T17:53:34+08:00",
+      "deadline_exact": true,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T15:48:24+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "246136739-6bee3ad362",
@@ -706,12 +722,60 @@
       "label": "考试",
       "status": "已完成",
       "state": "done",
-      "deadline": "2026-11-27T23:16:23+08:00",
+      "deadline": "2026-11-27T23:16:25+08:00",
       "deadline_exact": false,
-      "remaining_text": "83 分 剩余21小时16分钟",
+      "remaining_text": "83 分 剩余20小时19分钟",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-f9f21da890",
+      "kind": "quiz",
+      "category": "quiz",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "暗流之下：管网工程师的抉择",
+      "status": "",
+      "state": "unknown",
+      "deadline": "2026-11-28T00:00:00+08:00",
+      "deadline_exact": true,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-26T15:48:24+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-f5e36766aa",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "结课论文",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": "2026-11-30T23:58:01+08:00",
+      "deadline_exact": false,
+      "time_hint": "剩余93小时1分钟",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-9363e9d37b",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "建环专业学生职业生涯规划作业",
+      "status": "待批阅",
+      "state": "submitted",
+      "deadline": "2026-11-30T23:58:01+08:00",
+      "deadline_exact": false,
+      "time_hint": "剩余93小时1分钟",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "228141406-6acf5f8fe4",
@@ -724,12 +788,12 @@
       "label": "",
       "status": "待批阅",
       "state": "submitted",
-      "deadline": "2026-11-30T23:58:11+08:00",
+      "deadline": "2026-11-30T23:58:13+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余93小时58分钟",
+      "remaining_text": "剩余93小时1分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771731",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "228141406-08ea8dd7e1",
@@ -742,12 +806,28 @@
       "label": "",
       "status": "待批阅",
       "state": "submitted",
-      "deadline": "2026-11-30T23:58:11+08:00",
+      "deadline": "2026-11-30T23:58:13+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余93小时58分钟",
+      "remaining_text": "剩余93小时1分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771753",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "268008349-32989facac",
+      "kind": "exam",
+      "category": "exam",
+      "course": "军事理论（同济大学版）",
+      "course_id": "268008349",
+      "title": "军事理论",
+      "status": "已完成",
+      "state": "done",
+      "deadline": "2026-12-13T23:55:01+08:00",
+      "deadline_exact": false,
+      "time_hint": "剩余404小时58分钟",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "268008349-7bcd10c306",
@@ -760,12 +840,12 @@
       "label": "考试",
       "status": "已完成",
       "state": "done",
-      "deadline": "2026-12-13T23:59:14+08:00",
+      "deadline": "2026-12-13T23:59:16+08:00",
       "deadline_exact": false,
-      "remaining_text": "100 分 剩余405小时59分钟",
+      "remaining_text": "100 分 剩余405小时2分钟",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=268008349&clazzid=157042838&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "214014802-99a973636b",
@@ -778,12 +858,12 @@
       "label": "互评",
       "status": "待批阅",
       "state": "submitted",
-      "deadline": "2026-12-31T09:51:17+08:00",
+      "deadline": "2026-12-31T09:51:19+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余823小时51分钟",
+      "remaining_text": "剩余822小时54分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=214014802&classId=153270975&workId=58788782",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "268371439-d050c4254c",
@@ -801,7 +881,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=268371439&clazzid=158553251&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "228141406-497e31d3cf",
@@ -819,7 +899,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=57526332",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "228141406-0cc488bb65",
@@ -837,7 +917,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771802",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "228141406-ec9f34e1ca",
@@ -855,7 +935,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771787",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "228141406-6b7783323d",
@@ -873,7 +953,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771769",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "228141406-147d7af1f3",
@@ -891,7 +971,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204806",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "228141406-6713fb5201",
@@ -909,7 +989,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204711",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "260598171-231e2e59be",
@@ -927,7 +1007,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58802014",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "260598171-bc92f57b1c",
@@ -945,7 +1025,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58802004",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "260598171-def44f4b92",
@@ -963,7 +1043,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58530024",
       "first_seen": "2026-11-18T10:27:18+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "260598171-61a8809da6",
@@ -981,7 +1061,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58301119",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "260598171-1c99ab59f3",
@@ -999,7 +1079,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57984053",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "260598171-72b229d891",
@@ -1017,7 +1097,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57648797",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "260598171-a6fef1114b",
@@ -1035,7 +1115,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57576073",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "260598171-96bd1e26e2",
@@ -1053,7 +1133,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57576023",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "260598171-8fecdc421f",
@@ -1071,7 +1151,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57297581",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "260598171-b7fb842da0",
@@ -1089,7 +1169,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=56895598",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "260598171-4e8c5c943b",
@@ -1107,7 +1187,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=56430556",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "201780805-51f684486f",
@@ -1125,7 +1205,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=57584189",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-25210e679f",
@@ -1143,7 +1223,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58841797",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-725c9fce61",
@@ -1161,7 +1241,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58763973",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-6651af1cfb",
@@ -1179,7 +1259,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58841797",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-9f8fde3d38",
@@ -1197,7 +1277,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58673369",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-2928dd1aac",
@@ -1215,7 +1295,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58763973",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-d7a743416f",
@@ -1233,7 +1313,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58673369",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-7bfb3fd544",
@@ -1251,7 +1331,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58370553",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-dc63b1d597",
@@ -1269,7 +1349,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58370553",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-a0405ca270",
@@ -1287,7 +1367,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58263400",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-f1dafa4ec2",
@@ -1305,7 +1385,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-15T15:26:24+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-fcedf41184",
@@ -1323,7 +1403,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "219232606-9eea2c518b",
@@ -1341,7 +1421,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "205372276-04e9b87b21",
@@ -1359,7 +1439,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=205372276&classId=154422672&workId=56132865",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "205372276-53a0490202",
@@ -1377,7 +1457,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=205372276&classId=154422672&workId=56132395",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "205372276-b727ee1d09",
@@ -1395,23 +1475,215 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=205372276&clazzid=154422672&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
-      "id": "268371439-dc895617cf",
-      "kind": "exam",
-      "category": "exam",
-      "course": "2026级-校规校纪",
-      "course_id": "268371439",
-      "title": "2026级新生校规校纪考试",
+      "id": "228141406-84a6f3be78",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "内部空间的外环境",
       "status": "已完成",
       "state": "done",
       "deadline": null,
       "deadline_exact": false,
       "time_hint": "",
       "url": "",
-      "first_seen": "2026-11-27T01:59:59+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-1c7931c288",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "专业教育与职业规划",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-7d55daeeba",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "建筑自动化与建筑智能化",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-b5383fe365",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "运载工具的环境与能源应用",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-2c37ae1350",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "工业建筑环境与能源应用",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-2325c5a97e",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "建筑区域能源规划",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-505886838f",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "人造空间能源应用工程",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-6c49d81249",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "人造空间保障能源的生产、交换与输配",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-9a9f9e8fcc",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "人造空间的热湿声光环境调控工程",
+      "status": "未交",
+      "state": "pending",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-a71150e729",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "人工环境的健康与安全工程",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-7ebdea33f9",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "内部空间环境及调控原理",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-c1e2d7d7d9",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "建筑环境与能源应用的基础常识",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
+    },
+    {
+      "id": "228141406-862669ccc3",
+      "kind": "work",
+      "category": "work",
+      "course": "建筑环境与能源应用工程概论",
+      "course_id": "228141406",
+      "title": "绪论",
+      "status": "已完成",
+      "state": "done",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T02:57:01+08:00",
+      "last_seen": "2026-11-27T02:57:01+08:00"
     },
     {
       "id": "214014802-86cdd0a71a",
