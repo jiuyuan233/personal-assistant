@@ -875,6 +875,14 @@ def collect_course(course: dict, mid_url: str, cookies: list[dict],
                     result["diag"].append("no_stuactivelist_frame（API 兜底）")
                 tasks = parse_active_blocks(blocks, course, now)
                 merge_home_cards(tasks, cards)
+                # v2.4：兜底块解析的任务用 API type 数据过滤课堂类
+                #（国安「1.作为青年大学生…谈一谈」标题像作业、type=5 是讨论）
+                if api_items:
+                    tmap = {re.sub(r"\s+", "", str(it.get("nameOne") or "")):
+                            it.get("type") for it in api_items}
+                    tasks = [t for t in tasks
+                             if _quiz_type(tmap.get(re.sub(r"\s+", "", t.get("title") or "")))]
+                result["diag"].append(f"过滤后 {len(tasks)}")
 
             # ②③ 作业/考试 tab（iframe 块 + 翻页）
             seen_w: dict = {}
