@@ -28,7 +28,8 @@ from urllib.parse import parse_qs, urlparse
 
 import requests
 
-from dedup import load_list, merge_quiz, merge_tasks, save_list, sort_by_deadline
+from dedup import (dedupe_by_identity, load_list, merge_quiz, merge_tasks,
+                    save_list, sort_by_deadline)
 from utils import (DATA_DIR, clean_html_text, env, exc_brief, fmt_remaining,
                    load_json, log, make_id, now_bj, parse_datetime,
                    parse_remaining, safe_text, save_json, scrub_course_name,
@@ -688,6 +689,12 @@ def run() -> dict:
     old_main = [t for t in old_all if t.get("kind") != "quiz"]
     merged = merge_tasks(old_main, all_tasks, now)
     merged = sort_by_deadline(merged + merge_quiz(old_quiz, quiz_new, quiz_covered, now))
+    # v2.4（用户报「一堆重复+无状态作业」）：同作业不同 id 的历史条目
+    # 分桶去重——unknown 旧版本在有状态版本存在时丢弃；不同状态的桶
+    # 各自保留（「人造空间」同名已完成+未交两条都得在）
+    merged, _dedup_removed = dedupe_by_identity(merged)
+    if _dedup_removed:
+        log(f"同作业去重：清掉历史堆积 {_dedup_removed} 条")
     # v1.7.0（用户报的 bug）：老师发的课件（.pptx/.pdf 等文件后缀标题）不是作业。
     # 采集层已过滤新条目；这一步清掉历史入库的存量（一次性迁移，下轮采集起全链路干净）。
     _before_files = len(merged)
