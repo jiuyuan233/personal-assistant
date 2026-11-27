@@ -9,6 +9,8 @@
 """
 from __future__ import annotations
 
+import re
+
 from datetime import date, datetime, timedelta
 
 from utils import BJ_TZ, load_json, log, now_bj, parse_datetime, save_json
@@ -28,6 +30,63 @@ def dedupe_by_id(items: list[dict]) -> list[dict]:
         seen.add(iid)
         out.append(it)
     return out
+
+
+def _norm_title(s: str) -> str:
+    return re.sub(r"\s+", "", s or "")
+
+
+def _task_richness(t: dict) -> int:
+    """任务信息完整度评分（去重时保留最全的一条）。"""
+    score = 0
+    if t.get("status"):
+        score += 8
+    if t.get("score"):
+        score += 4
+    if t.get("deadline_exact"):
+        score += 2
+    if t.get("deadline"):
+        score += 1
+    if t.get("first_seen"):
+        score += 1
+    return score
+
+
+def dedupe_by_identity(tasks: list[dict]) -> tuple[list[dict], int]:
+    """v2.4：按（课程+班级+类型+归一标题+状态）分桶去重——清除历史堆积。
+
+    根因（2026-11-27 用户报「一堆重复+无状态作业」）：同一条作业在不同轮次
+    以不同 id 入库（id 漂移/轮换残留），tasks.json 同一标题堆积 3-6 条，
+    其中多为 unknown 旧版本，已剔除文档里一叠重复。
+
+    规则（保住「人造空间」同名不同 workId 两条真实任务的案例）：
+    - 桶键 = (course_id, class_id, kind, 归一标题, state)
+    - 每桶只留信息最全的一条；
+    - 同键若有**有状态**版本，unknown 版本整桶丢弃（新采集的状态比
+      历史 unknown 权威）；
+    - 不同 state 的桶各自保留（「人造空间」已完成+未交两条都得在）。
+    返回 (去重后列表, 清掉的条数)。"""
+    buckets: dict[tuple, list[dict]] = {}
+    for t in tasks:
+        key = (t.get("course_id"), t.get("class_id"), t.get("kind"),
+               _norm_title(t.get("title")), t.get("state"))
+        buckets.setdefault(key, []).append(t)
+    removed = 0
+    best_by_nostate: dict[tuple, dict] = {}
+    for (cid, clz, kind, ntitle, state), group in buckets.items():
+        group.sort(key=_task_richness, reverse=True)
+        removed += len(group) - 1
+        nk = (cid, clz, kind, ntitle)
+        best_by_nostate.setdefault(nk, {})[state] = group[0]
+    out: list[dict] = []
+    for nk, states in best_by_nostate.items():
+        has_real = any(st != "unknown" for st in states)
+        for st, best in states.items():
+            if st == "unknown" and has_real:
+                removed += 1
+                continue
+            out.append(best)
+    return sort_by_deadline(out), removed
 
 
 def _carry(old: dict, new: dict, keys: tuple[str, ...]) -> None:
