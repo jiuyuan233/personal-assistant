@@ -1,20 +1,39 @@
 {
-  "updated_at": "2026-11-27T15:16:02+08:00",
+  "updated_at": "2026-11-28T00:57:55+08:00",
   "stats": {
-    "pending": 1,
+    "pending": 2,
     "overdue": 0,
     "today": 0,
-    "week": 0,
+    "week": 1,
     "later": 0,
     "unknown": 1,
     "upcoming": 0,
     "dropped": {
-      "not_pending": 55,
-      "overdue": 6
+      "not_pending": 57,
+      "overdue": 3
     },
     "courses": 14
   },
   "items": [
+    {
+      "id": "219232606-e18c310e8c",
+      "kind": "work",
+      "course": "高等数学A",
+      "course_id": "219232606",
+      "class_id": "153566712",
+      "title": "5.1 定积分的概念与性质",
+      "work_id": "59023749",
+      "label": "互评",
+      "status": "未交",
+      "state": "pending",
+      "deadline": "2026-11-29T23:59:00+08:00",
+      "deadline_exact": true,
+      "remaining_text": "剩余47小时7分钟",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=59023749",
+      "start_time": "2026-11-27T18:54:00+08:00",
+      "first_seen": "2026-11-28T00:50:10+08:00",
+      "last_seen": "2026-11-28T00:50:10+08:00"
+    },
     {
       "id": "214014802-86cdd0a71a",
       "kind": "quiz",
@@ -29,7 +48,7 @@
       "time_hint": "",
       "url": "",
       "first_seen": "2026-11-27T00:44:21+08:00",
-      "last_seen": "2026-11-27T14:15:41+08:00"
+      "last_seen": "2026-11-27T15:16:35+08:00"
     }
   ],
   "courses": [
@@ -135,7 +154,7 @@
       "ismooc2": "1",
       "name": "高等数学A",
       "task_count": 16,
-      "pending_count": 0
+      "pending_count": 1
     },
     {
       "course_id": "205372276",
