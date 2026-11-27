@@ -732,9 +732,15 @@ def run() -> dict:
                                   _re.sub(r"\s+", "", t.get("title") or ""))
                 _new_by_key = {_key(t): t for t in
                                (res.get("tasks") or []) if t.get("kind") == "quiz"}
-                _old_keys = {_key(t) for t in old_quiz}
+                # 并集合并限本轮 picks 课程（避免未轮到课程的任务混进
+                # 本轮日志/清单——数据 course_id 各自正确，但日志按课程
+                # 打印会错乱误导）
+                _pick_ids = {str(c.get("course_id")) for c in picks}
+                _old_pick = [t for t in old_quiz
+                             if str(t.get("course_id")) in _pick_ids]
+                _old_keys = {_key(t) for t in _old_pick}
                 merged_q: list[dict] = []
-                for t in old_quiz:
+                for t in _old_pick:
                     nk = _key(t)
                     if nk in _new_by_key:
                         merged_q.append(_new_by_key[nk])  # 新值覆盖
