@@ -691,6 +691,10 @@ def run() -> dict:
     quiz_new: list[dict] = []
     quiz_covered: set = set()
     xxt_cpi = str(cfg.get("xxt_cpi") or "577967959")
+    # v2.7：旧 quiz 列表提前拆出（合并用——骨架轮 API 只回部分活动，
+    # 并集合并需要旧清单做底册）
+    old_all = load_list(TASKS_PATH)
+    old_quiz = [t for t in old_all if t.get("kind") == "quiz"]
     if cfg.get("quiz_browser", True):
         try:
             import quiz_browser as qb
@@ -719,8 +723,27 @@ def run() -> dict:
                 # v2.4c：只收随堂作业（kind=quiz）——浏览器块的 work/exam
                 # 与 requests 主链双源重复（同作业两条入库，用户报的重复根因）；
                 # work/exam 以 requests 主链为准，浏览器块仅记 diag
-                tasks_q = [t for t in (res.get("tasks") or [])
-                           if t.get("kind") == "quiz"]
+                # v2.7：**合并而非替换**——本轮新抓的条目按 (course_id,
+                # 归一标题) 覆盖旧条目，旧条目中不在本轮清单的保留
+                #（activelist 骨架轮 API 只回当前 tab 的部分活动——
+                # 本地实证：思修全量 8 条、骨架轮只回 3 条）
+                import re as _re
+                _key = lambda t: (str(t.get("course_id")),
+                                  _re.sub(r"\s+", "", t.get("title") or ""))
+                _new_by_key = {_key(t): t for t in
+                               (res.get("tasks") or []) if t.get("kind") == "quiz"}
+                _old_keys = {_key(t) for t in old_quiz}
+                merged_q: list[dict] = []
+                for t in old_quiz:
+                    nk = _key(t)
+                    if nk in _new_by_key:
+                        merged_q.append(_new_by_key[nk])  # 新值覆盖
+                    else:
+                        merged_q.append(t)  # 本轮清单没有 → 保留旧值
+                for nk, t in _new_by_key.items():
+                    if nk not in _old_keys:
+                        merged_q.append(t)  # 新出现的活动
+                tasks_q = merged_q
                 diag = "; ".join(str(d) for d in res.get("diag") or [])
                 # 「有任一解析结果」才算覆盖这门课；全 0 保留旧数据（旧数据保命）
                 if tasks_q or res.get("work_blocks") or res.get("exam_blocks"):
