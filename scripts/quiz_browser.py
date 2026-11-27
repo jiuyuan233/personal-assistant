@@ -556,16 +556,16 @@ def tasks_from_activelist(items: list[dict], course: dict,
                 exact = True
         except (TypeError, ValueError, OSError):
             pass
-        # type=77：content.sourceConfig.publishRelationUuid 是学生页面
-        # （situationalDialogue 等 Vue 页）的关键参数——teaUrl 是教师预览
-        # 链接，学生态访问会被拒
-        uuid = ""
+
+        # type=77：content.stuUrl 是学生入口重定向链接（activeRowClick
+        # default 分支点击用的就是它），redirect 落地后拿参数调
+        # ai-evaluate load-data API；teaUrl 是教师预览链接（学生态被拒）
+        stu_url = ""
         if at == 77:
             try:
                 content = json.loads(
                     str(it.get("content") or "").replace("'", '"'))
-                sc = json.loads(str(content.get("sourceConfig") or ""))
-                uuid = str(sc.get("publishRelationUuid") or "")
+                stu_url = str(content.get("stuUrl") or "")
             except Exception:
                 pass
         tasks.append({
@@ -573,7 +573,7 @@ def tasks_from_activelist(items: list[dict], course: dict,
             "kind": "quiz",
             "category": "quiz",
             "_aid": str(it.get("id") or ""),
-            "_uuid": uuid,
+            "_stu_url": stu_url,
             "atype": at,
             "course": course.get("name") or "",
             "course_id": course.get("course_id") or "",
@@ -638,54 +638,79 @@ def _quiz42_status(ctx, mid_url: str, aid: str) -> str:
             pass
 
 
-def _tea_url_status(ctx, mid_url: str, course: dict, uuid: str,
-                    cpi: str) -> str:
-    """type=77（老师发布的外部互动活动，teaUrl 指向 situationalDialogue/
-    aiInteractStory 等 Vue 页）：用 sourceConfig.publishRelationUuid 构造
-    学生页面 URL，轮询 60s 读「最终得分/总分」。
+def _tea_url_status(ctx, course: dict, stu_url: str, cpi: str) -> str:
+    """type=77（老师发布的外部 AI 互动活动）：content.stuUrl → redirect
+    落地（situationalDialogue/aiInteractStory 等学生页，参数齐全）→
+    从落地 URL 提取参数 → fetch ai-evaluate load-data API →
+    answerScore/answerRecords/taskEndedFlag 判状态。
 
-    本地实证：页面挂载 **51s 后才出现 innerText**（「最终得分 85 分」），
-    25s 等待不够是此前抓不到的唯一原因；网络无失败请求。
-    在主 ctx 里直开（persistent+proxy 时 chaoxing.com 可达且带登录态；
-    Actions runner 直连亦可达）。"""
+    本地实证（绘梦者 libraryType=6 aiInteractStory）：stuUrl → 1s
+    redirect → pcStudentIndex → load-data 含 answerScore=96/answerRecords；
+    **API 直调不需要等页面渲染（57s）**——响应 3KB，Actions runner 可用。
+    libraryType=0（situationalDialogue）load-data 不带 libraryUuid 同样有效
+    （answerScore=85 实证）。"""
     page = ctx.new_page()
     try:
         page.add_init_script(
             "Object.defineProperty(navigator,'webdriver',{get:()=>undefined})")
-        cid = course.get("course_id") or ""
-        clz = course.get("class_id") or ""
-        surl = (f"https://mooc2-ans.chaoxing.com/mooc2-ans-vue/situationalDialogue"
-                f"?courseid={cid}&clazzid={clz}&cpi={cpi}"
-                f"&publishRelationUuid={uuid}")
-        # chaoxing.com 对部分网络直连极慢/超时——commit 不等 domcontentloaded
-        page.goto(surl, wait_until="commit", timeout=45000)
-        best = ""
-        for _ in range(60):
+        page.goto(stu_url, wait_until="commit", timeout=60000)
+        # 等 redirect 落地（stuUrl 是 ai-evaluate redirect，实测 1s 即跳）
+        landed = ""
+        for _ in range(30):
             page.wait_for_timeout(1000)
-            for f in page.frames:
-                try:
-                    txt = f.evaluate(STAT_PAGE_JS)
-                except Exception:
-                    continue
-                m = re.search(r"(最终得分|总分|个人最终得分)[^\d]{0,6}([\d.]+)\s*分", txt)
-                if m:
-                    return f"已提交，{m.group(1)} {m.group(2)} 分"
-                for ln in txt.splitlines():
-                    ln2 = ln.strip()
-                    if ln2 and len(ln2) < 60 and not GROUP_TAG.fullmatch(ln2) \
-                            and classify_quiz(ln2) != "unknown":
-                        if any(w in ln2 for w in ("已提交", "待批阅", "已评分",
-                                                  "已互评", "得分")):
-                            return ln2
-                        if not best:
-                            best = ln2
-        return best
+            cur = page.url
+            if "redirect/active" not in cur:
+                landed = cur
+                break
+        if not landed:
+            landed = page.url
+        from urllib.parse import parse_qs, urlparse
+        qs = parse_qs(urlparse(landed).query)
+
+        def q(name: str) -> str:
+            for k in (name, name.lower(), name.capitalize()):
+                v = qs.get(k)
+                if v:
+                    return v[0]
+            return ""
+
+        cid = q("courseid") or str(course.get("course_id") or "")
+        clz = q("clazzid") or str(course.get("class_id") or "")
+        cpi_v = q("cpi") or cpi
+        lib = q("libraryUuid") or ""
+        rel = q("publishRelationUuid") or ""
+        api = (f"https://mooc2-ans.chaoxing.com/mooc2-ans/ai-evaluate/v2/answer/"
+               f"load-data?courseid={cid}&clazzid={clz}&cpi={cpi_v}"
+               + (f"&libraryUuid={lib}" if lib else "")
+               + (f"&publishRelationUuid={rel}" if rel else ""))
+        js = """
+async (args) => {
+  const r = await fetch(args.url, {credentials: 'include',
+      headers: {'Accept': 'application/json'}});
+  return await r.text();
+}
+"""
+        txt = page.evaluate(js, {"url": api})
+        data = (json.loads(txt).get("data")) or {}
+        score = data.get("answerScore")
+        recs = data.get("answerRecords") or []
+        if score:
+            return f"已提交，得分 {score} 分"
+        if recs:
+            sub = str(recs[0].get("submitTime") or "")[:16]
+            return f"已提交（提交时间 {sub}）"
+        try:
+            ended = int(data.get("taskEndedFlag") or 0)
+        except (TypeError, ValueError):
+            ended = 0
+        if ended == 1:
+            return "已结束，未提交"
+        return ""
     except Exception:
         return ""
     finally:
         try:
-            if page:
-                page.close()
+            page.close()
         except Exception:
             pass
 
@@ -714,11 +739,11 @@ def _fill_quiz_status(ctx, course: dict, mid_url: str,
                 else:
                     reasons.append(f"{tag}:分组任务API空")
         elif atype == 77:
-            uuid = it.get("_uuid") or ""
-            status = _tea_url_status(ctx, mid_url, course, uuid, cpi) \
-                if uuid else ""
+            stu_url = it.get("_stu_url") or ""
+            status = _tea_url_status(ctx, course, stu_url, cpi) \
+                if stu_url else ""
             if not status:
-                reasons.append(f"{tag}:teaUrl学生页无状态")
+                reasons.append(f"{tag}:stuUrl无状态")
         elif atype == 42:
             status = _quiz42_status(ctx, mid_url, aid)
             if not status:
@@ -913,7 +938,7 @@ def collect_course(course: dict, mid_url: str, cookies: list[dict],
             for t in tasks:
                 t.pop("_aid", None)
                 t.pop("atype", None)
-                t.pop("_uuid", None)
+                t.pop("_stu_url", None)
             result["ok"] = True
             result["tasks"] = tasks
             ctx.close()
