@@ -1,20 +1,37 @@
 {
-  "updated_at": "2026-11-27T13:55:53+08:00",
+  "updated_at": "2026-11-27T15:16:02+08:00",
   "stats": {
-    "pending": 0,
+    "pending": 1,
     "overdue": 0,
     "today": 0,
     "week": 0,
     "later": 0,
-    "unknown": 0,
+    "unknown": 1,
     "upcoming": 0,
     "dropped": {
-      "not_pending": 128,
-      "overdue": 9
+      "not_pending": 55,
+      "overdue": 6
     },
     "courses": 14
   },
-  "items": [],
+  "items": [
+    {
+      "id": "214014802-86cdd0a71a",
+      "kind": "quiz",
+      "category": "quiz",
+      "course": "思想道德与法治（校级网络课程）",
+      "course_id": "214014802",
+      "title": "小组视频作业。",
+      "status": "未提交（待作答）",
+      "state": "pending",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T00:44:21+08:00",
+      "last_seen": "2026-11-27T14:15:41+08:00"
+    }
+  ],
   "courses": [
     {
       "course_id": "269154829",
