@@ -161,10 +161,46 @@ class Chaoxing:
         if data.get("status") is True:
             self.logged_in = True
             log("学习通登录成功")
+            # v2.6：huuc fanyalogin 的 cookie 只种 huuc 域——type=77 的
+            # load-data API 在 chaoxing.com 域，需要同账号在该域再登录一次
+            self._login_chaoxing_domain()
             return True
         # 只打 msg，绝不回显 uname/password
         log(f"学习通登录失败：{safe_text(data.get('msg') or data, 160)}", level="ERROR")
         return False
+
+    def _login_chaoxing_domain(self) -> None:
+        """同账号密码在 passport2.chaoxing.com 登录（种 chaoxing.com 域 cookie）。
+
+        type=77 的 load-data API 在 chaoxing.com 域——huuc cookie 不覆盖。
+        失败只 WARN（77 类将进未知清单，不影响主采集）。"""
+        try:
+            r = self.s.post(
+                "https://passport2.chaoxing.com/fanyalogin",
+                data={
+                    "fid": self.cfg.get("fid", "12"),
+                    "uname": aes_encrypt(self.username),
+                    "password": aes_encrypt(self.password),
+                    "t": "true",
+                    "refer": "https://i.chaoxing.com",
+                    "forbidotherlogin": "0",
+                    "validate": "",
+                    "doubleFactorLogin": "0",
+                    "independentId": "0",
+                    "independentNameId": "0",
+                },
+                headers={"X-Requested-With": "XMLHttpRequest",
+                         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},
+                timeout=30,
+            )
+            data = r.json()
+            if data.get("status") is True:
+                log("chaoxing.com 域登录成功（77 类状态 API 可用）")
+            else:
+                log(f"chaoxing.com 域登录失败：{safe_text(data.get('msg') or data, 120)}",
+                    level="WARN")
+        except Exception as e:
+            log(f"chaoxing.com 域登录异常：{safe_text(e, 160)}", level="WARN")
 
     def ensure_chaoxing_login(self) -> bool:
         """确认 chaoxing.com 域登录态（type=77 的 load-data API 在该域）。
