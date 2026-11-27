@@ -66,6 +66,23 @@ def dedupe_by_identity(tasks: list[dict]) -> tuple[list[dict], int]:
       历史 unknown 权威）；
     - 不同 state 的桶各自保留（「人造空间」已完成+未交两条都得在）。
     返回 (去重后列表, 清掉的条数)。"""
+    # v2.4d：quiz 的 id 是合成键（course+标题）——同 id = 同一活动，多条
+    # 并存是轮次堆积/状态覆盖残留，只留信息最全一条；work/eval/exam 的
+    # id 是真实 workId（同名不同 workId 是两条真实任务，如「人造空间」
+    # 已完成+未交案例），按 (…, state) 分桶保留。
+    removed = 0
+    by_id_quiz: dict[str, list[dict]] = {}
+    rest: list[dict] = []
+    for t in tasks:
+        if t.get("kind") == "quiz" and t.get("id"):
+            by_id_quiz.setdefault(t["id"], []).append(t)
+        else:
+            rest.append(t)
+    for iid, group in by_id_quiz.items():
+        if len(group) > 1:
+            removed += len(group) - 1
+    tasks = [sorted(g, key=_task_richness, reverse=True)[0]
+             for g in by_id_quiz.values()] + rest
     buckets: dict[tuple, list[dict]] = {}
     for t in tasks:
         key = (t.get("course_id"), t.get("class_id"), t.get("kind"),
