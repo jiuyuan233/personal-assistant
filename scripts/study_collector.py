@@ -736,8 +736,21 @@ def run() -> dict:
                 # 本轮日志/清单——数据 course_id 各自正确，但日志按课程
                 # 打印会错乱误导）
                 _pick_ids = {str(c.get("course_id")) for c in picks}
-                _old_pick = [t for t in old_quiz
-                             if str(t.get("course_id")) in _pick_ids]
+                # v2.7：课堂类（type 数据）旧条目在本轮覆盖时清除——
+                # type=5 讨论/11 选人/14 问卷等不是作业（用户定论），
+                # 不允许以 unknown 残留。type 映射来自 res（collect_course
+                # 返回的 api_type_map，key=(归一标题, aid)）
+                _tmap = res.get("api_type_map") or {}
+                _old_pick = []
+                for t in old_quiz:
+                    if str(t.get("course_id")) not in _pick_ids:
+                        continue
+                    at = (_tmap.get((_re.sub(r"\s+", "", t.get("title") or ""),
+                                     str(t.get("_aid") or "")))
+                          or _tmap.get((_re.sub(r"\s+", "", t.get("title") or ""), "")))
+                    if at is not None and not qb._quiz_type(at):
+                        continue  # 课堂类旧条目清除
+                    _old_pick.append(t)
                 _old_keys = {_key(t) for t in _old_pick}
                 merged_q: list[dict] = []
                 for t in _old_pick:
