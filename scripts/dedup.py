@@ -197,6 +197,10 @@ def merge_tasks(old_list: list[dict], new_list: list[dict], now: datetime) -> li
                 new["deadline_exact"] = True
             if not new.get("description") and old.get("description"):
                 new["description"] = old["description"]
+            # v2.4e：score 只在 stat 轮换覆盖到时回填——不 carry 的话
+            # 未轮到的课每轮重抓被清空，分数永远只存在一轮
+            if not new.get("score") and old.get("score"):
+                new["score"] = old["score"]
         else:
             new["first_seen"] = stamp
             fresh += 1
