@@ -705,9 +705,14 @@ def _fill_quiz_status(ctx, course: dict, mid_url: str,
         if not aid:
             reasons.append(f"{tag}:无id")
         elif atype == 35:
-            status = _group_task_status(ctx, mid_url, aid)
+            status, to_ans_flag = _group_task_status(ctx, mid_url, aid)
             if not status:
-                reasons.append(f"{tag}:分组任务API空")
+                # toAnswerPage=1 = 跳答题页 = 未作答
+                # （用户 2026-11-27 定论：待作答就是明确状态，进待办提醒）
+                if to_ans_flag == 1:
+                    status = "未提交（待作答）"
+                else:
+                    reasons.append(f"{tag}:分组任务API空")
         elif atype == 77:
             uuid = it.get("_uuid") or ""
             status = _tea_url_status(ctx, mid_url, course, uuid, cpi) \
@@ -1017,18 +1022,20 @@ def _rowclick_status(ctx, mid_url: str, title: str) -> tuple[str, str]:
             pass
 
 
-def _group_task_status(ctx, mid_url: str, aid: str) -> str:
+def _group_task_status(ctx, mid_url: str, aid: str) -> tuple[str, int]:
     """分组任务（type=35）：getActiveInfoForMe 选分支 → 详情页 parse_group_detail。
 
     本地实证：详情页文本「个人最终得分 58.4 分（提交时间 11-04）」；
-    直接构造详情 URL（4 分支模板），不经页面点击（popup 会停在 about:blank）。"""
+    直接构造详情 URL（4 分支模板），不经页面点击（popup 会停在 about:blank）。
+    返回 (状态串, toAnswerPage)——to_ans=1 表示未作答（跳答题页），
+    调用方据此给「未提交（待作答）」明确状态（用户 2026-11-27 定论）。"""
     page = ctx.new_page()
     try:
         page.goto(mid_url, wait_until="domcontentloaded", timeout=60000)
         page.wait_for_timeout(6000)
         frame = _find_active_frame(page)
         if frame is None:
-            return ""
+            return "", -1
         vals = frame.evaluate(
             "() => ({fid: String(window.fid||''), courseId: String(window.courseId||''),"
             " classId: String(window.classId||''), timetable: String(window.timetable||'')})")
@@ -1071,10 +1078,10 @@ async (args) => {
                 except Exception:
                     continue
                 if "个人最终得分" in txt or "提交时间" in txt or "已结束" in txt:
-                    return parse_group_detail(txt)
-        return ""
+                    return parse_group_detail(txt), to_ans
+        return "", to_ans
     except Exception:
-        return ""
+        return "", -1
     finally:
         try:
             page.close()
