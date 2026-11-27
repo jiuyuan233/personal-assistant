@@ -166,6 +166,25 @@ class Chaoxing:
         log(f"学习通登录失败：{safe_text(data.get('msg') or data, 160)}", level="ERROR")
         return False
 
+    def ensure_chaoxing_login(self) -> bool:
+        """确认 chaoxing.com 域登录态（type=77 的 load-data API 在该域）。
+
+        fanyalogin 统一登录会种全家族 cookie（含 .chaoxing.com）——
+        访问 i.chaoxing.com 若直达个人空间即确认；跳登录页则 77 类状态
+        将进未知清单（Actions runner 无法人工补登）。"""
+        try:
+            r = self.s.get("https://i.chaoxing.com/", timeout=40,
+                           allow_redirects=True)
+            if r.url and "passport2" not in r.url:
+                log("chaoxing.com 域登录态确认（SSO 直达个人空间）")
+                return True
+            log("chaoxing.com 未登录（跳转登录页）——77 类状态将进未知清单",
+                level="WARN")
+            return False
+        except Exception as e:
+            log(f"chaoxing SSO 检测异常：{safe_text(e, 160)}", level="WARN")
+            return False
+
     def get(self, url: str, *, params: dict | None = None, follow: bool = True) -> str | None:
         try:
             r = self.s.get(url, params=params, timeout=40, allow_redirects=follow)
@@ -645,6 +664,8 @@ def run() -> dict:
             picks = courses[cursor:cursor + per_round] or courses[:1]
             log(f"[quiz] 本轮随堂采集 {len(picks)} 门（cursor={cursor}）："
                 f"{', '.join((c.get('name') or '?')[:12] for c in picks)}")
+            # v2.6：确认 chaoxing.com 域登录态（type=77 的 load-data API 在该域）
+            cx.ensure_chaoxing_login()
             q_cookies = qb.cookies_for_browser(cx.s)
             for c in picks:
                 time.sleep(2)
