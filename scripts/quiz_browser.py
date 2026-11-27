@@ -43,10 +43,15 @@ def cookies_for_browser(session) -> list[dict]:
     by_name: dict[str, dict] = {}
     for c in session.cookies:
         dom = (c.domain or "").lstrip(".")
-        if not dom.endswith("huuc.edu.cn"):
-            continue
-        by_name[c.name] = {"name": c.name, "value": c.value or "",
-                           "domain": ".huuc.edu.cn", "path": c.path or "/"}
+        # v2.6：chaoxing.com 域也收（type=77 的 load-data API 在该域，
+        # fanyalogin 统一登录会种全家族 cookie）
+        if dom.endswith("huuc.edu.cn"):
+            by_name[c.name] = {"name": c.name, "value": c.value or "",
+                               "domain": ".huuc.edu.cn", "path": c.path or "/"}
+        elif dom.endswith("chaoxing.com"):
+            by_name[f"cx.{c.name}"] = {"name": c.name, "value": c.value or "",
+                                       "domain": ".chaoxing.com",
+                                       "path": c.path or "/"}
     return list(by_name.values())
 
 
@@ -560,12 +565,15 @@ def tasks_from_activelist(items: list[dict], course: dict,
         # type=77：content.stuUrl 是学生入口重定向链接（activeRowClick
         # default 分支点击用的就是它），redirect 落地后拿参数调
         # ai-evaluate load-data API；teaUrl 是教师预览链接（学生态被拒）
-        stu_url = ""
+        stu_url, uuid, lib_uuid = "", "", ""
         if at == 77:
             try:
                 content = json.loads(
                     str(it.get("content") or "").replace("'", '"'))
                 stu_url = str(content.get("stuUrl") or "")
+                sc = json.loads(str(content.get("sourceConfig") or ""))
+                uuid = str(sc.get("publishRelationUuid") or "")
+                lib_uuid = str(sc.get("libraryUuid") or "")
             except Exception:
                 pass
         tasks.append({
@@ -574,6 +582,8 @@ def tasks_from_activelist(items: list[dict], course: dict,
             "category": "quiz",
             "_aid": str(it.get("id") or ""),
             "_stu_url": stu_url,
+            "_uuid": uuid,
+            "_lib_uuid": lib_uuid,
             "atype": at,
             "course": course.get("name") or "",
             "course_id": course.get("course_id") or "",
@@ -638,59 +648,40 @@ def _quiz42_status(ctx, mid_url: str, aid: str) -> str:
             pass
 
 
-def _tea_url_status(ctx, course: dict, stu_url: str, cpi: str) -> str:
-    """type=77（老师发布的外部 AI 互动活动）：content.stuUrl → redirect
-    落地（situationalDialogue/aiInteractStory 等学生页，参数齐全）→
-    从落地 URL 提取参数 → fetch ai-evaluate load-data API →
-    answerScore/answerRecords/taskEndedFlag 判状态。
+def _tea_url_status(ctx, course: dict, uuid: str, lib_uuid: str,
+                    cpi: str) -> str:
+    """type=77（老师发布的外部 AI 互动活动）状态：**直调 load-data API**。
 
-    本地实证（绘梦者 libraryType=6 aiInteractStory）：stuUrl → 1s
-    redirect → pcStudentIndex → load-data 含 answerScore=96/answerRecords；
-    **API 直调不需要等页面渲染（57s）**——响应 3KB，Actions runner 可用。
-    libraryType=0（situationalDialogue）load-data 不带 libraryUuid 同样有效
-    （answerScore=85 实证）。"""
+    本地实证（思修「怎样创造有意义的人生？」）：
+    GET /mooc2-ans/ai-evaluate/v2/answer/load-data?courseid=&cpi=&clazzid=&
+    publishRelationUuid=[&libraryUuid=] → JSON 含 answerScore=85.0/
+    answerRecords（submitTime）/taskEndedFlag——**响应 3KB，一次请求，
+    不经 51s 页面渲染**（此前 teaUrl 页面方案在 Actions 失败的根因是
+    runner→chaoxing.com 跨洋访问慢页面）。libraryType=6（aiInteractStory）
+    需带 libraryUuid；libraryType=0（situationalDialogue）不带同样有效。
+    在 chaoxing 域轻页面上下文里 fetch（cookie 同域）。"""
     page = ctx.new_page()
     try:
         page.add_init_script(
             "Object.defineProperty(navigator,'webdriver',{get:()=>undefined})")
-        page.goto(stu_url, wait_until="commit", timeout=60000)
-        # 等 redirect 落地（stuUrl 是 ai-evaluate redirect，实测 1s 即跳）
-        landed = ""
-        for _ in range(30):
-            page.wait_for_timeout(1000)
-            cur = page.url
-            if "redirect/active" not in cur:
-                landed = cur
-                break
-        if not landed:
-            landed = page.url
-        from urllib.parse import parse_qs, urlparse
-        qs = parse_qs(urlparse(landed).query)
-
-        def q(name: str) -> str:
-            for k in (name, name.lower(), name.capitalize()):
-                v = qs.get(k)
-                if v:
-                    return v[0]
-            return ""
-
-        cid = q("courseid") or str(course.get("course_id") or "")
-        clz = q("clazzid") or str(course.get("class_id") or "")
-        cpi_v = q("cpi") or cpi
-        lib = q("libraryUuid") or ""
-        rel = q("publishRelationUuid") or ""
-        api = (f"https://mooc2-ans.chaoxing.com/mooc2-ans/ai-evaluate/v2/answer/"
-               f"load-data?courseid={cid}&clazzid={clz}&cpi={cpi_v}"
-               + (f"&libraryUuid={lib}" if lib else "")
-               + (f"&publishRelationUuid={rel}" if rel else ""))
+        # 开一个 chaoxing 域轻上下文（根路径 404 页也行，fetch 同域即可）
+        page.goto("https://mooc2-ans.chaoxing.com/", wait_until="commit",
+                  timeout=45000)
+        page.wait_for_timeout(3000)
+        cid = course.get("course_id") or ""
+        clz = course.get("class_id") or ""
         js = """
 async (args) => {
-  const r = await fetch(args.url, {credentials: 'include',
-      headers: {'Accept': 'application/json'}});
+  const r = await fetch('/mooc2-ans/ai-evaluate/v2/answer/load-data?courseid='
+      + args.cid + '&cpi=' + args.cpi + '&clazzid=' + args.clz
+      + '&publishRelationUuid=' + args.uuid
+      + (args.lib ? '&libraryUuid=' + args.lib : ''),
+      {credentials: 'include', headers: {'Accept': 'application/json'}});
   return await r.text();
 }
 """
-        txt = page.evaluate(js, {"url": api})
+        txt = page.evaluate(js, {"cid": cid, "cpi": cpi, "clz": clz,
+                                 "uuid": uuid, "lib": lib_uuid})
         data = (json.loads(txt).get("data")) or {}
         score = data.get("answerScore")
         recs = data.get("answerRecords") or []
@@ -739,11 +730,12 @@ def _fill_quiz_status(ctx, course: dict, mid_url: str,
                 else:
                     reasons.append(f"{tag}:分组任务API空")
         elif atype == 77:
-            stu_url = it.get("_stu_url") or ""
-            status = _tea_url_status(ctx, course, stu_url, cpi) \
-                if stu_url else ""
+            uuid = it.get("_uuid") or ""
+            lib_uuid = it.get("_lib_uuid") or ""
+            status = _tea_url_status(ctx, course, uuid, lib_uuid, cpi) \
+                if uuid else ""
             if not status:
-                reasons.append(f"{tag}:stuUrl无状态")
+                reasons.append(f"{tag}:load-data无状态")
         elif atype == 42:
             status = _quiz42_status(ctx, mid_url, aid)
             if not status:
@@ -939,6 +931,8 @@ def collect_course(course: dict, mid_url: str, cookies: list[dict],
                 t.pop("_aid", None)
                 t.pop("atype", None)
                 t.pop("_stu_url", None)
+                t.pop("_uuid", None)
+                t.pop("_lib_uuid", None)
             result["ok"] = True
             result["tasks"] = tasks
             ctx.close()
