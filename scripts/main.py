@@ -1313,6 +1313,7 @@ def do_selftest() -> bool:
     import types as _types
     import quiz_browser as qb
     import utils as _u
+    from dedup import dedupe_by_identity as _ddfn
     from dedup import merge_quiz as _mq
     from dedup import merge_tasks
     fake = _types.SimpleNamespace(cookies=[
@@ -1343,6 +1344,33 @@ def do_selftest() -> bool:
         {"course_id": "219232606", "class_id": "153566712", "name": "高等数学A"}, now)
     check("随堂块解析出 1 条（纯状态行跳过）",
           len(_brows) == 1, str(len(_brows)))
+    # v2.4（用户报「一堆重复+无状态作业」）：同作业不同 id 的历史堆积
+    # 分桶去重——人造空间同名不同 workId 两条真实任务必须都保住
+    _dd_in = [
+        {"id": "a1", "kind": "work", "course_id": "C", "class_id": "K",
+         "title": "人造空间的热湿声光环境调控工程", "state": "pending",
+         "status": "未交", "score": "100"},
+        {"id": "a2", "kind": "work", "course_id": "C", "class_id": "K",
+         "title": "人造空间的热湿声光环境调控工程", "state": "done",
+         "status": "已完成", "score": "84"},
+        {"id": "b1", "kind": "quiz", "course_id": "C", "class_id": "K",
+         "title": "怎样创造有意义的人生？", "state": "unknown", "status": ""},
+        {"id": "b2", "kind": "quiz", "course_id": "C", "class_id": "K",
+         "title": "怎样创造有意义的人生？", "state": "unknown",
+         "status": "", "first_seen": "2026-11-12"},
+        {"id": "b3", "kind": "quiz", "course_id": "C", "class_id": "K",
+         "title": "怎样创造有意义的人生？", "state": "done",
+         "status": "已提交，最终得分 85 分"},
+    ]
+    _dd_out, _dd_n = _ddfn(_dd_in)
+    _rz = [t for t in _dd_out if "人造空间" in (t.get("title") or "")]
+    _cy = [t for t in _dd_out if "怎样创造" in (t.get("title") or "")]
+    check("同作业堆积去重：unknown 桶被有状态版本替代",
+          _dd_n == 2 and len(_cy) == 1 and _cy[0]["state"] == "done"
+          and _cy[0]["status"] == "已提交，最终得分 85 分", str(len(_dd_out)))
+    check("同名不同状态两条真实任务都保住（人造空间案例）",
+          len(_rz) == 2 and {t["state"] for t in _rz} == {"pending", "done"},
+          str([(t["state"], t["status"]) for t in _rz]))
     if len(_brows) == 1:
         t0 = _brows[0]
         check("随堂块字段齐（kind/分类/标题/状态/截止推算）",
