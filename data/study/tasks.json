@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-11-27T13:35:26+08:00",
-  "count": 137,
+  "updated_at": "2026-11-27T14:00:46+08:00",
+  "count": 65,
   "course_count": 14,
   "items": [
     {
@@ -26,54 +26,6 @@
       "course": "高等数学A",
       "course_id": "219232606",
       "title": "提问",
-      "status": "当前题目 已答 未答",
-      "state": "pending",
-      "deadline": "2026-10-19T11:13:11+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T21:48:12+08:00",
-      "last_seen": "2026-11-27T09:39:58+08:00"
-    },
-    {
-      "id": "219232606-990e465d56",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "提问",
-      "status": "当前题目 已答 未答",
-      "state": "pending",
-      "deadline": "2026-10-19T11:13:11+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T21:48:12+08:00",
-      "last_seen": "2026-11-27T05:12:49+08:00"
-    },
-    {
-      "id": "219232606-990e465d56",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "提问",
-      "status": "当前题目 已答 未答",
-      "state": "pending",
-      "deadline": "2026-10-19T11:13:11+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T21:48:12+08:00",
-      "last_seen": "2026-11-27T00:53:18+08:00"
-    },
-    {
-      "id": "219232606-990e465d56",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "提问",
       "status": "已提交，待教师公布正确答案",
       "state": "done",
       "deadline": "2026-10-19T11:13:11+08:00",
@@ -98,102 +50,6 @@
       "url": "",
       "first_seen": "2026-11-26T13:29:49+08:00",
       "last_seen": "2026-11-27T13:08:31+08:00"
-    },
-    {
-      "id": "214014802-6e1e90c2d0",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "title": "怎样创造有意义的人生？",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-10-23T17:50:00+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:29:49+08:00",
-      "last_seen": "2026-11-27T04:03:49+08:00"
-    },
-    {
-      "id": "214014802-6e1e90c2d0",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "title": "怎样创造有意义的人生？",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-10-23T17:50:00+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:29:49+08:00",
-      "last_seen": "2026-11-27T00:44:21+08:00"
-    },
-    {
-      "id": "214014802-6e1e90c2d0",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "title": "怎样创造有意义的人生？",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-10-23T17:50:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：10-23 17:50",
-      "url": "",
-      "first_seen": "2026-11-26T13:29:49+08:00",
-      "last_seen": "2026-11-26T21:25:59+08:00"
-    },
-    {
-      "id": "214014802-6e1e90c2d0",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "title": "怎样创造有意义的人生？",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-10-23T17:50:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：10-23 17:50",
-      "url": "",
-      "first_seen": "2026-11-26T13:29:49+08:00",
-      "last_seen": "2026-11-26T13:29:49+08:00"
-    },
-    {
-      "id": "219232606-931d561926",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第一章知识点总结（自己手写，写上学号姓名，后期发现盗图，截网图的成绩作废）",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-10-25T23:59:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：10-25 23:59",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-26T18:00:28+08:00"
-    },
-    {
-      "id": "219232606-931d561926",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第一章知识点总结（自己手写，写上学号姓名，后期发现盗图，截网图的成绩作废）",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-10-25T23:59:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：10-25 23:59",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-26T13:37:59+08:00"
     },
     {
       "id": "219232606-931d561926",
@@ -228,86 +84,6 @@
       "last_seen": "2026-11-27T09:39:58+08:00"
     },
     {
-      "id": "219232606-931d561926",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第一章知识点总结（自己手写，写上学号姓名，后期发现盗图，截网图的成绩作废）",
-      "status": "当前题目 已答 未答",
-      "state": "pending",
-      "deadline": "2026-10-25T23:59:11+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-27T05:12:49+08:00"
-    },
-    {
-      "id": "219232606-931d561926",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第一章知识点总结（自己手写，写上学号姓名，后期发现盗图，截网图的成绩作废）",
-      "status": "未提交",
-      "state": "pending",
-      "deadline": "2026-10-25T23:59:11+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-27T00:53:18+08:00"
-    },
-    {
-      "id": "219232606-931d561926",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第一章知识点总结（自己手写，写上学号姓名，后期发现盗图，截网图的成绩作废）",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-10-25T23:59:11+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-26T21:48:12+08:00"
-    },
-    {
-      "id": "219232606-1d3d885ab0",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第二章知识点总结",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-11-02T11:51:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-02 11:51",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-26T18:00:28+08:00"
-    },
-    {
-      "id": "219232606-1d3d885ab0",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第二章知识点总结",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-11-02T11:51:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-02 11:51",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-26T13:37:59+08:00"
-    },
-    {
       "id": "219232606-1d3d885ab0",
       "kind": "quiz",
       "category": "quiz",
@@ -324,70 +100,6 @@
       "last_seen": "2026-11-27T13:30:23+08:00"
     },
     {
-      "id": "219232606-1d3d885ab0",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第二章知识点总结",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-11-02T11:51:32+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-27T09:39:58+08:00"
-    },
-    {
-      "id": "219232606-1d3d885ab0",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第二章知识点总结",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-11-02T11:51:32+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-27T05:12:49+08:00"
-    },
-    {
-      "id": "219232606-1d3d885ab0",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第二章知识点总结",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-11-02T11:51:32+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-27T00:53:18+08:00"
-    },
-    {
-      "id": "219232606-1d3d885ab0",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第二章知识点总结",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-11-02T11:51:32+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-26T21:48:12+08:00"
-    },
-    {
       "id": "214014802-f01a199cff",
       "kind": "quiz",
       "category": "quiz",
@@ -402,22 +114,6 @@
       "url": "",
       "first_seen": "2026-11-26T13:29:49+08:00",
       "last_seen": "2026-11-26T21:25:59+08:00"
-    },
-    {
-      "id": "214014802-f01a199cff",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "title": "现在的青年还需要艰苦奋斗吗？",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-06T17:20:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-06 17:20",
-      "url": "",
-      "first_seen": "2026-11-26T13:29:49+08:00",
-      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "214014802-0b7ba3fdcf",
@@ -434,70 +130,6 @@
       "url": "",
       "first_seen": "2026-11-26T13:29:49+08:00",
       "last_seen": "2026-11-27T13:08:31+08:00"
-    },
-    {
-      "id": "214014802-0b7ba3fdcf",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "title": "绘梦者：AI时代的坚守与突破",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-06T17:50:00+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:29:49+08:00",
-      "last_seen": "2026-11-27T04:03:49+08:00"
-    },
-    {
-      "id": "214014802-0b7ba3fdcf",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "title": "绘梦者：AI时代的坚守与突破",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-06T17:50:00+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:29:49+08:00",
-      "last_seen": "2026-11-27T00:44:21+08:00"
-    },
-    {
-      "id": "214014802-0b7ba3fdcf",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "title": "绘梦者：AI时代的坚守与突破",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-06T17:50:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-06 17:50",
-      "url": "",
-      "first_seen": "2026-11-26T13:29:49+08:00",
-      "last_seen": "2026-11-26T21:25:59+08:00"
-    },
-    {
-      "id": "214014802-0b7ba3fdcf",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "title": "绘梦者：AI时代的坚守与突破",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-06T17:50:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-06 17:50",
-      "url": "",
-      "first_seen": "2026-11-26T13:29:49+08:00",
-      "last_seen": "2026-11-26T13:29:49+08:00"
     },
     {
       "id": "228141406-dad3429abf",
@@ -516,7 +148,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204754",
       "start_time": "2026-11-09T20:21:00+08:00",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "214014802-e05313f151",
@@ -535,22 +167,6 @@
       "last_seen": "2026-11-26T21:25:59+08:00"
     },
     {
-      "id": "214014802-e05313f151",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "title": "如果让你说一句没够代表中国精神的话语，你会说什么？",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-13T16:19:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-13 16:19",
-      "url": "",
-      "first_seen": "2026-11-26T13:29:49+08:00",
-      "last_seen": "2026-11-26T13:29:49+08:00"
-    },
-    {
       "id": "214014802-95611e4af8",
       "kind": "quiz",
       "category": "quiz",
@@ -567,54 +183,6 @@
       "last_seen": "2026-11-26T21:25:59+08:00"
     },
     {
-      "id": "214014802-95611e4af8",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "title": "从中国共产党人的精神谱系中任选一个，讲一讲它的形成和内涵？",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-13T17:47:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-13 17:47",
-      "url": "",
-      "first_seen": "2026-11-26T13:29:49+08:00",
-      "last_seen": "2026-11-26T13:29:49+08:00"
-    },
-    {
-      "id": "219232606-23b25949e5",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第三章知识点总结（手写+学号姓名）",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-11-15T23:40:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-15 23:40",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-26T18:00:28+08:00"
-    },
-    {
-      "id": "219232606-23b25949e5",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第三章知识点总结（手写+学号姓名）",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-11-15T23:40:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-15 23:40",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-26T13:37:59+08:00"
-    },
-    {
       "id": "219232606-23b25949e5",
       "kind": "quiz",
       "category": "quiz",
@@ -629,70 +197,6 @@
       "url": "",
       "first_seen": "2026-11-26T13:37:59+08:00",
       "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-23b25949e5",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第三章知识点总结（手写+学号姓名）",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-11-15T23:40:49+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-27T09:39:58+08:00"
-    },
-    {
-      "id": "219232606-23b25949e5",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第三章知识点总结（手写+学号姓名）",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-11-15T23:40:49+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-27T05:12:49+08:00"
-    },
-    {
-      "id": "219232606-23b25949e5",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第三章知识点总结（手写+学号姓名）",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-11-15T23:40:49+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-27T00:53:18+08:00"
-    },
-    {
-      "id": "219232606-23b25949e5",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第三章知识点总结（手写+学号姓名）",
-      "status": "已提交，待教师公布正确答案",
-      "state": "done",
-      "deadline": "2026-11-15T23:40:49+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T13:37:59+08:00",
-      "last_seen": "2026-11-26T21:48:12+08:00"
     },
     {
       "id": "219232606-5f29d3d202",
@@ -710,7 +214,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58467962",
       "first_seen": "2026-11-13T18:38:58+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "219232606-dc942471f7",
@@ -728,7 +232,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58558183",
       "first_seen": "2026-11-16T17:34:53+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "228141406-196238fb25",
@@ -746,7 +250,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491059",
       "first_seen": "2026-11-16T18:32:54+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "228141406-183effa9b4",
@@ -764,7 +268,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491026",
       "first_seen": "2026-11-16T18:32:54+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "228141406-12104c89e4",
@@ -782,7 +286,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491082",
       "first_seen": "2026-11-16T18:32:54+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "201780805-ba99d83e8f",
@@ -800,7 +304,8 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=58170556",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00",
+      "score": "100"
     },
     {
       "id": "219232606-1621c779be",
@@ -818,7 +323,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58558183",
       "first_seen": "2026-11-18T07:26:26+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "201780805-8722437faf",
@@ -836,7 +341,8 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=58170689",
       "first_seen": "2026-11-13T14:28:50+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00",
+      "score": "100"
     },
     {
       "id": "268016715-fc0e283afd",
@@ -864,38 +370,6 @@
       "title": "分组任务",
       "status": "已结束（任务详情页）",
       "state": "unknown",
-      "deadline": "2026-11-25T17:53:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-25 17:53",
-      "url": "",
-      "first_seen": "2026-11-26T15:48:24+08:00",
-      "last_seen": "2026-11-26T20:16:09+08:00"
-    },
-    {
-      "id": "228141406-451fca03b5",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "建筑环境与能源应用工程概论",
-      "course_id": "228141406",
-      "title": "分组任务",
-      "status": "已结束（任务详情页）",
-      "state": "unknown",
-      "deadline": "2026-11-25T17:53:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-25 17:53",
-      "url": "",
-      "first_seen": "2026-11-26T15:48:24+08:00",
-      "last_seen": "2026-11-26T15:48:24+08:00"
-    },
-    {
-      "id": "228141406-451fca03b5",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "建筑环境与能源应用工程概论",
-      "course_id": "228141406",
-      "title": "分组任务",
-      "status": "已结束（任务详情页）",
-      "state": "unknown",
       "deadline": "2026-11-25T17:53:34+08:00",
       "deadline_exact": true,
       "time_hint": "",
@@ -904,38 +378,6 @@
       "last_seen": "2026-11-27T11:55:59+08:00"
     },
     {
-      "id": "228141406-451fca03b5",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "建筑环境与能源应用工程概论",
-      "course_id": "228141406",
-      "title": "分组任务",
-      "status": "已结束（任务详情页）",
-      "state": "unknown",
-      "deadline": "2026-11-25T17:53:34+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T15:48:24+08:00",
-      "last_seen": "2026-11-27T07:26:12+08:00"
-    },
-    {
-      "id": "228141406-451fca03b5",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "建筑环境与能源应用工程概论",
-      "course_id": "228141406",
-      "title": "分组任务",
-      "status": "已结束（任务详情页）",
-      "state": "unknown",
-      "deadline": "2026-11-25T17:53:34+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T15:48:24+08:00",
-      "last_seen": "2026-11-27T02:57:01+08:00"
-    },
-    {
       "id": "246136739-6bee3ad362",
       "kind": "quiz",
       "category": "quiz",
@@ -949,103 +391,7 @@
       "time_hint": "结束时间：11-25 18:18",
       "url": "",
       "first_seen": "2026-11-26T14:42:51+08:00",
-      "last_seen": "2026-11-27T10:49:06+08:00"
-    },
-    {
-      "id": "246136739-6bee3ad362",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "国家安全教育",
-      "course_id": "246136739",
-      "title": "1.作为青年大学生，你谈一谈为什么要在新时代坚持和发展“枫桥经验”？这对维护社会安全有什么意义？",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-25T18:18:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-25 18:18",
-      "url": "",
-      "first_seen": "2026-11-26T14:42:51+08:00",
-      "last_seen": "2026-11-27T06:19:51+08:00"
-    },
-    {
-      "id": "246136739-6bee3ad362",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "国家安全教育",
-      "course_id": "246136739",
-      "title": "1.作为青年大学生，你谈一谈为什么要在新时代坚持和发展“枫桥经验”？这对维护社会安全有什么意义？",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-25T18:18:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-25 18:18",
-      "url": "",
-      "first_seen": "2026-11-26T14:42:51+08:00",
-      "last_seen": "2026-11-27T01:59:59+08:00"
-    },
-    {
-      "id": "246136739-6bee3ad362",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "国家安全教育",
-      "course_id": "246136739",
-      "title": "1.作为青年大学生，你谈一谈为什么要在新时代坚持和发展“枫桥经验”？这对维护社会安全有什么意义？",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-25T18:18:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-25 18:18",
-      "url": "",
-      "first_seen": "2026-11-26T14:42:51+08:00",
-      "last_seen": "2026-11-26T22:30:47+08:00"
-    },
-    {
-      "id": "246136739-6bee3ad362",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "国家安全教育",
-      "course_id": "246136739",
-      "title": "1.作为青年大学生，你谈一谈为什么要在新时代坚持和发展“枫桥经验”？这对维护社会安全有什么意义？",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-25T18:18:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-25 18:18",
-      "url": "",
-      "first_seen": "2026-11-26T14:42:51+08:00",
-      "last_seen": "2026-11-26T19:10:47+08:00"
-    },
-    {
-      "id": "246136739-6bee3ad362",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "国家安全教育",
-      "course_id": "246136739",
-      "title": "1.作为青年大学生，你谈一谈为什么要在新时代坚持和发展“枫桥经验”？这对维护社会安全有什么意义？",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-25T18:18:00+08:00",
-      "deadline_exact": false,
-      "time_hint": "结束时间：11-25 18:18",
-      "url": "",
-      "first_seen": "2026-11-26T14:42:51+08:00",
-      "last_seen": "2026-11-26T14:42:51+08:00"
-    },
-    {
-      "id": "219232606-033713d017",
-      "kind": "exam",
-      "category": "exam",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第四章不定积分测试题",
-      "status": "已完成",
-      "state": "done",
-      "deadline": "2026-11-27T23:15:23+08:00",
-      "deadline_exact": false,
-      "time_hint": "剩余9小时45分钟",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "219232606-5b357a06f1",
@@ -1058,12 +404,12 @@
       "label": "考试",
       "status": "已完成",
       "state": "done",
-      "deadline": "2026-11-27T23:16:01+08:00",
+      "deadline": "2026-11-27T23:16:50+08:00",
       "deadline_exact": false,
-      "remaining_text": "83 分 剩余9小时45分钟",
+      "remaining_text": "83 分 剩余9小时19分钟",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "228141406-f9f21da890",
@@ -1082,38 +428,6 @@
       "last_seen": "2026-11-27T11:55:59+08:00"
     },
     {
-      "id": "228141406-f9f21da890",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "建筑环境与能源应用工程概论",
-      "course_id": "228141406",
-      "title": "暗流之下：管网工程师的抉择",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-28T00:00:00+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T15:48:24+08:00",
-      "last_seen": "2026-11-27T07:26:12+08:00"
-    },
-    {
-      "id": "228141406-f9f21da890",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "建筑环境与能源应用工程概论",
-      "course_id": "228141406",
-      "title": "暗流之下：管网工程师的抉择",
-      "status": "",
-      "state": "unknown",
-      "deadline": "2026-11-28T00:00:00+08:00",
-      "deadline_exact": true,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-26T15:48:24+08:00",
-      "last_seen": "2026-11-27T02:57:01+08:00"
-    },
-    {
       "id": "228141406-6acf5f8fe4",
       "kind": "work",
       "course": "建筑环境与能源应用工程概论",
@@ -1124,12 +438,12 @@
       "label": "",
       "status": "待批阅",
       "state": "submitted",
-      "deadline": "2026-11-30T23:58:38+08:00",
+      "deadline": "2026-11-30T23:58:33+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余82小时28分钟",
+      "remaining_text": "剩余82小时1分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771731",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "228141406-08ea8dd7e1",
@@ -1142,12 +456,12 @@
       "label": "",
       "status": "待批阅",
       "state": "submitted",
-      "deadline": "2026-11-30T23:58:38+08:00",
+      "deadline": "2026-11-30T23:58:33+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余82小时28分钟",
+      "remaining_text": "剩余82小时1分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771753",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "268008349-7bcd10c306",
@@ -1160,12 +474,12 @@
       "label": "考试",
       "status": "已完成",
       "state": "done",
-      "deadline": "2026-12-13T23:59:47+08:00",
+      "deadline": "2026-12-13T23:59:37+08:00",
       "deadline_exact": false,
-      "remaining_text": "100 分 剩余394小时29分钟",
+      "remaining_text": "100 分 剩余394小时2分钟",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=268008349&clazzid=157042838&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "214014802-99a973636b",
@@ -1178,13 +492,12 @@
       "label": "互评",
       "status": "待批阅",
       "state": "submitted",
-      "deadline": "2026-12-31T09:50:51+08:00",
+      "deadline": "2026-12-31T09:51:41+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余812小时20分钟",
+      "remaining_text": "剩余811小时54分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=214014802&classId=153270975&workId=58788782",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00",
-      "score": "100"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "268371439-d050c4254c",
@@ -1202,7 +515,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=268371439&clazzid=158553251&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "228141406-497e31d3cf",
@@ -1220,7 +533,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=57526332",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "228141406-0cc488bb65",
@@ -1238,7 +551,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771802",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "228141406-ec9f34e1ca",
@@ -1256,7 +569,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771787",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "228141406-6b7783323d",
@@ -1274,7 +587,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771769",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "228141406-147d7af1f3",
@@ -1292,7 +605,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204806",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "228141406-6713fb5201",
@@ -1310,7 +623,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204711",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "260598171-231e2e59be",
@@ -1328,8 +641,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58802014",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00",
-      "score": "20"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "260598171-bc92f57b1c",
@@ -1347,8 +659,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58802004",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00",
-      "score": "20"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "260598171-def44f4b92",
@@ -1366,8 +677,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58530024",
       "first_seen": "2026-11-18T10:27:18+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00",
-      "score": "100"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "260598171-61a8809da6",
@@ -1385,8 +695,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58301119",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00",
-      "score": "100"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "260598171-1c99ab59f3",
@@ -1404,8 +713,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57984053",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00",
-      "score": "100"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "260598171-72b229d891",
@@ -1423,8 +731,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57648797",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00",
-      "score": "100"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "260598171-a6fef1114b",
@@ -1442,8 +749,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57576073",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00",
-      "score": "100"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "260598171-96bd1e26e2",
@@ -1461,8 +767,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57576023",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00",
-      "score": "100"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "260598171-8fecdc421f",
@@ -1480,8 +785,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57297581",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00",
-      "score": "100"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "260598171-b7fb842da0",
@@ -1499,8 +803,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=56895598",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00",
-      "score": "100"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "260598171-4e8c5c943b",
@@ -1518,8 +821,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=56430556",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00",
-      "score": "100"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "201780805-51f684486f",
@@ -1537,7 +839,8 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=57584189",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00",
+      "score": "100"
     },
     {
       "id": "219232606-25210e679f",
@@ -1555,7 +858,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58841797",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "219232606-725c9fce61",
@@ -1573,7 +876,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58763973",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "219232606-6651af1cfb",
@@ -1591,7 +894,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58841797",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "219232606-9f8fde3d38",
@@ -1609,7 +912,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58673369",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "219232606-2928dd1aac",
@@ -1627,7 +930,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58763973",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "219232606-d7a743416f",
@@ -1645,7 +948,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58673369",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "219232606-7bfb3fd544",
@@ -1663,7 +966,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58370553",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "219232606-dc63b1d597",
@@ -1681,7 +984,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58370553",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "219232606-a0405ca270",
@@ -1699,7 +1002,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58263400",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "219232606-f1dafa4ec2",
@@ -1717,7 +1020,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-15T15:26:24+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "219232606-fcedf41184",
@@ -1735,7 +1038,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "219232606-9eea2c518b",
@@ -1753,7 +1056,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "205372276-04e9b87b21",
@@ -1771,7 +1074,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=205372276&classId=154422672&workId=56132865",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "205372276-53a0490202",
@@ -1789,7 +1092,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=205372276&classId=154422672&workId=56132395",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "205372276-b727ee1d09",
@@ -1807,423 +1110,23 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=205372276&clazzid=154422672&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
-      "id": "219232606-bb59964f24",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "4.3分部积分法",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-b195f9a22b",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "4.2换元积分法（第2类换元积分法）",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-0e3b0b4ef8",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "4.2换元积分法（第一类换元积分法）",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-1255afc59d",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "4.1不定积分的概念与性质",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-ad48c430d7",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "3-6函数图形的描绘3-7曲率",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-33dd82cf83",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "3-5函数的极值与最值",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-72565825c3",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "3.3泰勒公式 3.4函数的单调性及曲线的凹凸性",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-5e8ca81322",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "3.2洛必达法则",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-5993425085",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "3.1微分中值定理",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-f66cf250da",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "2.4参数方程的导数2.5微分",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-edf945dcfc",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "2.3高阶导数2.4隐函数求导",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-a235c563d3",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "2.2函数的求导法则",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-0c628f0dee",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "1.10闭区间连续函数的性质",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-0a534c0d21",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "2.1导数概念",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-9f75259c31",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "1.8 1.9函数的连续性",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-ce1f004044",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "1.6两个重要极限1.7无穷小比较",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-bbcaed6af4",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "1.4，1.5无穷小与无穷大及极限的运算法则",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-aa8f29b284",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "1.3函数的极限",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-c4f57bda60",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "1.2数列的极限作业",
-      "status": "已互评",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-db08163558",
-      "kind": "work",
-      "category": "work",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "1.1函数的概念与性质",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-378c0387a3",
+      "id": "268371439-dc895617cf",
       "kind": "exam",
       "category": "exam",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "期中测试题（前三章）",
+      "course": "2026级-校规校纪",
+      "course_id": "268371439",
+      "title": "2026级新生校规校纪考试",
       "status": "已完成",
       "state": "done",
       "deadline": null,
       "deadline_exact": false,
       "time_hint": "",
       "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-46e15cc654",
-      "kind": "exam",
-      "category": "exam",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第二章测试题",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "219232606-3a5ceda3e8",
-      "kind": "exam",
-      "category": "exam",
-      "course": "高等数学A",
-      "course_id": "219232606",
-      "title": "第一章测试题",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "205372276-0c07a7eb52",
-      "kind": "work",
-      "category": "work",
-      "course": "军事理论课教学",
-      "course_id": "205372276",
-      "title": "2026-2027（1）作业2",
-      "status": "待批阅",
-      "state": "submitted",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "205372276-0ab5d07c68",
-      "kind": "work",
-      "category": "work",
-      "course": "军事理论课教学",
-      "course_id": "205372276",
-      "title": "2026-2027（1）作业",
-      "status": "待批阅",
-      "state": "submitted",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
-    },
-    {
-      "id": "205372276-4231455b4e",
-      "kind": "exam",
-      "category": "exam",
-      "course": "军事理论课教学",
-      "course_id": "205372276",
-      "title": "2026-2027（1）军事理论结课测试",
-      "status": "已完成",
-      "state": "done",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T13:30:23+08:00",
-      "last_seen": "2026-11-27T13:30:23+08:00"
+      "first_seen": "2026-11-27T13:57:15+08:00",
+      "last_seen": "2026-11-27T13:57:15+08:00"
     },
     {
       "id": "214014802-86cdd0a71a",
@@ -2240,70 +1143,6 @@
       "url": "",
       "first_seen": "2026-11-27T00:44:21+08:00",
       "last_seen": "2026-11-27T13:08:31+08:00"
-    },
-    {
-      "id": "214014802-86cdd0a71a",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "title": "小组视频作业。",
-      "status": "",
-      "state": "unknown",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T00:44:21+08:00",
-      "last_seen": "2026-11-27T04:03:49+08:00"
-    },
-    {
-      "id": "214014802-86cdd0a71a",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "思想道德与法治（校级网络课程）",
-      "course_id": "214014802",
-      "title": "小组视频作业。",
-      "status": "",
-      "state": "unknown",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "",
-      "url": "",
-      "first_seen": "2026-11-27T00:44:21+08:00",
-      "last_seen": "2026-11-27T00:44:21+08:00"
-    },
-    {
-      "id": "228141406-f9f21da890",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "建筑环境与能源应用工程概论",
-      "course_id": "228141406",
-      "title": "暗流之下：管网工程师的抉择",
-      "status": "",
-      "state": "unknown",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "剩余:1天",
-      "url": "",
-      "first_seen": "2026-11-26T15:48:24+08:00",
-      "last_seen": "2026-11-26T20:16:09+08:00"
-    },
-    {
-      "id": "228141406-f9f21da890",
-      "kind": "quiz",
-      "category": "quiz",
-      "course": "建筑环境与能源应用工程概论",
-      "course_id": "228141406",
-      "title": "暗流之下：管网工程师的抉择",
-      "status": "",
-      "state": "unknown",
-      "deadline": null,
-      "deadline_exact": false,
-      "time_hint": "剩余:1天",
-      "url": "",
-      "first_seen": "2026-11-26T15:48:24+08:00",
-      "last_seen": "2026-11-26T15:48:24+08:00"
     }
   ]
 }
