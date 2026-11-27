@@ -495,7 +495,7 @@ def diary_facts(kind: str, today: date) -> str:
     # 今日名言只在晚（night）档——三路不重复原则（v1.5.19 起 dusk 也排除）
     if kind == "night" and quotes_today:
         lines.append("今天从你日记里摘出来的话：")
-        for q in quotes_today[:3]:
+        for q in quotes_today[:12]:
             lines.append(f"- 「{q.get('text')}」")
             if q.get("comment"):
                 lines.append(f"  点评：{q['comment']}")
@@ -535,7 +535,20 @@ def task_overview(now: datetime, tasks: list[dict] | None = None) -> str:
         parts.append(f"7 天内还有 {week_n} 条")
     if upc:
         parts.append(f"另有 {upc} 条未开始（暂不可做）")
-    return "，".join(parts) + "。"
+    head = "，".join(parts) + "。"
+    # v2.4（用户 2026-11-27：通知里必须列出具体作业条目+链接，只有数字没法行动）
+    lines = [head]
+    if act:
+        lines.append("📋 待做清单：")
+        for t in act:
+            lines += _task_line(t)
+    if upc:
+        upc_ts = [t for t in kept if t.get("state") == "upcoming"]
+        if upc_ts:
+            lines.append("⏳ 未开始：")
+            for t in upc_ts[:12]:
+                lines += _task_line(t)
+    return "\n".join(lines)
 
 
 # v1.7.2：飞书清单里每条作业的状态标注（用户 2026-11-17 要求：「12 点那一条的
@@ -605,7 +618,7 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
                  if t.get("first_seen") == today_iso and t.get("state") == "pending"]
         if fresh:
             lines = [f"🆕 今天新发的作业 {len(fresh)} 条："]
-            for t in fresh[:3]:
+            for t in fresh[:12]:
                 lines += _task_line(t)
             if len(fresh) > 3:
                 lines.append(f"（还有 {len(fresh) - 3} 条，全量在 README）")
@@ -615,7 +628,7 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
                 and (parse_datetime(t["deadline"]) or now) <= now + timedelta(days=7)]
         if week:
             lines = [f"⏳ 7 天内截止 {len(week)} 条："]
-            for t in week[:3]:
+            for t in week[:12]:
                 lines += _task_line(t)
             if len(week) > 3:
                 lines.append(f"（还有 {len(week) - 3} 条，全量在 README）")
@@ -638,7 +651,7 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
                  and now <= (parse_datetime(t["deadline"]) or now) <= day_end]
         if today:
             lines = [f"🔥 今天 24:00 前截止还没交的 {len(today)} 条："]
-            for t in today[:3]:
+            for t in today[:12]:
                 lines += _task_line(t)
             if len(today) > 3:
                 lines.append(f"（还有 {len(today) - 3} 条，全量在 README）")
@@ -657,7 +670,7 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
                 and (parse_datetime(t["deadline"]) or now) <= now + timedelta(hours=48)]
         if soon:
             lines = [f"🔥 48 小时内截止还没交的 {len(soon)} 条："]
-            for t in soon[:3]:
+            for t in soon[:12]:
                 lines += _task_line(t)
             if len(soon) > 3:
                 lines.append(f"（还有 {len(soon) - 3} 条，全量在 README）")
