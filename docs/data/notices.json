@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-11-27T04:32:10+08:00",
-  "count": 129,
+  "updated_at": "2026-11-27T10:28:49+08:00",
+  "count": 130,
   "sources": [
     "校网通知公告",
     "教务处",
@@ -101,6 +101,25 @@
       ],
       "score": 3,
       "first_seen": "2026-11-13",
+      "last_seen": "2026-11-27"
+    },
+    {
+      "id": "-cdf20bb2b8",
+      "title": "关于河南省第二批科教融汇协同育人项目推荐名单的公示",
+      "url": "https://jwc.huuc.edu.cn/info/1019/5586.htm",
+      "source": "教务处",
+      "publish_date": "2026-11-27",
+      "description": "",
+      "deadline": null,
+      "category": "科研",
+      "reason": "科研项目公示，本科生难直接参与",
+      "tags": [
+        "科研",
+        "公示",
+        "协同育人"
+      ],
+      "score": 2,
+      "first_seen": "2026-11-27",
       "last_seen": "2026-11-27"
     },
     {
