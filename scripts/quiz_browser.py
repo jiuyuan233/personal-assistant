@@ -76,6 +76,9 @@ def classify_quiz(status: str) -> str:
         # v1.6.6：未开始单独判 upcoming（显示在清单、标「未开始」，
         # 不进待完成/urgent6）
         return "upcoming"
+    if s.startswith("已结束"):
+        # v2.7：已结束（详情页确认/未提交）= 活动窗口关闭，状态已终态
+        return "done"
     if s in QUIZ_DONE:
         return "done"
     if s in QUIZ_SUBMITTED:
@@ -945,6 +948,13 @@ def collect_course(course: dict, mid_url: str, cookies: list[dict],
                                                      need, cpi)
                 result["diag"].extend(_reasons)
             result["diag"].append(f"补状态 {filled}/{len(need)}")
+            # v2.7：type 映射给调用方（并集合并时清除课堂类旧条目）
+            _tm: dict = {}
+            for it in api_items:
+                nt = re.sub(r"\s+", "", str(it.get("nameOne") or ""))
+                _tm[(nt, str(it.get("id") or ""))] = it.get("type")
+                _tm.setdefault((nt, ""), it.get("type"))  # 仅标题 fallback
+            result["api_type_map"] = _tm
             # 审计红线（§2.5）：_aid/atype 是每生活动 ID，不落盘
             for t in tasks:
                 t.pop("_aid", None)
