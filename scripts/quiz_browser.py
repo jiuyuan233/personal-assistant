@@ -183,7 +183,17 @@ LIST_ITEM_JS = """
   const out = [];
   for (const el of document.querySelectorAll('li, .listItem, .item, [onclick]')) {
     const t = (el.innerText || '').trim();
-    if (t && t.length > 5 && t.length < 500 && t.includes('\\n')) out.push(t);
+    if (t && t.length > 5 && t.length < 500 && t.includes('\\n')) {
+      // v2.4：抓块的任务链接——work/list 的 li 带 data 属性（完整
+      // work/task 链接，含 answerId/enc——飞书通知「去做」链接来源）
+      let href = el.getAttribute('data') || '';
+      if (!href || !href.startsWith('http')) {
+        const a = el.querySelector('a[href*="work/task"], a[href*="dowork"],'
+            + ' a[href*="answerId"]');
+        href = a ? a.href : '';
+      }
+      out.push(JSON.stringify({text: t, href: href.startsWith('http') ? href : ''}));
+    }
   }
   return [...new Set(out)];
 }
@@ -263,6 +273,15 @@ def parse_active_blocks(blocks: list[str], course: dict, now: datetime) -> list[
     tasks: list[dict] = []
     seen: set[str] = set()
     for b in blocks or []:
+        # v2.4：块是 JSON 串 {"text":…, "href":…}（LIST_ITEM_JS 输出）——
+        # href 是飞书通知「去做」链接（work/task 含 answerId/enc 全参数）
+        href = ""
+        try:
+            obj = json.loads(b)
+            href = str(obj.get("href") or "")
+            b = str(obj.get("text") or b)
+        except Exception:
+            pass
         lines = [l.strip() for l in (b or "").splitlines() if l.strip()]
         if not lines or len(lines) > 12:
             continue
@@ -300,7 +319,7 @@ def parse_active_blocks(blocks: list[str], course: dict, now: datetime) -> list[
             "deadline": deadline,
             "deadline_exact": exact,
             "time_hint": time_hint,
-            "url": "",
+            "url": href,
             "first_seen": now.isoformat(timespec="seconds"),
         })
     return tasks
@@ -951,6 +970,14 @@ def _merge_work_exam(tasks: list[dict], blocks: list[str], kind: str,
         if t.get("kind") == kind:
             seen.add(re.sub(r"\s+", "", t.get("title") or ""))
     for b in blocks or []:
+        # v2.4：块是 JSON 串 {"text":…, "href":…}——href 是飞书通知链接
+        href = ""
+        try:
+            obj = json.loads(b)
+            href = str(obj.get("href") or "")
+            b = str(obj.get("text") or b)
+        except Exception:
+            pass
         lines = [l.strip() for l in (b or "").splitlines() if l.strip()]
         if not lines or len(lines) > 12:
             continue
@@ -984,7 +1011,7 @@ def _merge_work_exam(tasks: list[dict], blocks: list[str], kind: str,
             "deadline": deadline,
             "deadline_exact": exact,
             "time_hint": time_hint,
-            "url": "",
+            "url": href,
             "first_seen": now.isoformat(timespec="seconds"),
         })
 
