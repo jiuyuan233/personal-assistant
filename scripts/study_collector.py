@@ -659,7 +659,11 @@ def run() -> dict:
                     log(f"[quiz] {cname} 随堂采集失败：{res.get('error', '')[:120]}",
                         level="WARN")
                     continue
-                tasks_q = res.get("tasks") or []
+                # v2.4c：只收随堂作业（kind=quiz）——浏览器块的 work/exam
+                # 与 requests 主链双源重复（同作业两条入库，用户报的重复根因）；
+                # work/exam 以 requests 主链为准，浏览器块仅记 diag
+                tasks_q = [t for t in (res.get("tasks") or [])
+                           if t.get("kind") == "quiz"]
                 diag = "; ".join(str(d) for d in res.get("diag") or [])
                 # 「有任一解析结果」才算覆盖这门课；全 0 保留旧数据（旧数据保命）
                 if tasks_q or res.get("work_blocks") or res.get("exam_blocks"):
