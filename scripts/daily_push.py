@@ -578,14 +578,6 @@ def _task_line(t: dict) -> list[str]:
     return out
 
 
-def _actionable_sorted(now: datetime, tasks: list | None = None) -> list[dict]:
-    """能做的作业（待完成且未逾期），按截止近→远。与 README 任务清单同口径。"""
-    import render_readme as rr
-    if tasks is None:
-        tasks = load_list(DATA_DIR / "study" / "tasks.json")
-    kept, _ = rr.actionable(tasks, now)
-    return sort_by_deadline(kept)
-
 
 def _full_todo_block(now: datetime, tasks: list[dict] | None = None) -> str:
     """全部可做的作业清单（study_facts 同口径全列），无可做时返回 ""。
@@ -606,14 +598,16 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
                tasks: list[dict] | None = None) -> str:
     """确定性清单，拼在 AI prose 后面。**不经过 AI**，保证用户点名的内容一条不漏。
 
-    分工（用户 2026-11-14：「作业部分可以重复」+ 三时段增值）：
-    早 = 作业总览 + 公告总览（公告只在早报）；
-    午 = 今日新发作业 + 7 天内截止 + 每日英语 + 名言回顾；
-    晚 = 48h 截止未交 + 本周盘点 + 明日预告 + 明早天气 + 当天日记名言（在 diary_facts）。
+    分工（v2.11 定稿，用户 2026-11-28：「一份作业写三遍——只显示全部的作业，
+    在后面加上截止时间就行了，没截止时间就说未知」）：
+    早 = 全部可做作业清单 + 公告总览（公告只在早报）；
+    午 = 全部可做作业清单 + 每日英语 + 名言回顾；
+    晚（傍晚）= 全部可做作业清单 + IT之家科技热点（本档独有）；
+    夜 = 全部可做作业清单 + 本周盘点（纯数字）+ 明早天气 + 当天日记名言（在 diary_facts）。
+    **作业条目只列一遍**（全量清单），不再有「今天截止/48h/新发」子节。
     另有独立的 6h 紧急提醒通道（urgent6_pick），不受三时段「每天一次」限制。
     """
     parts: list[str] = []
-    today_iso = now.date().isoformat()
     if kind == "morning":
         sf, kept_m = study_facts(now, tasks)
         if kept_m:
@@ -631,23 +625,6 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
         blk = _full_todo_block(now, tasks)
         if blk:
             parts.append(blk)
-        kept = _actionable_sorted(now, tasks)
-        all_tasks = tasks if tasks is not None else load_list(DATA_DIR / "study" / "tasks.json")
-        fresh = [t for t in all_tasks
-                 if t.get("first_seen") == today_iso and t.get("state") == "pending"]
-        if fresh:
-            lines = [f"🆕 今天新发的作业 {len(fresh)} 条："]
-            for t in fresh:
-                lines += _task_line(t)
-            parts.append("\n".join(lines))
-        week = [t for t in kept
-                if t.get("deadline")
-                and (parse_datetime(t["deadline"]) or now) <= now + timedelta(days=7)]
-        if week:
-            lines = [f"⏳ 7 天内截止 {len(week)} 条："]
-            for t in week:
-                lines += _task_line(t)
-            parts.append("\n".join(lines))
         en = daily_english()
         if en:
             parts.append("🇬🇧 今日英语一句\n" + en)
@@ -655,43 +632,22 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
         if recall:
             parts.append("📖 名言回顾（你日记里的话）\n" + recall)
     elif kind == "dusk":
-        # v1.5.19 傍晚冲刺：今天 24:00 前截止的作业（全天最后一次「还来得及」）
-        # + IT之家科技热点（本档独有）。不含英语/名言回顾（午安专属）与天气（晚安专属）。
+        # v1.5.19 傍晚冲刺：全部可做作业清单 + IT之家科技热点（本档独有）。
+        # 不含英语/名言回顾（午安专属）与天气（晚安专属）。
         # v1.7.1（用户 2026-11-17 报）：没有作业时也要明说并夸他——空清单不是
         # 直接跳过，而是确定性写「全部搞定」，AI 挂了这条也在。
-        kept = _actionable_sorted(now, tasks)
-        day_end = now.replace(hour=23, minute=59, second=59)
-        today = [t for t in kept
-                 if t.get("deadline")
-                 and now <= (parse_datetime(t["deadline"]) or now) <= day_end]
-        if today:
-            lines = [f"🔥 今天 24:00 前截止还没交的 {len(today)} 条："]
-            for t in today:
-                lines += _task_line(t)
-            parts.append("\n".join(lines))
-        else:
-            parts.append("🎉 今天截止的作业：**全部搞定，0 条要赶**。\n"
-                         "该交的都交了，今晚不用再惦记作业——哼，千得漂亮。")
-        # v2.10：傍晚档同样带全部可做作业清单（之前只列今天截止的，
-        # 明天/后天截止的通知里看不到——用户 2026-11-28 点名）
+        # v2.11：删「今天 24:00 前截止」子节——作业只列一遍（全量清单）。
         blk = _full_todo_block(now, tasks)
         if blk:
             parts.append(blk)
+        else:
+            parts.append("🎉 待完成作业：**全部搞定，0 条要赶**。\n"
+                         "该交的都交了，今晚不用再惦记作业——哼，干得漂亮。")
         # tech_provider 可注入（selftest 离线确定性）；缺省联 IT之家 RSS
         tn = (tech_provider or tech_news)()
         if tn:
             parts.append("📰 今日科技热点\n" + tn)
     else:
-        kept = _actionable_sorted(now, tasks)
-        soon = [t for t in kept
-                if t.get("deadline")
-                and (parse_datetime(t["deadline"]) or now) <= now + timedelta(hours=48)]
-        if soon:
-            lines = [f"🔥 48 小时内截止还没交的 {len(soon)} 条："]
-            for t in soon:
-                lines += _task_line(t)
-            parts.append("\n".join(lines))
-        # v2.10：晚安档同样带全部可做作业清单（48h 子节只作紧急高亮）
         blk = _full_todo_block(now, tasks)
         if blk:
             parts.append(blk)
@@ -702,15 +658,6 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
         open_w = [t for t in this_week if t.get("state") == "pending"]
         parts.append(f"📊 本周新发作业 {len(this_week)} 条：已交/处理 {len(done_w)} 条，"
                      f"还压着 {len(open_w)} 条。")
-        tomorrow_iso = (now.date() + timedelta(days=1)).isoformat()
-        due_tmr = [t for t in kept
-                   if t.get("deadline")
-                   and (parse_datetime(t["deadline"]) or now).date().isoformat() == tomorrow_iso]
-        if due_tmr:
-            lines = [f"📅 明天截止 {len(due_tmr)} 条："]
-            for t in due_tmr[:2]:
-                lines.append(f"- {t.get('course')} · {t.get('title')}")
-            parts.append("\n".join(lines))
         w = weather_tomorrow(now)
         if w:
             parts.append(f"🌤 明早天气：{w}")
