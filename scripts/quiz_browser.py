@@ -655,7 +655,7 @@ def _quiz42_status(ctx, mid_url: str, aid: str) -> str:
                     continue  # 误入分组任务详情，跳过
                 for ln in txt.splitlines():
                     ln2 = ln.strip()
-                    if ln2 and len(ln2) < 60 and not GROUP_TAG.fullmatch(ln2)                             and classify_quiz(ln2) != "unknown":
+                    if ln2 and len(ln2) < 60 and not GROUP_TAG.fullmatch(ln2)                             and "未答" not in ln2 and "当前题目" not in ln2                             and classify_quiz(ln2) != "unknown":
                         if any(w in ln2 for w in ("已提交", "待批阅", "已评分",
                                                   "已互评", "得分")):
                             return ln2
