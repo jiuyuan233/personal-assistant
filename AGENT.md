@@ -259,6 +259,57 @@ README 顶部出 🔴 告警，网页看板单列一桶 —— **绝不混进「
 **状态语义：** `待批阅` 通常表示已提交、等老师批阅，但**互评模式下「待批阅」+ 仍在倒计时 = 用户还得去互评**，
 `parse_work_rows()` 会把它升级成 `pending`。改这段前先看清楚。
 
+### 4.2 随堂采集层 v2.x（2026-11-26~28 全面重构，取代 v1.6.0 的纯 iframe 行解析）
+
+**四条链路**（全部本地浏览器逐条实证 + Actions runner 验证）：
+
+| 链路 | 覆盖对象 | 实现 | 关键文件 |
+| --- | --- | --- | --- |
+| ① requests 主链 | 作业/考试列表+状态 | 模拟登录四步链（本节上方）+ work/list HTML 的 `li[data]` 属性解析 | `study_collector.parse_work_rows` |
+| ② 随堂 API 优先 | 随堂活动清单+type | 拦截捕获 activelist URL → iframe 内 fetch 重放（绕过渲染随机骨架）→ type 分类 | `quiz_browser.tasks_from_activelist` |
+| ③ 状态补抓 | 各 type 详情状态 | 按 type 分发：42→answerQuestion2 直开、35→getActiveInfoForMe、77→stuUrl→load-data、其余→activeRowClick | `quiz_browser._fill_quiz_status` |
+| ④ stat 统计页 | 作业分数 | stat2 统计页 Playwright 渲染（轮换限频 stat_per_round=2）+ score carry | `quiz_browser.fetch_work_stat` |
+
+**六个必记的事实：**
+
+- **学生 cpi 全课程共用 `577967959`**，courses.json 无此字段——所有学习通
+  API 调用必须带（`work/list?cpi=None` 返回降级 HTML，data 属性简版——
+  曾被误判为「限流」，飞书链接 403 的根因）。fallback 在 `Chaoxing.cpi`
+  与 `collect_course(cpi=cfg.xxt_cpi)`。
+- **activelist API 的 status/userStatus 对所有活动无区分**（全是 2/1）——
+  用户完成状态必须走详情页（load-data/getActiveInfoForMe/activeRowClick），
+  别想着从 activelist JSON 里找。
+- **work/list 源码的 data 属性是简版**（JS 动态补全 answerId/enc）——
+  requests 提取的 url 永远简版（403），浏览器 DOM 里才完整。块解析
+  的 href 来自浏览器 DOM ✓；requests 链的简版 url 由浏览器块 href
+  覆盖修正（save 后二次写，`_res_by_course`）。
+- **type=77 的 load-data API 直调是唯一可靠路径**——stuUrl 页面渲染 51s+
+  在 Actions runner 上不可达；load-data 响应 3KB（answerScore/
+  answerRecords/taskEndedFlag），一次请求。chaoxing 域登录态由
+  `Chaoxing._login_chaoxing_domain()`（登录链同账号密码再登一次）保证。
+- **骨架轮**：activelist 页面渲染随机骨架（同课一轮 1524 字/一轮 13 字），
+  骨架轮 XHR 不发——API 重放前需整页重试至捕获（实测第 2-3 轮即中）。
+- **待作答（to_ans=1）是明确状态**：跳答题页=未作答 →
+  「未提交（待作答）」state=pending 进待办（用户 2026-11-27 定论）。
+
+**type 分类表**（activelist 的 `type` 字段 → 处理方式）：
+
+| type | 含义 | 处理 |
+| --- | --- | --- |
+| 42 | 测验/知识点总结 | 作业候选，状态走 answerQuestion2 直开 |
+| 35 | 分组任务 | 作业候选，状态走 getActiveInfoForMe |
+| 77 | 外部 AI 互动 | 作业候选，状态走 stuUrl→load-data |
+| 45 | 通知 | 课堂类，排除（体育课课次全是这种） |
+| 5 / 50 | 主题讨论 | 课堂类，排除（用户定论：讨论不算作业） |
+| 11 | 选人 | 课堂类，排除 |
+| 14 | 问卷 | 课堂类，排除 |
+| 2 / 44 / 4 / 13 / 43 / 46 / 17 / 23 / 49 / 56 / 80 / 83 | 签到/课件/投票等 | 课堂类，排除 |
+| 未知 | — | **宁多勿漏**：按作业候选收录，详情页确认后再定 |
+
+**已知限制**：type=5 的讨论详情页（BBS）无法确认「已参与」（需翻页找
+用户名，回复可能在子层）——按课堂活动排除后不影响待办，BBS 抓取
+列为潜在改进（见 docs/潜在计划.md）。
+
 ### 4.1 任务清单的过滤与排序规则（`render_readme.py`）
 
 用户要求：**14 门课全都要出现在 README 里，没作业的写「无」**；按活跃度排序；只显示还能做的。

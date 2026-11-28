@@ -255,6 +255,8 @@ python scripts/main.py finalize
 | 记忆段落的口吻和长度 | `scripts/prompts.py` → `MEMORY_INSTRUCTIONS` |
 | 作业/公告条数、相关度门槛 | `scripts/daily_push.py` 顶部常量 |
 | 加/停公告源、开关功能、轮换门数 | `data/sources.json` |
+| 学生 cpi（全课程共用） | `data/sources.json` → `study.xxt_cpi`（默认 577967959，勿随意改） |
+| 随堂统计页每轮轮换门数 | `data/sources.json` → `study.stat_per_round`（默认 2，防频率风控） |
 | 采集频率（study 60min 红线别破） | `scripts/main.py` → `TICK_INTERVALS` |
 | 推送时刻（北京整点） | `scripts/main.py` → `PUSH_HOURS`（同步 cron-job.org） |
 | 今天重发某时段 | `data/runtime.json` → `pushed`（唯一允许的手改） |

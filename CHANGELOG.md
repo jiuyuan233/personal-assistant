@@ -7,6 +7,80 @@
 > 编号会随补记漂移），和 [不足与风险 §0.5 状态表](docs/不足与风险.md)（唯一权威）。
 > 被后续版本推翻的结论已就地加注，**保留原文是为了记住当时为什么这么判断，不是让人照着做**。
 
+## v2.x 系列 — 2026-11-26~28（采集层全面重构：四条链路 + API 优先）
+
+> **这一系列是「随堂状态」问题的最终解。** 背景：v1.7.2 的随堂采集只有
+> stuActiveList iframe 行解析（无状态文字），后来经历了 v1.9.x 多轮探索
+> （点击式/主页卡片/stat2 统计页/77 类 stuUrl），最终在 2026-11-26~28
+> 由本地浏览器逐条实证收敛为四条链路。全程与用户逐条对照验证。
+
+### v2.0 — 2026-11-26（随堂采集层重写）
+
+- **API 优先**：拦截捕获 activelist URL → iframe 内 fetch 重放（绕过
+  列表渲染随机骨架——同课一轮 body 1524 字、一轮 13 字）；
+- **type 分类**：42 测验/35 分组任务/77 外部互动 = 作业候选；签到(2)/
+  课件(44)/选人(11)/投票(43)/讨论(5,50)/问卷(14)/通知(45) 等课堂类排除；
+- **deadline 用 endTime 毫秒时间戳**（精确到秒，不再靠文本解析）；
+- **课堂类旧条目清除**：type 数据证明不是作业的，不允许以 unknown 残留。
+
+### v2.3 — 2026-11-27（待作答=明确状态）
+
+- getActiveInfoForMe 的 to_ans=1（跳答题页=未作答）→
+  「未提交（待作答）」state=pending **进待办提醒**（用户定论：
+  待作答就是明确状态，不该留 unknown）。
+
+### v2.4~v2.4e — 2026-11-27（去重 + 双源修复 + score carry）
+
+- **dedupe_by_identity**：同作业不同 id 的历史堆积分桶去重
+  （unknown 桶被有状态版本替代；人造空间同名不同 workId 两条真实
+  任务保住）——线上清掉 47 条堆积；
+- **只收 kind=quiz**：浏览器块的 work/exam 与 requests 主链双源重复
+  （用户报「一叠重复作业」的根因）；
+- **merge_tasks carry score**：stat 轮换回填的分数不再每轮被清零。
+
+### v2.5~v2.6b — 2026-11-27~28（type=77 学生入口 + 登录链补 chaoxing 域）
+
+- **stuUrl 学生入口**：content.stuUrl（activeRowClick default 分支同款）
+  → redirect 落地（参数齐全）→ 提取参数 fetch load-data API →
+  answerScore/answerRecords/taskEndedFlag 判状态——
+  **绕过教师链接拒绝与 51s 页面挂载**（本地实测 96 分/85 分/97 分）；
+- **登录链补 chaoxing.com 域**：huuc fanyalogin 的 cookie 只种 huuc 域
+  （run #1093 实证「chaoxing.com 未登录」）——同账号密码在
+  passport2.chaoxing.com 再登一次（_login_chaoxing_domain）。
+
+### v2.7~v2.9e — 2026-11-28（链接完整性 + 通知格式 + 收尾）
+
+- **LIST_ITEM_JS 抓 li 的 data 属性**：work/list 的 li 带 data 属性
+  （完整 work/task 链接含 answerId/enc），任务 url 落全链接——
+  飞书通知链接从此可打开（此前简版 403）；
+- **parse_work_rows url 解码 HTML 实体**（data 属性里 & 是 &amp;）；
+- **飞书通知全列条目**：去 [:3] 截断，概况后直接跟待做清单
+  （用户要求「通知里必须列出具体作业条目+链接」）；
+- **merge_tasks carry score**：stat 回填的分数不再被清零；
+- **cpi fallback ×4**：mint/work_html/exam_html 全部加
+  `course.get("cpi") or cfg.xxt_cpi`（courses.json 无 cpi 字段——
+  work/list?cpi=None 返回降级 HTML 是飞书链接 403 的根因）；
+- **全课堂类课程也算覆盖**：体育课 6 条通知（type=45）——
+  权威采集返回全课堂类 → 清掉旧的 unknown+逾期条目；
+- **并集合并限 picks 课程** + **课堂类旧条目按 type 数据清除**。
+
+### 关键事实（后来者必读）
+
+- **学生 cpi 全课程共用 577967959**，courses.json 无此字段——所有
+  学习通 API 调用必须带（work/list?cpi=None 返回降级 HTML——
+  曾被误判为「限流」）；
+- **activelist API 的 status/userStatus 对签到/课件/作业无区分**
+  （全是 status=2/userStatus=1）——用户完成状态必须走详情页
+  （load-data/getActiveInfoForMe/activeRowClick）；
+- **work/list 源码的 data 属性是简版**（JS 动态补全 answerId/enc）——
+  requests 提取的 url 永远简版，浏览器 DOM 里才完整；
+- **type=77 的 load-data API 直调是唯一可靠路径**——页面渲染 51s+
+  在 Actions runner 上不可达；
+- **骨架轮**：activelist 页面渲染随机骨架（同课一轮 1524 字/一轮 13 字），
+  骨架轮 XHR 不发——API 重放前需整页重试至捕获；
+- **代理支持**：collect_course/fetch_work_stat 均可传 proxy（本地验证
+  走 Clash 7897）；Actions runner 直连全通（无需代理）。
+
 ## v1.7.2 — 2026-11-18（清单里每条作业带状态标注）
 
 **用户需求（2026-11-18）**：「12 点那一条的作业截止提醒，需要告诉我作业是什么状态，
