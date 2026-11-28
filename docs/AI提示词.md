@@ -302,7 +302,7 @@ README 不会开天窗。
 | 想整体换取向 | 只改 `USER_PROFILE` |
 | README 名言挑得不对 | 改 `QUOTE_VALUE_INSTRUCTIONS` 的档位描述；**存量不会自动重打分**（见上文缺口） |
 | 名言显示条数 | `render_readme.QUOTE_LIMIT`（当前 3），不是提示词 |
-| 早报作业/公告条数 | `daily_push.MORNING_TASK_LIMIT` / `MORNING_NOTICE_LIMIT` / `NOTICE_MIN_SCORE` |
+| 早报公告条数 | `daily_push.MORNING_NOTICE_LIMIT` / `NOTICE_MIN_SCORE`（作业清单 v2.10 起无上限） |
 | 飞书太吵 | 先确认降噪闸门还在（`notify_feishu.js` 的 `status === 'success' && urgent.length === 0`），再收窄 `urgent_alerts()` 的窗口 |
 | 图片风格不喜欢 | `anime_image.py` 的 endpoint（`neko` / `kitsune` / `waifu`），**不要换回 lolicon**（已实测否决） |
 
