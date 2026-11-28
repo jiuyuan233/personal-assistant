@@ -259,7 +259,7 @@ selftest 有两条守卫盯着这件事。
 | 改 README 版式 | `scripts/readme_template.md` |
 | 改名言显示条数 | `scripts/render_readme.py` 的 `QUOTE_LIMIT`（当前 3） |
 | 改名言挑选标准 | `scripts/prompts.py` 的 `QUOTE_VALUE_INSTRUCTIONS`（AI 打分 0–10 的口径） |
-| 改早报放几条作业/公告 | `scripts/daily_push.py` 的 `MORNING_TASK_LIMIT` / `MORNING_NOTICE_LIMIT` / `NOTICE_MIN_SCORE` |
+| 改早报公告条数 | `scripts/daily_push.py` 的 `MORNING_NOTICE_LIMIT` / `NOTICE_MIN_SCORE`（作业清单 v2.10 起无上限） |
 | 改二次元图风格 | `scripts/anime_image.py` 的 endpoint 列表（`neko` / `kitsune` / `waifu`） |
 | 改人格说话风格 | `scripts/prompts.py` 的 `PERSONA`（**只此一份**，名言点评与三时段共用） |
 | 改飞书降噪规则 | `scripts/notify_feishu.js` 的静默闸门（`status != success` 或日志含 `[urgent]` 才发状态卡） |
