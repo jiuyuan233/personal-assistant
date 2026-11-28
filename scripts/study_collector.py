@@ -336,7 +336,10 @@ def parse_work_rows(html: str, course: dict, now: datetime) -> list[dict]:
         um = DATA_URL_RE.search(chunk)
         if not um:
             continue
-        url = um.group(1)
+        # v2.8：data 属性里的 & 写作 &amp;——解码成 & 才能打开
+        # （否则飞书通知的链接 403/缺参数）
+        import html as _html
+        url = _html.unescape(um.group(1))
         q = {k: v[0] for k, v in parse_qs(urlparse(url).query).items()}
         work_id, answer_id = q.get("workId", ""), q.get("answerId", "")
         path = urlparse(url).path
@@ -745,9 +748,8 @@ def run() -> dict:
                 for t in old_quiz:
                     if str(t.get("course_id")) not in _pick_ids:
                         continue
-                    at = (_tmap.get((_re.sub(r"\s+", "", t.get("title") or ""),
-                                     str(t.get("_aid") or "")))
-                          or _tmap.get((_re.sub(r"\s+", "", t.get("title") or ""), "")))
+                    nt = _re.sub(r"\s+", "", t.get("title") or "")
+                    at = _tmap.get(f"{nt}|{t.get('_aid') or ''}") or                         _tmap.get(f"{nt}|")
                     if at is not None and not qb._quiz_type(at):
                         continue  # 课堂类旧条目清除
                     _old_pick.append(t)
@@ -764,8 +766,16 @@ def run() -> dict:
                         merged_q.append(t)  # 新出现的活动
                 tasks_q = merged_q
                 diag = "; ".join(str(d) for d in res.get("diag") or [])
-                # 「有任一解析结果」才算覆盖这门课；全 0 保留旧数据（旧数据保命）
-                if tasks_q or res.get("work_blocks") or res.get("exam_blocks"):
+                # 「有任一解析结果」才算覆盖这门课；全 0 保留旧数据（旧数据保命）。
+                # v2.8 例外：activelist 全部是课堂类（如体育课 6 条通知）→
+                # 也是权威采集（这门课确实没有作业），清掉旧条目（否则
+                # 通知类以 unknown+逾期 永久残留）
+                # activelist 全部是课堂类（如体育课 6 条通知）→ 也是权威
+                # 采集（这门课确实没有作业），清掉旧条目
+                _all_classroom = (bool(_tmap)
+                                  and all(not qb._quiz_type(at)
+                                          for at in _tmap.values()))
+                if tasks_q or res.get("work_blocks") or res.get("exam_blocks")                         or _all_classroom:
                     quiz_covered.add((c["course_id"], c["class_id"]))
                     quiz_new.extend(tasks_q)
                     log(f"[quiz] {cname} 随堂作业 {len(tasks_q)} 条"
