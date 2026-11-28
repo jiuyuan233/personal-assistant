@@ -1,16 +1,16 @@
 {
-  "updated_at": "2026-11-28T13:22:07+08:00",
+  "updated_at": "2026-11-28T14:36:54+08:00",
   "stats": {
-    "pending": 1,
+    "pending": 2,
     "overdue": 0,
     "today": 0,
     "week": 1,
     "later": 0,
-    "unknown": 0,
+    "unknown": 1,
     "upcoming": 0,
     "dropped": {
-      "not_pending": 55,
-      "overdue": 6
+      "not_pending": 58,
+      "overdue": 2
     },
     "courses": 14
   },
@@ -28,11 +28,27 @@
       "state": "pending",
       "deadline": "2026-11-29T23:59:00+08:00",
       "deadline_exact": true,
-      "remaining_text": "剩余34小时47分钟",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=59023749",
+      "remaining_text": "剩余33小时26分钟",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&cpi=577967959&workId=59023749&answerId=55881739&enc=ac13de9247fd5ad4b4e025bcd5d60697",
       "start_time": "2026-11-27T18:54:00+08:00",
       "first_seen": "2026-11-28T00:50:10+08:00",
-      "last_seen": "2026-11-28T13:11:02+08:00"
+      "last_seen": "2026-11-28T14:32:14+08:00"
+    },
+    {
+      "id": "214014802-86cdd0a71a",
+      "kind": "quiz",
+      "category": "quiz",
+      "course": "思想道德与法治（校级网络课程）",
+      "course_id": "214014802",
+      "title": "小组视频作业。",
+      "status": "未提交（待作答）",
+      "state": "pending",
+      "deadline": null,
+      "deadline_exact": false,
+      "time_hint": "",
+      "url": "",
+      "first_seen": "2026-11-27T00:44:21+08:00",
+      "last_seen": "2026-11-28T14:05:09+08:00"
     }
   ],
   "courses": [
