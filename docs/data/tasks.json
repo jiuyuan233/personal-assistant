@@ -1,10 +1,10 @@
 {
-  "updated_at": "2026-11-28T23:43:44+08:00",
+  "updated_at": "2026-11-29T00:04:49+08:00",
   "stats": {
     "pending": 2,
     "overdue": 0,
-    "today": 0,
-    "week": 1,
+    "today": 1,
+    "week": 0,
     "later": 0,
     "unknown": 1,
     "upcoming": 0,
