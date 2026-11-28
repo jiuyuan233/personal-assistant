@@ -128,6 +128,9 @@ class Chaoxing:
         self.username = username
         self.password = password
         self.passport = cfg.get("passport", "https://passport2.huuc.edu.cn").rstrip("/")
+        # v2.9：学生 cpi 全课程共用（courses.json 无此字段）——work/list
+        # 对 cpi=None 返回降级 HTML（data 属性简版无 answerId）→ 飞书链接 403
+        self.cpi = str(cfg.get("xxt_cpi") or "577967959")
         self.s = requests.Session()
         self.s.headers.update({"User-Agent": UA, "Accept-Language": "zh-CN,zh;q=0.9"})
         self.logged_in = False
@@ -259,7 +262,8 @@ class Chaoxing:
         base = self.cfg.get("middle", "https://mooc1.huuc.edu.cn/visit/stucoursemiddle")
         html = self.get(base, params={
             "courseid": course["course_id"], "clazzid": course["class_id"],
-            "cpi": course["cpi"], "ismooc2": course.get("ismooc2", "1"),
+            "cpi": course.get("cpi") or self.cpi,
+            "ismooc2": course.get("ismooc2", "1"),
         })
         if not html:
             return None
@@ -280,7 +284,7 @@ class Chaoxing:
     def work_html(self, course: dict, tokens: dict) -> str | None:
         return self.get(self.cfg.get("work_list", "https://mooc1.huuc.edu.cn/mooc2/work/list"),
                         params={"courseId": course["course_id"], "classId": course["class_id"],
-                                "cpi": course["cpi"], "ut": "s",
+                                "cpi": course.get("cpi") or self.cpi, "ut": "s",
                                 "stuenc": tokens["enc"], "enc": tokens["workEnc"]})
 
     def exam_html(self, course: dict, tokens: dict) -> str | None:
@@ -290,7 +294,7 @@ class Chaoxing:
                            "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list")
         # 考试模块用小写参数名，和作业模块不一样
         return self.get(url, params={"courseid": course["course_id"], "clazzid": course["class_id"],
-                                     "cpi": course["cpi"], "ut": "s",
+                                     "cpi": course.get("cpi") or self.cpi, "ut": "s",
                                      "stuenc": tokens["enc"], "enc": tokens["examEnc"]})
 
 
