@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import base64
+import json
 import re
 import time
 from datetime import datetime, timedelta
@@ -699,6 +700,7 @@ def run() -> dict:
     # 分类（quiz/classroom/material）+ 状态补抓（activeRowClick 跳详情 /
     # 分组任务 API）。classroom/material 只记日志不进待办（用户定论：
     # 讨论不算作业、课件不是作业）。任何失败都不影响主采集。
+    _res_by_course: dict = {}  # (course_id, class_id) → collect_course 结果
     quiz_new: list[dict] = []
     quiz_covered: set = set()
     xxt_cpi = str(cfg.get("xxt_cpi") or "577967959")
@@ -726,6 +728,8 @@ def run() -> dict:
                            f"&ismooc2={c.get('ismooc2', '1')}")
                 res = qb.collect_course(c, mid_url, q_cookies, UA, now,
                                         cpi=xxt_cpi)
+                _res_by_course[(str(c.get("course_id")),
+                                str(c.get("class_id")))] = res
                 cname = c.get("name") or "?"
                 if not res.get("ok"):
                     log(f"[quiz] {cname} 随堂采集失败：{res.get('error', '')[:120]}",
@@ -810,6 +814,28 @@ def run() -> dict:
     old_main = [t for t in old_all if t.get("kind") != "quiz"]
     merged = merge_tasks(old_main, all_tasks, now)
     merged = sort_by_deadline(merged + merge_quiz(old_quiz, quiz_new, quiz_covered, now))
+    # v2.9c：浏览器块的 work/exam 链接覆盖 requests 简版——
+    # requests 抓的 work/list 源码里 data 属性是简版（JS 动态补全
+    # answerId/enc），飞书链接 403；浏览器 DOM 里 data 属性完整。
+    # 按 (course_id, class_id, 归一标题前20) 匹配覆盖。
+    for (rcid, rclz), res in _res_by_course.items():
+        for bl in (res.get("work_blocks") or []) + (res.get("exam_blocks") or []):
+            try:
+                _obj = json.loads(bl)
+                _nt = _re.sub(r"\s+", "", (_obj.get("text") or "").splitlines()[0]
+                              if (_obj.get("text") or "").splitlines() else "")
+                _href = _obj.get("href") or ""
+            except Exception:
+                continue
+            if not _href or "answerId" not in _href:
+                continue
+            for t in merged:
+                if (t.get("kind") in ("work", "exam")
+                        and str(t.get("course_id")) == rcid
+                        and str(t.get("class_id")) == rclz
+                        and _re.sub(r"\s+", "", t.get("title") or "")[:20] == _nt):
+                    t["url"] = _href
+                    break
     # v2.4（用户报「一堆重复+无状态作业」）：同作业不同 id 的历史条目
     # 分桶去重——unknown 旧版本在有状态版本存在时丢弃；不同状态的桶
     # 各自保留（「人造空间」同名已完成+未交两条都得在）
