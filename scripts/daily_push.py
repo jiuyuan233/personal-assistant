@@ -58,7 +58,8 @@ WEATHER_URL = ("https://api.open-meteo.com/v1/forecast?latitude=33.77&longitude=
                "&timezone=Asia/Shanghai&forecast_days=2")
 KINDS = ("morning", "noon", "dusk", "night")
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
-MORNING_TASK_LIMIT = 6
+# v2.10（用户 2026-11-28）删除 MORNING_TASK_LIMIT=6：作业清单不再有条数上限
+# ——「通知就通知全部可以做的作业，每个通知都是」。
 MORNING_NOTICE_LIMIT = 3
 NOTICE_MIN_SCORE = 3
 # v1.5.19 傍晚冲刺档（用户 2026-11-15 新增）：18:30，今天截止的最后一次"还来得及"提醒
@@ -99,6 +100,8 @@ def study_facts(now: datetime, tasks: list[dict] | None = None) -> tuple[str, li
     v1.6.6：未开始的作业也列出来（用户澄清：要显示，只是状态区分）——标「未开始」，
     不计入待完成条数，也永远不会标「截止未知」（不是抓不到，是还没开放）。
     tasks 可注入（selftest 离线测「全部完成」场景），缺省读 data/study/tasks.json。
+    v2.10（用户 2026-11-28）：全列不截断——「通知就通知全部可以做的作业，
+    每个通知都是」，删 MORNING_TASK_LIMIT=6 上限与「全量在 README」提示。
     """
     import render_readme as rr
 
@@ -112,16 +115,14 @@ def study_facts(now: datetime, tasks: list[dict] | None = None) -> tuple[str, li
     if upc:
         header += f"；另有 {len(upc)} 条未开始（老师开放后自动进入待办）"
     lines = [header + "。"]
-    for t in act[:MORNING_TASK_LIMIT]:
+    for t in act:
         lines.append(f"- {t.get('course')} · {t.get('title')} ·「{_state_tag(t)}」· 截止 {_when(t)}")
         if t.get("url"):
             lines.append(f"  ↳ {t['url']}")
-    for t in upc[:MORNING_TASK_LIMIT]:
+    for t in upc:
         lines.append(f"- {t.get('course')} · {t.get('title')} ·「{_state_tag(t)}」· 暂不可做（未开始）")
         if t.get("url"):
             lines.append(f"  ↳ {t['url']}")
-    if len(act) > MORNING_TASK_LIMIT:
-        lines.append(f"（还有 {len(act) - MORNING_TASK_LIMIT} 条，全量在 README 任务清单）")
     return "\n".join(lines), kept
 
 
@@ -586,6 +587,21 @@ def _actionable_sorted(now: datetime, tasks: list | None = None) -> list[dict]:
     return sort_by_deadline(kept)
 
 
+def _full_todo_block(now: datetime, tasks: list[dict] | None = None) -> str:
+    """全部可做的作业清单（study_facts 同口径全列），无可做时返回 ""。
+
+    v2.10（用户 2026-11-28：「通知就通知全部可以做的作业，每个通知都是」）：
+    之前只有早报带作业清单，午/傍晚/晚安只挑子集（7 天内/今天截止/48h）——
+    截止更远的作业在通知里看不到、没法行动。现在**每个时段**都带这一块；
+    各时段原有的重点子节（今天截止/48h…）保留作紧急度高亮，条目允许重复
+    （用户 2026-11-14：「作业部分可以重复」）。
+    """
+    sf, kept = study_facts(now, tasks)
+    if not kept:
+        return ""
+    return "📚 全部可做的作业\n" + sf
+
+
 def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
                tasks: list[dict] | None = None) -> str:
     """确定性清单，拼在 AI prose 后面。**不经过 AI**，保证用户点名的内容一条不漏。
@@ -601,7 +617,7 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
     if kind == "morning":
         sf, kept_m = study_facts(now, tasks)
         if kept_m:
-            parts.append("📚 待完成作业\n" + sf)
+            parts.append("📚 全部可做的作业\n" + sf)
         else:
             # 用户 2026-11-15：「全部都完成了的话，就推送我的潜在任务，来自我的
             # obsidian 笔记」——没作业可做的日子，用他自己的长期计划填满这一格
@@ -612,26 +628,25 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
         nf, _ = notice_facts()
         parts.append("📢 值得关注的公告\n" + nf)
     elif kind == "noon":
+        blk = _full_todo_block(now, tasks)
+        if blk:
+            parts.append(blk)
         kept = _actionable_sorted(now, tasks)
         all_tasks = tasks if tasks is not None else load_list(DATA_DIR / "study" / "tasks.json")
         fresh = [t for t in all_tasks
                  if t.get("first_seen") == today_iso and t.get("state") == "pending"]
         if fresh:
             lines = [f"🆕 今天新发的作业 {len(fresh)} 条："]
-            for t in fresh[:12]:
+            for t in fresh:
                 lines += _task_line(t)
-            if len(fresh) > 3:
-                lines.append(f"（还有 {len(fresh) - 3} 条，全量在 README）")
             parts.append("\n".join(lines))
         week = [t for t in kept
                 if t.get("deadline")
                 and (parse_datetime(t["deadline"]) or now) <= now + timedelta(days=7)]
         if week:
             lines = [f"⏳ 7 天内截止 {len(week)} 条："]
-            for t in week[:12]:
+            for t in week:
                 lines += _task_line(t)
-            if len(week) > 3:
-                lines.append(f"（还有 {len(week) - 3} 条，全量在 README）")
             parts.append("\n".join(lines))
         en = daily_english()
         if en:
@@ -651,14 +666,17 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
                  and now <= (parse_datetime(t["deadline"]) or now) <= day_end]
         if today:
             lines = [f"🔥 今天 24:00 前截止还没交的 {len(today)} 条："]
-            for t in today[:12]:
+            for t in today:
                 lines += _task_line(t)
-            if len(today) > 3:
-                lines.append(f"（还有 {len(today) - 3} 条，全量在 README）")
             parts.append("\n".join(lines))
         else:
             parts.append("🎉 今天截止的作业：**全部搞定，0 条要赶**。\n"
                          "该交的都交了，今晚不用再惦记作业——哼，千得漂亮。")
+        # v2.10：傍晚档同样带全部可做作业清单（之前只列今天截止的，
+        # 明天/后天截止的通知里看不到——用户 2026-11-28 点名）
+        blk = _full_todo_block(now, tasks)
+        if blk:
+            parts.append(blk)
         # tech_provider 可注入（selftest 离线确定性）；缺省联 IT之家 RSS
         tn = (tech_provider or tech_news)()
         if tn:
@@ -670,11 +688,13 @@ def info_block(kind: str, now: datetime, hit: str, tech_provider=None,
                 and (parse_datetime(t["deadline"]) or now) <= now + timedelta(hours=48)]
         if soon:
             lines = [f"🔥 48 小时内截止还没交的 {len(soon)} 条："]
-            for t in soon[:12]:
+            for t in soon:
                 lines += _task_line(t)
-            if len(soon) > 3:
-                lines.append(f"（还有 {len(soon) - 3} 条，全量在 README）")
             parts.append("\n".join(lines))
+        # v2.10：晚安档同样带全部可做作业清单（48h 子节只作紧急高亮）
+        blk = _full_todo_block(now, tasks)
+        if blk:
+            parts.append(blk)
         all_tasks = tasks if tasks is not None else load_list(DATA_DIR / "study" / "tasks.json")
         monday_iso = (now.date() - timedelta(days=now.date().weekday())).isoformat()
         this_week = [t for t in all_tasks if (t.get("first_seen") or "") >= monday_iso]
