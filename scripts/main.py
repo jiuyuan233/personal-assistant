@@ -870,7 +870,7 @@ def do_selftest() -> bool:
                                   "first_seen": now.date().isoformat(),
                                   "deadline": (now + timedelta(days=5)).isoformat(timespec="seconds"),
                                   "url": ""}])
-    check("午安清单（今日新发/7 天内截止）每条也带状态标注",
+    check("午安全量作业清单每条带状态标注（v2.11 只列全量清单一遍）",
           _noon_blk.count("「待互评」") >= 1 and _noon_blk.count("「未交」") >= 1
           and _noon_blk.count("「待完成」") >= 1, _noon_blk[:200])
     check("四个时段的清单都不带课表",
