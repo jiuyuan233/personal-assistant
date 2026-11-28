@@ -818,24 +818,36 @@ def run() -> dict:
     # requests 抓的 work/list 源码里 data 属性是简版（JS 动态补全
     # answerId/enc），飞书链接 403；浏览器 DOM 里 data 属性完整。
     # 按 (course_id, class_id, 归一标题前20) 匹配覆盖。
+    _cov_n = 0
     for (rcid, rclz), res in _res_by_course.items():
+        _bl_n = 0
         for bl in (res.get("work_blocks") or []) + (res.get("exam_blocks") or []):
+            _bl_n += 1
             try:
                 _obj = json.loads(bl)
-                _nt = _re.sub(r"\s+", "", (_obj.get("text") or "").splitlines()[0]
-                              if (_obj.get("text") or "").splitlines() else "")
+                _lines = (_obj.get("text") or "").splitlines()
+                _nt = _re.sub(r"\s+", "", _lines[0] if _lines else "")
                 _href = _obj.get("href") or ""
-            except Exception:
+            except Exception as e:
+                log(f"[quiz] 链接覆盖解析异常 {safe_text(e, 60)}", level="WARN")
                 continue
             if not _href or "answerId" not in _href:
                 continue
+            _hit = False
             for t in merged:
                 if (t.get("kind") in ("work", "exam")
                         and str(t.get("course_id")) == rcid
                         and str(t.get("class_id")) == rclz
                         and _re.sub(r"\s+", "", t.get("title") or "")[:20] == _nt):
                     t["url"] = _href
+                    _cov_n += 1
+                    _hit = True
                     break
+            if not _hit:
+                log(f"[quiz] 链接覆盖未命中: {safe_text(_nt, 30)}", level="WARN")
+        log(f"[quiz] {rcid[:10]} 链接覆盖: 块 {_bl_n} 命中 {_cov_n}（累计）")
+    log(f"[quiz] 链接覆盖总计 {_cov_n} 条")
+    log(f"[quiz] _res_by_course 课程数 {len(_res_by_course)}")
     # v2.4（用户报「一堆重复+无状态作业」）：同作业不同 id 的历史条目
     # 分桶去重——unknown 旧版本在有状态版本存在时丢弃；不同状态的桶
     # 各自保留（「人造空间」同名已完成+未交两条都得在）
