@@ -837,12 +837,14 @@ def run() -> dict:
             for t in merged:
                 if (t.get("kind") in ("work", "exam")
                         and str(t.get("course_id")) == rcid
-                        and str(t.get("class_id")) == rclz
-                        and _re.sub(r"\s+", "", t.get("title") or "")[:20] == _nt):
-                    t["url"] = _href
-                    _cov_n += 1
-                    _hit = True
-                    break
+                        and str(t.get("class_id")) == rclz):
+                    _tt = _re.sub(r"\s+", "", t.get("title") or "")
+                    # 双向包含（块首行可能带题号前缀/后缀）
+                    if _nt and (_nt in _tt or _tt in _nt):
+                        t["url"] = _href
+                        _cov_n += 1
+                        _hit = True
+                        break
             if not _hit:
                 log(f"[quiz] 链接覆盖未命中: {safe_text(_nt, 30)}", level="WARN")
         log(f"[quiz] {rcid[:10]} 链接覆盖: 块 {_bl_n} 命中 {_cov_n}（累计）")
