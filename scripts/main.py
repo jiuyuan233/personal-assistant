@@ -1697,6 +1697,19 @@ def do_selftest() -> bool:
                                         "kind": "work", "deadline": "", "url": ""}])
     check("傍晚无作业时明说全部搞定（确定性，AI 挂了也在）",
           "全部搞定" in _empty_dusk and "0 条要赶" in _empty_dusk, _empty_dusk[:120])
+    # v2.10（用户 2026-11-28「通知就通知全部可以做的作业，每个通知都是」）：
+    # 午/傍晚/晚安也带全量作业清单；清单全列不截断（MORNING_TASK_LIMIT=6 已删）
+    for k in ("noon", "dusk", "night"):
+        _bk = dp.info_block(k, now, "", tech_provider=lambda: "", tasks=_st_tasks)
+        check(f"{k} 通知也带全部可做作业清单",
+              "全部可做的作业" in _bk and "4.1不定积分" in _bk and "结课测验" in _bk,
+              _bk[:150])
+    _many = [{"id": f"m{i}", "course": "课", "title": f"作业{i}", "kind": "work",
+              "state": "pending", "status": "",
+              "deadline": (now + timedelta(days=1, hours=i + 1)).isoformat(timespec="seconds"),
+              "url": ""} for i in range(8)]
+    check("作业清单全列不截断（8 条全部出现）",
+          all(f"作业{i}" in dp.study_facts(now, _many)[0] for i in range(8)))
     # task_overview：AI 事实注入的作业概览（清零 / 未清零两种口径）
     _ov_empty = dp.task_overview(now, [{"state": "done", "title": "x", "course": "c",
                                         "kind": "work", "deadline": None, "url": ""}])
@@ -1902,8 +1915,7 @@ def do_selftest() -> bool:
         "PUSH_RULES": "PUSH_RULES" in _maint and hasattr(__import__("prompts"), "PUSH_RULES"),
         "MEMORY_INSTRUCTIONS": "MEMORY_INSTRUCTIONS" in _maint
                                and hasattr(__import__("prompts"), "MEMORY_INSTRUCTIONS"),
-        "MORNING_TASK_LIMIT": "MORNING_TASK_LIMIT" in _maint
-                               and hasattr(__import__("daily_push"), "MORNING_TASK_LIMIT"),
+
         "TICK_INTERVALS": "TICK_INTERVALS" in _maint and "TICK_INTERVALS" in globals(),
         "PUSH_HOURS": "PUSH_HOURS" in _maint and "PUSH_HOURS" in globals(),
         "quiz_browser 开关": "quiz_browser" in _maint,
