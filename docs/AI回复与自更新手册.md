@@ -124,13 +124,15 @@
 
 ### 3.4 改清单内容与条数
 
-`scripts/daily_push.py` 顶部三个常量：
+`scripts/daily_push.py` 顶部两个常量：
 
 ```python
-MORNING_TASK_LIMIT = 6      # 早报最多列几条作业
 MORNING_NOTICE_LIMIT = 3    # 早报最多列几条公告
 NOTICE_MIN_SCORE = 3        # 公告相关度门槛（与 README 公告节一致）
 ```
+
+作业清单 v2.10 起无条数上限（用户 2026-11-28：「通知就通知全部可以做的作业，
+每个通知都是」），四个时段都带全量清单。
 
 要改「列哪些字段」就改 `study_facts()` / `notice_facts()`；要改「哪个时段带哪块」就改 `info_block()`。
 **改条数/门槛时记得同步 [AI 提示词](AI提示词.md) 与本文 §2 的表格**，否则文档立刻变成假的。
