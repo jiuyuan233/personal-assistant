@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-28T20:13:00+08:00",
+  "updated_at": "2026-11-28T21:17:34+08:00",
   "count": 62,
   "course_count": 14,
   "items": [
@@ -113,11 +113,11 @@
       "deadline": "2026-11-09T20:24:00+08:00",
       "deadline_exact": true,
       "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204754",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=57870732&answerId=55933232&enc=ea777df336184d1275f9016c2f81b68f",
       "start_time": "2026-11-09T20:21:00+08:00",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "214014802-e05313f151",
@@ -184,7 +184,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58467962",
       "first_seen": "2026-11-13T18:38:58+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-dc942471f7",
@@ -202,7 +202,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58558183",
       "first_seen": "2026-11-16T17:34:53+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "228141406-196238fb25",
@@ -218,10 +218,10 @@
       "deadline": "2026-11-17T18:03:00+08:00",
       "deadline_exact": true,
       "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491059",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58491059&answerId=56028524&enc=a3951d28a88102655ad6ee2fcb04656a",
       "first_seen": "2026-11-16T18:32:54+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "228141406-183effa9b4",
@@ -237,10 +237,10 @@
       "deadline": "2026-11-17T18:03:00+08:00",
       "deadline_exact": true,
       "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491026",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58491026&answerId=56028525&enc=56738f898188b6f671fac692ebe71fe9",
       "first_seen": "2026-11-16T18:32:54+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "228141406-12104c89e4",
@@ -256,10 +256,10 @@
       "deadline": "2026-11-17T18:04:00+08:00",
       "deadline_exact": true,
       "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58491082",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58491082&answerId=56028523&enc=231bd7a2b10d6f19b8fd7db1a5a3c6ca",
       "first_seen": "2026-11-16T18:32:54+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "201780805-ba99d83e8f",
@@ -278,7 +278,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=58170556",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-1621c779be",
@@ -296,7 +296,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58558183",
       "first_seen": "2026-11-18T07:26:26+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "201780805-8722437faf",
@@ -315,7 +315,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=58170689",
       "first_seen": "2026-11-13T14:28:50+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "268016715-fc0e283afd",
@@ -332,7 +332,7 @@
       "remaining_text": "End time：11-24 12:46",
       "url": "https://mobilelearn.huuc.edu.cn/page/active/stuActiveList?courseid=268016715&clazzid=157062544&ut=s",
       "first_seen": "2026-11-16T19:40:07+08:00",
-      "last_seen": "2026-11-28T16:43:17+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "228141406-451fca03b5",
@@ -348,7 +348,7 @@
       "time_hint": "",
       "url": "",
       "first_seen": "2026-11-26T15:48:24+08:00",
-      "last_seen": "2026-11-28T16:43:17+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "246136739-6bee3ad362",
@@ -380,7 +380,7 @@
       "time_hint": "",
       "url": "https://mooc2-ans.chaoxing.com/ai-evaluate/v2/redirect/active/stu?courseid=228141406&clazzid=157088208",
       "first_seen": "2026-11-26T15:48:24+08:00",
-      "last_seen": "2026-11-28T16:43:17+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-e18c310e8c",
@@ -395,11 +395,11 @@
       "state": "pending",
       "deadline": "2026-11-29T23:59:00+08:00",
       "deadline_exact": true,
-      "remaining_text": "剩余27小时49分钟",
+      "remaining_text": "剩余26小时47分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=59023749",
       "start_time": "2026-11-27T18:54:00+08:00",
       "first_seen": "2026-11-28T00:50:10+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "228141406-6acf5f8fe4",
@@ -412,13 +412,13 @@
       "label": "",
       "status": "待批阅",
       "state": "submitted",
-      "deadline": "2026-11-30T23:58:11+08:00",
+      "deadline": "2026-11-30T23:58:31+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余51小时49分钟",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771731",
+      "remaining_text": "剩余50小时47分钟",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58771731&answerId=56086403&enc=20976269031491bf7f504f699220cf82",
       "first_seen": "2026-11-26T10:23:45+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "228141406-08ea8dd7e1",
@@ -431,13 +431,13 @@
       "label": "",
       "status": "待批阅",
       "state": "submitted",
-      "deadline": "2026-11-30T23:58:11+08:00",
+      "deadline": "2026-11-30T23:58:31+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余51小时49分钟",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771753",
+      "remaining_text": "剩余50小时47分钟",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58771753&answerId=56086404&enc=a458663aa89a0c49923871a1a49af7c3",
       "first_seen": "2026-11-26T10:23:45+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "268008349-7bcd10c306",
@@ -450,12 +450,12 @@
       "label": "考试",
       "status": "已完成",
       "state": "done",
-      "deadline": "2026-12-13T23:59:14+08:00",
+      "deadline": "2026-12-13T23:59:35+08:00",
       "deadline_exact": false,
-      "remaining_text": "100 分 剩余363小时50分钟",
+      "remaining_text": "100 分 剩余362小时48分钟",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=268008349&clazzid=157042838&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "214014802-99a973636b",
@@ -468,13 +468,13 @@
       "label": "互评",
       "status": "待批阅",
       "state": "submitted",
-      "deadline": "2026-12-31T09:51:20+08:00",
+      "deadline": "2026-12-31T09:51:39+08:00",
       "deadline_exact": false,
-      "remaining_text": "剩余781小时42分钟",
+      "remaining_text": "剩余780小时40分钟",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=214014802&classId=153270975&workId=58788782",
       "first_seen": "2026-11-26T10:23:45+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "214014802-86cdd0a71a",
@@ -508,7 +508,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=268371439&clazzid=158553251&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "228141406-497e31d3cf",
@@ -524,10 +524,10 @@
       "deadline": null,
       "deadline_exact": false,
       "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=57526332",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=57526332&answerId=55890468&enc=160d98ac05d672cf29a92036d6c06ea0",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "228141406-0cc488bb65",
@@ -543,10 +543,10 @@
       "deadline": null,
       "deadline_exact": false,
       "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771802",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58771802&answerId=56086400&enc=74d5bcf3d2302b92b4c847de1358fd6e",
       "first_seen": "2026-11-26T10:23:45+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "228141406-ec9f34e1ca",
@@ -562,10 +562,10 @@
       "deadline": null,
       "deadline_exact": false,
       "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771787",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58771787&answerId=56086401&enc=8357da36eed693eb8caf52faee4521c8",
       "first_seen": "2026-11-26T10:23:45+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "228141406-6b7783323d",
@@ -581,10 +581,10 @@
       "deadline": null,
       "deadline_exact": false,
       "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58771769",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58771769&answerId=56086399&enc=dc11f7e04cd0e5b6d52cd2fe36efb6a8",
       "first_seen": "2026-11-26T10:23:45+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "228141406-147d7af1f3",
@@ -600,10 +600,10 @@
       "deadline": null,
       "deadline_exact": false,
       "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204806",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58204806&answerId=55982601&enc=4aa092d2e328ebf1c5ba24f5a130bf29",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "228141406-6713fb5201",
@@ -619,10 +619,10 @@
       "deadline": null,
       "deadline_exact": false,
       "remaining_text": "",
-      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&workId=58204711",
+      "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=228141406&classId=157088208&cpi=577967959&workId=58204711&answerId=55982143&enc=a7d89d7a2b327df7dd6d0bd7b7b58e53",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "260598171-231e2e59be",
@@ -641,7 +641,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58802014",
       "first_seen": "2026-11-26T10:23:45+08:00",
       "score": "20",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "260598171-bc92f57b1c",
@@ -660,7 +660,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58802004",
       "first_seen": "2026-11-26T10:23:45+08:00",
       "score": "20",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "260598171-def44f4b92",
@@ -679,7 +679,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58530024",
       "first_seen": "2026-11-18T10:27:18+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "260598171-61a8809da6",
@@ -698,7 +698,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=58301119",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "260598171-1c99ab59f3",
@@ -717,7 +717,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57984053",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "260598171-72b229d891",
@@ -736,7 +736,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57648797",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "260598171-a6fef1114b",
@@ -755,7 +755,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57576073",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "260598171-96bd1e26e2",
@@ -774,7 +774,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57576023",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "260598171-8fecdc421f",
@@ -793,7 +793,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=57297581",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "260598171-b7fb842da0",
@@ -812,7 +812,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=56895598",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "260598171-4e8c5c943b",
@@ -831,7 +831,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=260598171&classId=156188851&workId=56430556",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "201780805-51f684486f",
@@ -850,7 +850,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=201780805&classId=156290484&workId=57584189",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-25210e679f",
@@ -868,7 +868,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58841797",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-6651af1cfb",
@@ -886,7 +886,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58841797",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-725c9fce61",
@@ -904,7 +904,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58763973",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-9f8fde3d38",
@@ -922,7 +922,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58673369",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-2928dd1aac",
@@ -940,7 +940,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58763973",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-d7a743416f",
@@ -958,7 +958,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58673369",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-7bfb3fd544",
@@ -976,7 +976,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/eval-list?courseId=219232606&classId=153566712&workId=58370553",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-dc63b1d597",
@@ -995,7 +995,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=219232606&classId=153566712&workId=58370553",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-5b357a06f1",
@@ -1013,7 +1013,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-26T10:23:45+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-f1dafa4ec2",
@@ -1031,7 +1031,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-15T15:26:24+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-fcedf41184",
@@ -1049,7 +1049,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "219232606-9eea2c518b",
@@ -1067,7 +1067,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=219232606&clazzid=153566712&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "205372276-04e9b87b21",
@@ -1086,7 +1086,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=205372276&classId=154422672&workId=56132865",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "205372276-53a0490202",
@@ -1105,7 +1105,7 @@
       "url": "https://mooc1.huuc.edu.cn/mooc-ans/mooc2/work/task?courseId=205372276&classId=154422672&workId=56132395",
       "first_seen": "2026-11-13T13:07:02+08:00",
       "score": "100",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     },
     {
       "id": "205372276-b727ee1d09",
@@ -1123,7 +1123,7 @@
       "remaining_text": "",
       "url": "https://mooc1.huuc.edu.cn/exam-ans/mooc2/exam/exam-list?courseid=205372276&clazzid=154422672&ut=s",
       "first_seen": "2026-11-13T13:07:02+08:00",
-      "last_seen": "2026-11-28T20:08:42+08:00"
+      "last_seen": "2026-11-28T21:11:16+08:00"
     }
   ]
 }
