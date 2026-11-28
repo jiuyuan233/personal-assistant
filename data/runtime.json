@@ -11,14 +11,15 @@
   },
   "pushed": {
     "morning": "2026-11-28",
-    "noon": "2026-11-27",
+    "noon": "2026-11-28",
     "night": "2026-11-26",
     "dusk": "2026-11-26"
   },
   "errors": {},
   "writeback_date": "2026-11-28",
-  "last_tick": "2026-11-28T11:58:37+08:00",
+  "last_tick": "2026-11-28T12:06:27+08:00",
   "last_results": {
+    "noon": true,
     "finalize": true
   },
   "notified_new": {
