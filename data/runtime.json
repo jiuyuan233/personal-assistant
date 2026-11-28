@@ -13,13 +13,13 @@
     "morning": "2026-11-28",
     "noon": "2026-11-28",
     "night": "2026-11-26",
-    "dusk": "2026-11-26"
+    "dusk": "2026-11-28"
   },
   "errors": {},
   "writeback_date": "2026-11-28",
-  "last_tick": "2026-11-28T17:49:17+08:00",
+  "last_tick": "2026-11-28T18:06:30+08:00",
   "last_results": {
-    "study": true,
+    "dusk": true,
     "finalize": true
   },
   "notified_new": {
