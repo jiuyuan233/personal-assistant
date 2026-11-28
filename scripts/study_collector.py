@@ -340,6 +340,10 @@ def parse_work_rows(html: str, course: dict, now: datetime) -> list[dict]:
         # （否则飞书通知的链接 403/缺参数）
         import html as _html
         url = _html.unescape(um.group(1))
+        # v2.9：未交任务 data 属性可能缺 cpi（无 answerId 可补）——
+        # 补上课程 cpi，task 链接才打得开
+        if "cpi=" not in url:
+            url += f"&cpi={course.get('cpi')}"
         q = {k: v[0] for k, v in parse_qs(urlparse(url).query).items()}
         work_id, answer_id = q.get("workId", ""), q.get("answerId", "")
         path = urlparse(url).path
