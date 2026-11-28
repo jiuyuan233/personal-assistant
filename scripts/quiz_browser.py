@@ -615,7 +615,8 @@ def tasks_from_activelist(items: list[dict], course: dict,
             "deadline": deadline,
             "deadline_exact": exact,
             "time_hint": "",
-            "url": "",
+            # v2.8：url 用 stuUrl（学生入口，用户点开自动重定向到学生页）
+            "url": stu_url,
             "first_seen": now.isoformat(timespec="seconds"),
         })
     return tasks
@@ -952,8 +953,10 @@ def collect_course(course: dict, mid_url: str, cookies: list[dict],
             _tm: dict = {}
             for it in api_items:
                 nt = re.sub(r"\s+", "", str(it.get("nameOne") or ""))
-                _tm[(nt, str(it.get("id") or ""))] = it.get("type")
-                _tm.setdefault((nt, ""), it.get("type"))  # 仅标题 fallback
+                aid = str(it.get("id") or "")
+                # key 用字符串（tuple key 会让 result JSON 序列化崩溃）
+                _tm[f"{nt}|{aid}"] = it.get("type")
+                _tm.setdefault(f"{nt}|", it.get("type"))  # 仅标题 fallback
             result["api_type_map"] = _tm
             # 审计红线（§2.5）：_aid/atype 是每生活动 ID，不落盘
             for t in tasks:
